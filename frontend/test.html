@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Family Command Center</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/barcelona-theme.css">
+</head>
+<body>
+    <div style="padding: 20px;">
+        <h1>🍳 Family Command Center - Test</h1>
+        <p>Backend Status: <span id="backend-status">Checking...</span></p>
+        <button onclick="testBackend()">Test Backend Connection</button>
+        <button onclick="testMenuAPI()">Test Menu API</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function testBackend() {
+            try {
+                const response = await fetch('http://localhost:9000/health');
+                const data = await response.json();
+                document.getElementById('backend-status').innerHTML = '✅ Connected';
+                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('backend-status').innerHTML = '❌ Error: ' + error.message;
+            }
+        }
+
+        async function testMenuAPI() {
+            try {
+                const response = await fetch('http://localhost:9000/api/menu/current');
+                const data = await response.json();
+                document.getElementById('results').innerHTML = '<h3>Menu API Response:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<h3>Menu API Error:</h3><p>' + error.message + '</p>';
+            }
+        }
+
+        // Auto-test on load
+        testBackend();
+    </script>
+</body>
+</html>

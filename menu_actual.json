@@ -1,0 +1,754 @@
+﻿{
+  "data": {
+    "created_at": "2026-01-20T19:19:24.609266",
+    "generado_con": "claude",
+    "id": 2,
+    "lista_compra": {
+      "carnes_pescados": [
+        {
+          "cantidad": "2 unidades",
+          "estimado_eur": 8.0,
+          "item": "Pollo entero"
+        },
+        {
+          "cantidad": "600g",
+          "estimado_eur": 12.0,
+          "item": "Salmn fresco"
+        },
+        {
+          "cantidad": "800g",
+          "estimado_eur": 9.5,
+          "item": "Ternera para guisar"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 8.5,
+          "item": "Bacalao fresco"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 11.0,
+          "item": "Lubina"
+        },
+        {
+          "cantidad": "800g",
+          "estimado_eur": 14.0,
+          "item": "Cordero"
+        }
+      ],
+      "congelados": [
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 2.2,
+          "item": "Verduras mixtas"
+        }
+      ],
+      "despensa": [
+        {
+          "cantidad": "1 litro",
+          "estimado_eur": 4.5,
+          "item": "Aceite de oliva"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 1.8,
+          "item": "Arroz"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 1.2,
+          "item": "Pasta espaguetis"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 1.2,
+          "item": "Pasta macarrones"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 1.5,
+          "item": "Lentejas"
+        },
+        {
+          "cantidad": "1 caja",
+          "estimado_eur": 3.2,
+          "item": "Cereales integrales"
+        },
+        {
+          "cantidad": "1 botella",
+          "estimado_eur": 2.1,
+          "item": "Salsa de soja"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 0.8,
+          "item": "Sal"
+        },
+        {
+          "cantidad": "200g",
+          "estimado_eur": 2.8,
+          "item": "Frutos secos mixtos"
+        }
+      ],
+      "frutas_verduras": [
+        {
+          "cantidad": "2 kg",
+          "estimado_eur": 3.5,
+          "item": "Tomates"
+        },
+        {
+          "cantidad": "3 kg",
+          "estimado_eur": 2.8,
+          "item": "Patatas"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 2.2,
+          "item": "Pimientos rojos"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 1.8,
+          "item": "Calabacn"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 1.5,
+          "item": "Espinacas frescas"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 1.6,
+          "item": "Championes"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 1.4,
+          "item": "Judas verdes"
+        },
+        {
+          "cantidad": "4 unidades",
+          "estimado_eur": 3.2,
+          "item": "Aguacates"
+        },
+        {
+          "cantidad": "100g",
+          "estimado_eur": 1.2,
+          "item": "Jengibre fresco"
+        },
+        {
+          "cantidad": "1 manojo",
+          "estimado_eur": 1.0,
+          "item": "Cilantro fresco"
+        },
+        {
+          "cantidad": "1 ristra",
+          "estimado_eur": 1.5,
+          "item": "Ajo"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 1.2,
+          "item": "Cebolla"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 2.8,
+          "item": "Melocotones"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 2.4,
+          "item": "Peras"
+        },
+        {
+          "cantidad": "1 unidad",
+          "estimado_eur": 2.5,
+          "item": "Meln"
+        },
+        {
+          "cantidad": "1 unidad",
+          "estimado_eur": 3.0,
+          "item": "Sanda"
+        },
+        {
+          "cantidad": "1 kg",
+          "estimado_eur": 1.8,
+          "item": "Pltanos"
+        },
+        {
+          "cantidad": "500g",
+          "estimado_eur": 2.2,
+          "item": "Fresas"
+        }
+      ],
+      "lacteos_huevos": [
+        {
+          "cantidad": "18 unidades",
+          "estimado_eur": 3.6,
+          "item": "Huevos"
+        },
+        {
+          "cantidad": "2 litros",
+          "estimado_eur": 3.2,
+          "item": "Bebida de avena"
+        },
+        {
+          "cantidad": "8 unidades",
+          "estimado_eur": 4.8,
+          "item": "Yogures de soja"
+        }
+      ],
+      "panaderia": [
+        {
+          "cantidad": "2 barras",
+          "estimado_eur": 2.4,
+          "item": "Pan integral"
+        },
+        {
+          "cantidad": "1 barra",
+          "estimado_eur": 1.2,
+          "item": "Pan de pueblo"
+        }
+      ],
+      "total_estimado": 98.4
+    },
+    "menu_data": {
+      "consejos_semana": [
+        "Preparar el gazpacho y cremas de verduras el domingo para toda la semana",
+        "Cocinar arroz y pasta en mayor cantidad y guardar en nevera para reutilizar",
+        "Lavar y cortar verduras al inicio de la semana para ahorrar tiempo diario",
+        "Los das que trabaja Marycel (L-V), puede preparar guisos ms elaborados",
+        "Congelar porciones individuales de las comidas principales para emergencias",
+        "Preparar las verduras salteadas en lote para usar en varios platos"
+      ],
+      "consideraciones_aplicadas": [
+        "Eliminados todos los mariscos por alergia de Xilef",
+        "Sustituidos lcteos por alternativas vegetales por intolerancia a lactosa",
+        "Incluidos ingredientes favoritos: ajo, pimiento, jengibre, cilantro",
+        "Respetado nivel de picante suave para Xilef",
+        "Platos ms elaborados en das laborables cuando trabaja Marycel",
+        "Men infantil adaptado con texturas suaves y presentaciones atractivas",
+        "Presupuesto ajustado a 100 semanales",
+        "Productos de temporada mediterrneos priorizados"
+      ],
+      "lista_compra": {
+        "carnes_pescados": [
+          {
+            "cantidad": "2 unidades",
+            "estimado_eur": 8.0,
+            "item": "Pollo entero"
+          },
+          {
+            "cantidad": "600g",
+            "estimado_eur": 12.0,
+            "item": "Salmn fresco"
+          },
+          {
+            "cantidad": "800g",
+            "estimado_eur": 9.5,
+            "item": "Ternera para guisar"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 8.5,
+            "item": "Bacalao fresco"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 11.0,
+            "item": "Lubina"
+          },
+          {
+            "cantidad": "800g",
+            "estimado_eur": 14.0,
+            "item": "Cordero"
+          }
+        ],
+        "congelados": [
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 2.2,
+            "item": "Verduras mixtas"
+          }
+        ],
+        "despensa": [
+          {
+            "cantidad": "1 litro",
+            "estimado_eur": 4.5,
+            "item": "Aceite de oliva"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 1.8,
+            "item": "Arroz"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 1.2,
+            "item": "Pasta espaguetis"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 1.2,
+            "item": "Pasta macarrones"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 1.5,
+            "item": "Lentejas"
+          },
+          {
+            "cantidad": "1 caja",
+            "estimado_eur": 3.2,
+            "item": "Cereales integrales"
+          },
+          {
+            "cantidad": "1 botella",
+            "estimado_eur": 2.1,
+            "item": "Salsa de soja"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 0.8,
+            "item": "Sal"
+          },
+          {
+            "cantidad": "200g",
+            "estimado_eur": 2.8,
+            "item": "Frutos secos mixtos"
+          }
+        ],
+        "frutas_verduras": [
+          {
+            "cantidad": "2 kg",
+            "estimado_eur": 3.5,
+            "item": "Tomates"
+          },
+          {
+            "cantidad": "3 kg",
+            "estimado_eur": 2.8,
+            "item": "Patatas"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 2.2,
+            "item": "Pimientos rojos"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 1.8,
+            "item": "Calabacn"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 1.5,
+            "item": "Espinacas frescas"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 1.6,
+            "item": "Championes"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 1.4,
+            "item": "Judas verdes"
+          },
+          {
+            "cantidad": "4 unidades",
+            "estimado_eur": 3.2,
+            "item": "Aguacates"
+          },
+          {
+            "cantidad": "100g",
+            "estimado_eur": 1.2,
+            "item": "Jengibre fresco"
+          },
+          {
+            "cantidad": "1 manojo",
+            "estimado_eur": 1.0,
+            "item": "Cilantro fresco"
+          },
+          {
+            "cantidad": "1 ristra",
+            "estimado_eur": 1.5,
+            "item": "Ajo"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 1.2,
+            "item": "Cebolla"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 2.8,
+            "item": "Melocotones"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 2.4,
+            "item": "Peras"
+          },
+          {
+            "cantidad": "1 unidad",
+            "estimado_eur": 2.5,
+            "item": "Meln"
+          },
+          {
+            "cantidad": "1 unidad",
+            "estimado_eur": 3.0,
+            "item": "Sanda"
+          },
+          {
+            "cantidad": "1 kg",
+            "estimado_eur": 1.8,
+            "item": "Pltanos"
+          },
+          {
+            "cantidad": "500g",
+            "estimado_eur": 2.2,
+            "item": "Fresas"
+          }
+        ],
+        "lacteos_huevos": [
+          {
+            "cantidad": "18 unidades",
+            "estimado_eur": 3.6,
+            "item": "Huevos"
+          },
+          {
+            "cantidad": "2 litros",
+            "estimado_eur": 3.2,
+            "item": "Bebida de avena"
+          },
+          {
+            "cantidad": "8 unidades",
+            "estimado_eur": 4.8,
+            "item": "Yogures de soja"
+          }
+        ],
+        "panaderia": [
+          {
+            "cantidad": "2 barras",
+            "estimado_eur": 2.4,
+            "item": "Pan integral"
+          },
+          {
+            "cantidad": "1 barra",
+            "estimado_eur": 1.2,
+            "item": "Pan de pueblo"
+          }
+        ],
+        "total_estimado": 98.4
+      },
+      "menu_adultos": {
+        "domingo": {
+          "cena": {
+            "descripcion": "Sopa casera con verduras de temporada",
+            "plato": "Sopa de verduras",
+            "tiempo_prep": 30
+          },
+          "comida": {
+            "postre": "Flan casero sin lactosa",
+            "primero": "Lentejas",
+            "segundo": "Cordero asado con verduras",
+            "tiempo_prep": 90
+          },
+          "desayuno": {
+            "descripcion": "Tortilla espaola tradicional",
+            "plato": "Tortilla de patatas",
+            "tiempo_prep": 25
+          },
+          "merienda": {
+            "plato": "Fruta y frutos secos"
+          }
+        },
+        "jueves": {
+          "cena": {
+            "descripcion": "Verduras salteadas con salsa de soja y jengibre",
+            "plato": "Wok de verduras asitico",
+            "tiempo_prep": 25
+          },
+          "comida": {
+            "postre": "Meln",
+            "primero": "Judas verdes",
+            "segundo": "Bacalao con pimientos",
+            "tiempo_prep": 45
+          },
+          "desayuno": {
+            "descripcion": "Pan integral con aguacate machacado",
+            "plato": "Tostadas con aguacate",
+            "tiempo_prep": 10
+          },
+          "merienda": {
+            "plato": "Yogur de soja con fruta"
+          }
+        },
+        "lunes": {
+          "cena": {
+            "descripcion": "Mezcla de verduras salteadas con jengibre fresco y cilantro",
+            "plato": "Verduras salteadas con jengibre y arroz",
+            "tiempo_prep": 30
+          },
+          "comida": {
+            "postre": "Melocotn",
+            "primero": "Gazpacho",
+            "segundo": "Pollo al ajillo con patatas",
+            "tiempo_prep": 45
+          },
+          "desayuno": {
+            "descripcion": "Pan tostado con tomate rallado, aceite de oliva y sal",
+            "plato": "Tostadas con tomate y aceite",
+            "tiempo_prep": 10
+          },
+          "merienda": {
+            "plato": "Fruta de temporada"
+          }
+        },
+        "martes": {
+          "cena": {
+            "descripcion": "Espaguetis con calabacn, pimiento y ajo",
+            "plato": "Pasta con verduras y ajo",
+            "tiempo_prep": 35
+          },
+          "comida": {
+            "postre": "Yogur de soja",
+            "primero": "Ensalada mixta",
+            "segundo": "Salmn a la plancha con verduras",
+            "tiempo_prep": 40
+          },
+          "desayuno": {
+            "descripcion": "Tortilla con pan tostado",
+            "plato": "Tortilla francesa",
+            "tiempo_prep": 15
+          },
+          "merienda": {
+            "plato": "Bocadillo pequeo de jamn"
+          }
+        },
+        "miercoles": {
+          "cena": {
+            "descripcion": "Huevos revueltos con espinacas y championes",
+            "plato": "Revuelto de verduras con huevo",
+            "tiempo_prep": 20
+          },
+          "comida": {
+            "postre": "Pera",
+            "primero": "Crema de verduras",
+            "segundo": "Ternera guisada con patatas",
+            "tiempo_prep": 50
+          },
+          "desayuno": {
+            "descripcion": "Cereales integrales con fruta",
+            "plato": "Cereales con bebida de avena",
+            "tiempo_prep": 5
+          },
+          "merienda": {
+            "plato": "Frutos secos y fruta"
+          }
+        },
+        "sabado": {
+          "cena": {
+            "descripcion": "Pizza con base casera y verduras mediterrneas",
+            "plato": "Pizza casera de verduras",
+            "tiempo_prep": 60
+          },
+          "comida": {
+            "postre": "Fruta mixta",
+            "primero": "Escalivada",
+            "segundo": "Lubina al horno con patatas",
+            "tiempo_prep": 45
+          },
+          "desayuno": {
+            "descripcion": "Pan empapado en huevo batido con bebida vegetal",
+            "plato": "Tostadas francesas",
+            "tiempo_prep": 15
+          },
+          "merienda": {
+            "plato": "Bocadillo vegetal"
+          }
+        },
+        "viernes": {
+          "cena": {
+            "descripcion": "Paella catalana con verduras de temporada",
+            "plato": "Paella de verduras",
+            "tiempo_prep": 40
+          },
+          "comida": {
+            "postre": "Sanda",
+            "primero": "Ensaladilla rusa (sin mayonesa)",
+            "segundo": "Pollo asado con hierbas",
+            "tiempo_prep": 60
+          },
+          "desayuno": {
+            "descripcion": "Batido con pltano, fresas y bebida de avena",
+            "plato": "Batido de frutas",
+            "tiempo_prep": 10
+          },
+          "merienda": {
+            "plato": "Pan con tomate"
+          }
+        }
+      },
+      "menu_ninos": {
+        "domingo": {
+          "cena": {
+            "descripcion": "Sopa pasada por batidora, textura cremosa",
+            "plato": "Sopa suave de verduras"
+          },
+          "comida": {
+            "adaptacion": "Carne muy blanda con verduras hervidas",
+            "plato": "Cordero muy tierno",
+            "truco": "Cortar en formas divertidas"
+          },
+          "desayuno": {
+            "alternativa": "Tostadas con mermelada",
+            "plato": "Tortilla de patatas"
+          },
+          "merienda": {
+            "plato": "Fruta variada"
+          }
+        },
+        "jueves": {
+          "cena": {
+            "descripcion": "Verduras muy blanditas con arroz blanco",
+            "plato": "Verduras hervidas con arroz"
+          },
+          "comida": {
+            "adaptacion": "Sin espinas, con patatas hervidas",
+            "plato": "Bacalao desmenuzado",
+            "truco": "Mezclar con patata machacada"
+          },
+          "desayuno": {
+            "alternativa": "Yogur con cereales",
+            "plato": "Tostadas con pltano"
+          },
+          "merienda": {
+            "plato": "Yogur sin lactosa con fruta"
+          }
+        },
+        "lunes": {
+          "cena": {
+            "descripcion": "Arroz blanco con verduras muy pequeitas",
+            "plato": "Arroz con verduras"
+          },
+          "comida": {
+            "adaptacion": "Sin gazpacho, pollo en trozos pequeos",
+            "plato": "Pollo troceado con patatas",
+            "truco": "Servir con ketchup casero"
+          },
+          "desayuno": {
+            "alternativa": "Cereales con leche sin lactosa",
+            "plato": "Tostadas con tomate dulce"
+          },
+          "merienda": {
+            "plato": "Fruta pelada en trozos"
+          }
+        },
+        "martes": {
+          "cena": {
+            "descripcion": "Pasta con salsa de tomate suave",
+            "plato": "Macarrones con tomate"
+          },
+          "comida": {
+            "adaptacion": "Salmn sin espinas con pur de patata",
+            "plato": "Salmn desmenuzado con pur",
+            "truco": "Hacer bolitas de salmn"
+          },
+          "desayuno": {
+            "alternativa": "Tostadas con mermelada",
+            "plato": "Tortilla francesa"
+          },
+          "merienda": {
+            "plato": "Bocadillo pequeo de jamn dulce"
+          }
+        },
+        "miercoles": {
+          "cena": {
+            "descripcion": "Tortilla con verduras muy pequeitas",
+            "plato": "Tortilla de verduras"
+          },
+          "comida": {
+            "adaptacion": "Carne muy blanda cortada pequea",
+            "plato": "Ternera muy tierna con patatas",
+            "truco": "Servir con forma divertida"
+          },
+          "desayuno": {
+            "alternativa": "Galletas con leche",
+            "plato": "Cereales con leche sin lactosa"
+          },
+          "merienda": {
+            "plato": "Fruta troceada"
+          }
+        },
+        "sabado": {
+          "cena": {
+            "descripcion": "Pizza pequea con verduras que les gusten",
+            "plato": "Pizza mini casera"
+          },
+          "comida": {
+            "adaptacion": "Lubina sin espinas con patatas",
+            "plato": "Pescado al horno desmenuzado",
+            "truco": "Servir con salsa suave"
+          },
+          "desayuno": {
+            "alternativa": "Cereales con frutas",
+            "plato": "Tostadas dulces"
+          },
+          "merienda": {
+            "plato": "Bocadillo de jamn dulce"
+          }
+        },
+        "viernes": {
+          "cena": {
+            "descripcion": "Paella suave solo con verduras blandas",
+            "plato": "Arroz con verduras"
+          },
+          "comida": {
+            "adaptacion": "Pollo sin huesos en trozos pequeos",
+            "plato": "Pollo asado troceado",
+            "truco": "Con patatas en forma de estrella"
+          },
+          "desayuno": {
+            "alternativa": "Leche con cacao sin lactosa",
+            "plato": "Batido de frutas"
+          },
+          "merienda": {
+            "plato": "Pan tostado con tomate dulce"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "family_members_count": 5,
+      "generation_time": "2026-01-20T19:19:24.604176",
+      "settings": {
+        "comidas_por_dia": [
+          "desayuno",
+          "comida",
+          "merienda",
+          "cena"
+        ],
+        "dias_menu": [
+          "lunes",
+          "martes",
+          "miercoles",
+          "jueves",
+          "viernes",
+          "sabado",
+          "domingo"
+        ],
+        "presupuesto_semanal": 100,
+        "regenerate": false,
+        "supermercado_preferido": "Mercadona"
+      }
+    },
+    "prompt_usado": "\nEres un nutricionista y chef experto en cocina mediterr\u00e1nea y espa\u00f1ola, especializado en planificaci\u00f3n de men\u00fas familiares.\n\n## CONTEXTO\nFamilia de 5 personas viviendo en Barcelona, Espa\u00f1a. Necesito un men\u00fa semanal personalizado.\n\n## MIEMBROS DE LA FAMILIA\n\n### ADULTOS:\n\n        - Joe (35 a\u00f1os):\n          * Objetivo: Mantener\n          * Estilo: Mediterranea\n          * Cocinas favoritas: italiana, espanola\n          * Nivel picante: Medio\n          * Ingredientes favoritos: ajo, pimiento\n          * No le gustan: \n          * ALERGIAS: Ninguna\n          * Intolerancias: Ninguna\n          * Restricciones: None\n          * Tiempo m\u00e1x cocinar: 60 minutos\n          * Nivel cocina: Medio\n        \n\n        - Xilef (33 a\u00f1os):\n          * Objetivo: Salud\n          * Estilo: Mediterranea\n          * Cocinas favoritas: asiatica, vegetariana\n          * Nivel picante: Suave\n          * Ingredientes favoritos: jengibre, cilantro\n          * No le gustan: \n          * ALERGIAS: mariscos\n          * Intolerancias: lactosa\n          * Restricciones: None\n          * Tiempo m\u00e1x cocinar: 45 minutos\n          * Nivel cocina: Avanzado\n        \n\n        - Marycel (45 a\u00f1os):\n          * Objetivo: None\n          * Estilo: None\n          * Cocinas favoritas: \n          * Nivel picante: None\n          * Ingredientes favoritos: \n          * No le gustan: \n          * ALERGIAS: Ninguna\n          * Intolerancias: Ninguna\n          * Restricciones: None\n          * Tiempo m\u00e1x cocinar: None minutos\n          * Nivel cocina: None\n        \n\n### NI\u00d1OS:\n\n\n### EMPLEADOS DEL HOGAR:\n\n- Marycel (empleada hogar):\n  * D\u00edas trabajo: lunes, martes, miercoles, jueves, viernes\n  * Horario: 18:00 - 21:00\n  * Responsabilidades: limpieza, cocina, preparar_cena\n\n\n## CONFIGURACI\u00d3N\n- D\u00edas a planificar: lunes, martes, miercoles, jueves, viernes, sabado, domingo\n- Comidas por d\u00eda: desayuno, comida, merienda, cena\n- Presupuesto semanal: 100\u20ac\n- Supermercado preferido: Mercadona\n- Ubicaci\u00f3n: Barcelona, Espa\u00f1a\n\n## HORARIOS COMIDAS (Espa\u00f1a):\n- Desayuno: 7:00-9:00\n- Comida (principal): 13:30-15:00\n- Merienda: 17:00-18:00  \n- Cena: 20:30-21:30\n\n## CONSIDERACIONES ESPECIALES:\n1. Los d\u00edas que trabaja personal de hogar, las cenas pueden ser m\u00e1s elaboradas\n2. Fines de semana cocina la familia, platos m\u00e1s simples\n3. Priorizar productos de temporada y mercado local de Barcelona\n4. Incluir platos t\u00edpicos catalanes/espa\u00f1oles\n5. Para ni\u00f1os peque\u00f1os: porciones peque\u00f1as, sin huesos, texturas suaves\n6. Adolescentes pueden comer porciones de adulto\n\n\n\n## INSTRUCCIONES:\n1. Genera DOS men\u00fas: uno para ADULTOS y otro adaptado para NI\u00d1OS\n2. El men\u00fa de ni\u00f1os debe ser versi\u00f3n adaptada del de adultos cuando sea posible (mismos ingredientes, diferente preparaci\u00f3n)\n3. Incluye alternativas para platos que los ni\u00f1os podr\u00edan rechazar\n4. Para ni\u00f1os peque\u00f1os: porciones peque\u00f1as, sin huesos, texturas suaves, presentaci\u00f3n atractiva\n5. Genera lista de compra organizada por secciones del supermercado\n6. Incluye estimaci\u00f3n de precio por item\n7. A\u00f1ade consejos de preparaci\u00f3n y batch cooking\n8. Considera el presupuesto objetivo\n\n## ALERGIAS E INTOLERANCIAS (CR\u00cdTICO - NUNCA INCLUIR):\nALERGIAS: mariscos | INTOLERANCIAS: lactosa\n\n## FORMATO DE RESPUESTA:\nResponde SOLO con un JSON v\u00e1lido con esta estructura exacta:\n{\n  \"menu_adultos\": {\n    \"lunes\": {\n      \"desayuno\": {\"plato\": \"...\", \"descripcion\": \"...\", \"tiempo_prep\": 10},\n      \"comida\": {\"primero\": \"...\", \"segundo\": \"...\", \"postre\": \"...\", \"tiempo_prep\": 45},\n      \"merienda\": {\"plato\": \"...\"},\n      \"cena\": {\"plato\": \"...\", \"descripcion\": \"...\", \"tiempo_prep\": 30}\n    },\n    // martes a domingo...\n  },\n  \"menu_ninos\": {\n    \"lunes\": {\n      \"desayuno\": {\"plato\": \"...\", \"alternativa\": \"...\"},\n      \"comida\": {\"plato\": \"...\", \"adaptacion\": \"...\", \"truco\": \"...\"},\n      \"merienda\": {\"plato\": \"...\"},\n      \"cena\": {\"plato\": \"...\", \"descripcion\": \"...\"}\n    },\n    // martes a domingo...\n  },\n  \"lista_compra\": {\n    \"frutas_verduras\": [{\"item\": \"...\", \"cantidad\": \"...\", \"estimado_eur\": 0.00}],\n    \"carnes_pescados\": [...],\n    \"lacteos_huevos\": [...],\n    \"panaderia\": [...],\n    \"despensa\": [...],\n    \"congelados\": [...],\n    \"total_estimado\": 0.00\n  },\n  \"consejos_semana\": [\"...\", \"...\"],\n  \"consideraciones_aplicadas\": [\"...\", \"...\"]\n}\n",
+    "ratings_count": 4,
+    "semana_inicio": "2026-01-19",
+    "updated_at": "2026-01-20T19:19:24.609292"
+  },
+  "success": true
+}
+

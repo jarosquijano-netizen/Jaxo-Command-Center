@@ -1,0 +1,40 @@
+# ============================================
+# FAMILY COMMAND CENTER - DEPENDENCIES
+# ============================================
+
+# Web Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+Flask-SQLAlchemy==3.1.1
+
+# Database
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Environment
+python-dotenv==1.0.0
+
+# AI Integration
+anthropic==0.8.1
+
+# Google APIs
+google-auth==2.25.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.111.0
+
+# PDF Generation
+reportlab==4.0.7
+
+# Utilities
+requests==2.31.0
+pytz==2023.3
+
+# Development/Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# ============================================
+# Instalación:
+# pip install -r requirements.txt
+# ============================================

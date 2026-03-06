@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Command Center - TV View</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="http://localhost:8080/css/main.css?v=20260306">
+    <link rel="stylesheet" href="http://localhost:8080/css/barcelona-theme.css">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <style>
+        /* TV View Specific Styles - Adaptación del Dashboard */
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-dark);
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .tv-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Hide sidebar for TV view */
+        .sidebar {
+            display: none;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        
+        /* Adaptar dashboard grid para TV */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: auto 1fr;
+            gap: 1rem;
+            align-items: stretch;
+            height: 100%;
+        }
+        
+        .dashboard-card-large {
+            grid-column: span 4;
+            grid-row: span 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Aumentar tamaños para TV */
+        .dashboard-title {
+            font-size: 2rem;
+        }
+        
+        .dashboard-date {
+            font-size: 1.2rem;
+        }
+        
+        .card-header h3 {
+            font-size: 1.5rem;
+        }
+        
+        .meal-section, .shopping-category, .cleaning-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .meal-title, .category-title, .cleaning-person {
+            font-size: 1.2rem;
+        }
+        
+        .meal-details, .shopping-item, .cleaning-task {
+            font-size: 1.1rem;
+        }
+        
+        /* TV Cleaning Tasks Styles */
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .task-person {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+        
+        .task-area {
+            background: var(--gaudi-gold);
+            color: var(--bg-dark);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .task-description {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .task-time {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+        }
+        
+        /* Calendar adjustments for TV */
+        .calendar-week-grid {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .calendar-day-header {
+            font-size: 1rem;
+            padding: 0.8rem;
+        }
+        
+        .calendar-event-item {
+            font-size: 0.9rem;
+            padding: 0.6rem;
+        }
+        
+        /* Filter buttons adjustments for TV */
+        .filter-btn {
+            padding: 10px 16px;
+            font-size: 1rem;
+            min-width: 100px;
+        }
+        
+        .filter-btn i {
+            font-size: 1.2rem;
+        }
+        
+        /* TV To-Do List Styles */
+        .tv-todo-stats {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+        
+        .tv-todo-stats .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .tv-todo-stats .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .tv-todo-stats .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .tv-todo-filters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            padding: var(--spacing-sm);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+        }
+        
+        .tv-filter-tabs {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+        
+        .tv-filter-tab {
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .tv-filter-tab:hover {
+            background: var(--gaudi-gold);
+            color: var(--bg-dark);
+        }
+        
+        .tv-filter-tab.active {
+            background: var(--gaudi-gold);
+            color: var(--bg-dark);
+            border-color: var(--gaudi-gold);
+            font-weight: 600;
+        }
+        
+        .tv-voice-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: 8px 16px;
+            background: var(--gaudi-gold);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .tv-voice-btn:hover {
+            background: var(--barcelona-orange);
+            transform: translateY(-1px);
+        }
+        
+        .tv-todo-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .tv-todo-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-sm);
+            border-left: 4px solid var(--gaudi-gold);
+            transition: all 0.2s ease;
+        }
+        
+        .tv-todo-item:hover {
+            transform: translateX(2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tv-todo-item.completed {
+            opacity: 0.7;
+            border-left-color: var(--rambla-green);
+        }
+        
+        .tv-todo-item.completed .tv-todo-content {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+        
+        .tv-todo-checkbox {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--gaudi-gold);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+        
+        .tv-todo-checkbox:hover {
+            background: var(--gaudi-gold);
+        }
+        
+        .tv-todo-checkbox.checked {
+            background: var(--gaudi-gold);
+            color: var(--bg-dark);
+        }
+        
+        .tv-todo-content {
+            flex: 1;
+        }
+        
+        .tv-todo-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin-bottom: 2px;
+        }
+        
+        .tv-todo-meta {
+            display: flex;
+            gap: var(--spacing-sm);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .tv-todo-category {
+            padding: 2px 8px;
+            background: var(--bg-sidebar);
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+        }
+        
+        .tv-todo-priority {
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+        }
+        
+        .tv-todo-priority.baja {
+            background: rgba(46, 125, 50, 0.2);
+            color: var(--rambla-green);
+        }
+        
+        .tv-todo-priority.media {
+            background: rgba(212, 175, 55, 0.2);
+            color: var(--gaudi-gold);
+        }
+        
+        .tv-todo-priority.alta {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--barcelona-orange);
+        }
+        
+        .tv-todo-priority.urgente {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+        
+        /* TV Voice Interface Styles */
+        .tv-voice-interface {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-md);
+            border: 2px solid var(--gaudi-gold);
+            box-shadow: 0 4px 16px rgba(212, 175, 55, 0.2);
+        }
+        
+        .tv-voice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .tv-voice-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.3rem;
+        }
+        
+        .tv-voice-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .tv-voice-indicator {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .tv-voice-indicator i {
+            font-size: 2.5rem;
+            color: var(--gaudi-gold);
+            z-index: 2;
+            position: relative;
+        }
+        
+        .tv-pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--gaudi-gold);
+            border-radius: 50%;
+            animation: tv-pulse 2s infinite;
+            z-index: 1;
+        }
+        
+        @keyframes tv-pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .tv-voice-text {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        .tv-voice-transcript {
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            min-height: 100px;
+            border: 1px solid var(--border-color);
+        }
+        
+        #tvTranscriptText {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .tv-voice-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            justify-content: center;
+        }
+        
+        .tv-voice-actions .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .tv-stop-voice-btn, .tv-create-voice-btn, .tv-cancel-voice-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            transition: all 0.2s ease;
+        }
+        
+        .tv-stop-voice-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        .tv-create-voice-btn {
+            background: var(--rambla-green);
+            color: white;
+        }
+        
+        .tv-cancel-voice-btn {
+            background: var(--bg-sidebar);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .tv-voice-interface.recording .tv-voice-indicator i {
+            color: #f44336;
+        }
+        
+        .tv-voice-interface.recording .tv-pulse-ring {
+            border-color: #f44336;
+            animation: tv-pulse-red 1s infinite;
+        }
+        
+        @keyframes tv-pulse-red {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0.3;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .tv-voice-interface.processing .tv-voice-indicator i {
+            color: var(--barcelona-orange);
+        }
+        
+        .tv-voice-interface.processing .tv-pulse-ring {
+            border-color: var(--barcelona-orange);
+            animation: tv-pulse-orange 1.5s infinite;
+        }
+        
+        @keyframes tv-pulse-orange {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.15);
+                opacity: 0.4;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Scrollbar styling */
+        .main-content::-webkit-scrollbar,
+        .calendar-week-grid::-webkit-scrollbar,
+        .menu-content::-webkit-scrollbar,
+        .shopping-list-content::-webkit-scrollbar,
+        .cleaning-tasks-content::-webkit-scrollbar,
+        .calendar-events::-webkit-scrollbar,
+        .tv-todo-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .main-content::-webkit-scrollbar-track,
+        .calendar-week-grid::-webkit-scrollbar-track,
+        .menu-content::-webkit-scrollbar-track,
+        .shopping-list-content::-webkit-scrollbar-track,
+        .cleaning-tasks-content::-webkit-scrollbar-track,
+        .calendar-events::-webkit-scrollbar-track,
+        .tv-todo-list::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+        
+        .main-content::-webkit-scrollbar-thumb,
+        .calendar-week-grid::-webkit-scrollbar-thumb,
+        .menu-content::-webkit-scrollbar-thumb,
+        .shopping-list-content::-webkit-scrollbar-thumb,
+        .cleaning-tasks-content::-webkit-scrollbar-thumb,
+        .calendar-events::-webkit-scrollbar-thumb,
+        .tv-todo-list::-webkit-scrollbar-thumb {
+            background: var(--gaudi-gold);
+            border-radius: 4px;
+        }
+        
+        /* Responsive for 24" TV */
+        @media (max-width: 1920px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .dashboard-card-large {
+                grid-column: span 3;
+            }
+        }
+        
+        @media (max-width: 1366px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
+            }
+            
+            .dashboard-card-large {
+                grid-column: span 2;
+            }
+            
+            .dashboard-title {
+                font-size: 1.8rem;
+            }
+            
+            .card-header h3 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar hidden for TV -->
+        <aside class="sidebar">
+            <!-- Sidebar content hidden -->
+        </aside>
+        
+        <!-- Main Content (Dashboard) -->
+        <main class="main-content">
+            <!-- Quick Stats Header -->
+            <div class="quick-stats-header glass-card fade-in">
+                <div class="quick-stats-top">
+                    <div>
+                        <h1 class="dashboard-title">Family Command Center</h1>
+                        <p class="dashboard-date" id="currentDate">Domingo, 1 De Febrero</p>
+                    </div>
+                    <div class="family-avatars">
+                        <!-- Los avatares se cargarán dinámicamente -->
+                    </div>
+                </div>
+                
+                <!-- Stat Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card fade-in stagger-1">
+                        <div class="stat-icon" style="background: rgba(255, 107, 53, 0.2); color: var(--barcelona-orange);">
+                            <i data-lucide="utensils"></i>
+                        </div>
+                        <div class="stat-value" id="menuStatValue">Cargando...</div>
+                        <div class="stat-label">Menú</div>
+                    </div>
+                    <div class="stat-card fade-in stagger-2">
+                        <div class="stat-icon" style="background: rgba(212, 175, 55, 0.2); color: var(--gaudi-gold);">
+                            <i data-lucide="shopping-cart"></i>
+                        </div>
+                        <div class="stat-value" id="shoppingStatValue">0</div>
+                        <div class="stat-label">Compras</div>
+                    </div>
+                    <div class="stat-card fade-in stagger-3">
+                        <div class="stat-icon" style="background: rgba(46, 125, 50, 0.2); color: var(--rambla-green);">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <div class="stat-value" id="cleaningStatValue">0/0</div>
+                        <div class="stat-label">Limpieza</div>
+                    </div>
+                    <div class="stat-card fade-in stagger-4">
+                        <div class="stat-icon" style="background: rgba(0, 102, 255, 0.2); color: var(--barcelona-blue);">
+                            <i data-lucide="calendar"></i>
+                        </div>
+                        <div class="stat-value" id="calendarStatValue">0</div>
+                        <div class="stat-label">Eventos</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Weekly Menu -->
+                <div class="dashboard-card glass-card fade-in stagger-1">
+                    <div class="card-header">
+                        <h3>📅 Menú de Hoy</h3>
+                        <span class="current-day" id="menuCurrentDay"></span>
+                    </div>
+                    
+                    <div class="menu-content" id="tvMenuContent">
+                        <!-- El contenido del menú se cargará dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- To-Do List -->
+                <div class="dashboard-card glass-card fade-in stagger-2">
+                    <div class="card-header">
+                        <h3>� To-Do List</h3>
+                        <div class="tv-todo-stats">
+                            <span class="stat-item">
+                                <span class="stat-number" id="tvTodoTotalCount">0</span>
+                                <span class="stat-label">Total</span>
+                            </span>
+                            <span class="stat-item">
+                                <span class="stat-number" id="tvTodoCompletedCount">0</span>
+                                <span class="stat-label">Completadas</span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="tv-todo-filters">
+                        <div class="tv-filter-tabs">
+                            <button class="tv-filter-tab active" data-filter="all">Todas</button>
+                            <button class="tv-filter-tab" data-filter="pending">Pendientes</button>
+                            <button class="tv-filter-tab" data-filter="today">Hoy</button>
+                        </div>
+                        <button class="tv-voice-btn" id="tvVoiceTodoBtn">
+                            <i data-lucide="mic"></i>
+                            <span>Voz</span>
+                        </button>
+                    </div>
+                    
+                    <div class="tv-todo-list" id="tvTodoContent">
+                        <!-- Los items se cargarán dinámicamente -->
+                    </div>
+                    
+                    <!-- Voice Interface -->
+                    <div class="tv-voice-interface" id="tvVoiceInterface" style="display: none;">
+                        <div class="tv-voice-header">
+                            <h3>🎤 Comando de Voz</h3>
+                            <button class="tv-stop-voice-btn" id="tvStopVoiceBtn">
+                                <i data-lucide="square"></i> Detener
+                            </button>
+                        </div>
+                        <div class="tv-voice-status">
+                            <div class="tv-voice-indicator" id="tvVoiceIndicator">
+                                <div class="tv-pulse-ring"></div>
+                                <i data-lucide="mic"></i>
+                            </div>
+                            <p class="tv-voice-text" id="tvVoiceText">Escuchando...</p>
+                        </div>
+                        <div class="tv-voice-transcript" id="tvVoiceTranscript">
+                            <p id="tvTranscriptText">Di tu tarea...</p>
+                        </div>
+                        <div class="tv-voice-actions">
+                            <button class="tv-create-voice-btn" id="tvCreateVoiceTodoBtn" disabled>
+                                <i data-lucide="plus"></i> Crear Tarea
+                            </button>
+                            <button class="tv-cancel-voice-btn" id="tvCancelVoiceBtn">
+                                <i data-lucide="x"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cleaning Tasks -->
+                <div class="dashboard-card glass-card fade-in stagger-3">
+                    <div class="card-header">
+                        <h3>🧹 Tareas de Hoy</h3>
+                        <span class="current-day" id="cleaningCurrentDay"></span>
+                    </div>
+                    
+                    <div class="cleaning-tasks-content" id="tvCleaningContent">
+                        <!-- Las tareas de limpieza se cargarán dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Calendar Events - Ocupa 3 espacios -->
+                <div class="dashboard-card dashboard-card-large glass-card fade-in stagger-4">
+                    <div class="card-header">
+                        <div class="header-top">
+                            <h3>📅 Calendario Semanal</h3>
+                        </div>
+                        
+                        <!-- Calendar Filters -->
+                        <div class="calendar-filters">
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-filter="all" title="Todos los eventos">
+                                    <i data-lucide="calendar"></i>
+                                    <span>Todos</span>
+                                </button>
+                                <button class="filter-btn" data-filter="google" title="Google Calendar">
+                                    <i data-lucide="calendar-days"></i>
+                                    <span>Google</span>
+                                </button>
+                                <button class="filter-btn" data-filter="cleaning" title="Tareas de limpieza">
+                                    <i data-lucide="sparkles"></i>
+                                    <span>Limpieza</span>
+                                </button>
+                                <button class="filter-btn" data-filter="menu" title="Menú y comidas">
+                                    <i data-lucide="utensils"></i>
+                                    <span>Menú</span>
+                                </button>
+                                <button class="filter-btn" data-filter="otros" title="Otros eventos">
+                                    <i data-lucide="bookmark"></i>
+                                    <span>Otros</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="header-bottom">
+                            <div class="calendar-nav-buttons">
+                                <button class="nav-btn" id="prevWeekBtn">
+                                    <i data-lucide="chevron-left"></i>
+                                </button>
+                                <span class="week-display" id="calendarWeekDisplay">Semana actual</span>
+                                <button class="nav-btn" id="nextWeekBtn">
+                                    <i data-lucide="chevron-right"></i>
+                                </button>
+                                <button class="nav-btn" id="todayWeekBtn">
+                                    <i data-lucide="calendar-days"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-week-grid" id="tvCalendarContent">
+                        <!-- El calendario semanal se cargará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="http://localhost:8080/js/api.js?v=20260306"></script>
+    <script>
+        class TVViewManager {
+            constructor() {
+                this.currentShoppingList = null;
+                this.currentWeek = null;
+                this.currentCalendarFilter = 'all';
+                this.todos = [];
+                this.currentTodoFilter = 'all';
+                this.tvRecognition = null;
+                this.tvIsRecording = false;
+                this.tvVoiceTranscript = '';
+                this.apiBase = 'http://localhost:9000/api';
+                this.init();
+            }
+            
+            async init() {
+                this.updateCurrentDate();
+                await this.loadRealData();
+                this.startDateTimeUpdate();
+                // Actualizar cada 5 minutos
+                setInterval(() => this.loadRealData(), 5 * 60 * 1000);
+            }
+            
+            startDateTimeUpdate() {
+                this.updateDateTime();
+                setInterval(() => this.updateDateTime(), 1000);
+            }
+            
+            updateDateTime() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                };
+                const dateStr = now.toLocaleDateString('es-ES', options);
+                document.getElementById('currentDate').textContent = dateStr;
+            }
+            
+            updateCurrentDate() {
+                const now = new Date();
+                const options = { weekday: 'long', day: 'numeric', month: 'short' };
+                const dateStr = now.toLocaleDateString('es-ES', options);
+                
+                const elements = ['menuCurrentDay', 'cleaningCurrentDay'];
+                elements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.textContent = dateStr;
+                });
+            }
+            
+            async loadRealData() {
+                try {
+                    const [familyData, menuData, cleaningData, calendarData, todoData] = await Promise.all([
+                        this.fetchFamilyMembers(),
+                        this.fetchCurrentMenu(),
+                        this.fetchCleaningSchedule(),
+                        this.fetchCalendarEvents(),
+                        this.fetchTodos()
+                    ]);
+
+                    this.updateFamilyAvatars(familyData);
+                    this.updateMenuSection(menuData);
+                    this.updateTodoSection(todoData);
+                    this.updateCleaningSection(cleaningData);
+                    this.updateCalendarSection(calendarData);
+                    this.updateStatCards(familyData, menuData, cleaningData, calendarData, todoData);
+                    
+                } catch (error) {
+                    console.error('Error cargando datos reales:', error);
+                }
+            }
+            
+            async fetchFamilyMembers() {
+                try {
+                    const response = await fetch(`${this.apiBase}/family/members`);
+                    const result = await response.json();
+                    return result.success ? result.data : [];
+                } catch (error) {
+                    console.error('Error fetching family members:', error);
+                    return [];
+                }
+            }
+            
+            async fetchCurrentMenu() {
+                try {
+                    let response = await fetch(`${this.apiBase}/menu/current`);
+                    let result = await response.json();
+                    
+                    if (!result.success || !result.data) {
+                        response = await fetch(`${this.apiBase}/menu/latest`);
+                        result = await response.json();
+                    }
+                    
+                    return result.success ? result.data : null;
+                } catch (error) {
+                    console.error('Error fetching menu:', error);
+                    return null;
+                }
+            }
+            
+            async fetchCleaningSchedule() {
+                try {
+                    console.log('🧹 TV: Obteniendo schedule de limpieza...');
+                    const response = await fetch(`${this.apiBase}/cleaning/schedule`);
+                    const result = await response.json();
+                    console.log('🧹 TV: Respuesta de limpieza:', result);
+                    return result.success ? result.data : [];
+                } catch (error) {
+                    console.error('🧹 TV: Error fetching cleaning schedule:', error);
+                    return [];
+                }
+            }
+            
+            async fetchCalendarEvents() {
+                try {
+                    const response = await fetch(`${this.apiBase}/calendar/week`);
+                    const result = await response.json();
+                    return result.success ? result.data : { events: [] };
+                } catch (error) {
+                    console.error('Error fetching calendar events:', error);
+                    return { events: [] };
+                }
+            }
+            
+            async fetchTodos() {
+                try {
+                    const response = await fetch(`${this.apiBase}/todos`);
+                    const result = await response.json();
+                    return result.success ? result.data : [];
+                } catch (error) {
+                    console.error('📋 TV: Error fetching todos:', error);
+                    return [];
+                }
+            }
+            
+            updateFamilyAvatars(familyData) {
+                const avatarsContainer = document.querySelector('.family-avatars');
+                if (!avatarsContainer) return;
+                
+                avatarsContainer.innerHTML = '';
+                
+                familyData.slice(0, 5).forEach(member => {
+                    const avatar = document.createElement('div');
+                    avatar.className = 'avatar';
+                    avatar.title = member.nombre;
+                    avatar.textContent = member.nombre.charAt(0).toUpperCase();
+                    
+                    if (member.avatar_color) {
+                        avatar.style.background = member.avatar_color;
+                    }
+                    
+                    avatarsContainer.appendChild(avatar);
+                });
+            }
+            
+            updateMenuSection(menuData) {
+                const content = document.getElementById('tvMenuContent');
+                if (!menuData) {
+                    content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay menú para hoy</p>';
+                    return;
+                }
+
+                let menuParsed;
+                try {
+                    menuParsed = typeof menuData.menu_data === 'string' 
+                        ? JSON.parse(menuData.menu_data) 
+                        : menuData.menu_data;
+                } catch (error) {
+                    console.error('Error parseando menu data:', error);
+                    return;
+                }
+
+                const today = new Date();
+                const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+                const currentDay = dayNames[today.getDay()];
+                
+                const adultMenu = menuParsed.menu_adultos?.[currentDay];
+                const kidsMenu = menuParsed.menu_ninos?.[currentDay];
+                
+                if (!adultMenu && !kidsMenu) {
+                    content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay menú para hoy</p>';
+                    return;
+                }
+
+                content.innerHTML = '';
+                
+                const availableMeals = new Set();
+                if (adultMenu) {
+                    Object.keys(adultMenu).forEach(meal => availableMeals.add(meal));
+                }
+                if (kidsMenu) {
+                    Object.keys(kidsMenu).forEach(meal => availableMeals.add(meal));
+                }
+
+                availableMeals.forEach(meal => {
+                    const mealSection = document.createElement('div');
+                    mealSection.className = 'meal-section';
+                    
+                    const adultMeal = adultMenu?.[meal];
+                    const kidsMeal = kidsMenu?.[meal];
+                    
+                    const adultPlate = adultMeal?.plato || 'Sin definir';
+                    const kidsPlate = kidsMeal?.plato || 'Sin definir';
+                    
+                    mealSection.innerHTML = `
+                        <div class="meal-header">
+                            <i data-lucide="${this.getMealIcon(meal)}" class="meal-icon"></i>
+                            <span class="meal-title">${this.formatMealName(meal)}</span>
+                        </div>
+                        <div class="meal-content">
+                            ${adultMeal ? `
+                                <div class="meal-group">
+                                    <div class="meal-group-label adultos-label">Adultos</div>
+                                    <div class="meal-item">
+                                        <div class="meal-plate">${adultPlate}</div>
+                                        ${adultMeal.ingredientes ? `
+                                            <div class="meal-details">
+                                                <div class="meal-ingredients">
+                                                    <strong>Ingredientes:</strong> ${adultMeal.ingredientes}
+                                                </div>
+                                                ${adultMeal.preparacion ? `
+                                                    <div class="meal-preparation">
+                                                        <strong>Preparación:</strong> ${adultMeal.preparacion}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${kidsMeal ? `
+                                <div class="meal-group">
+                                    <div class="meal-group-label ninas-label">Niñas</div>
+                                    <div class="meal-item">
+                                        <div class="meal-plate">${kidsPlate}</div>
+                                        ${kidsMeal.ingredientes ? `
+                                            <div class="meal-details">
+                                                <div class="meal-ingredients">
+                                                    <strong>Ingredientes:</strong> ${kidsMeal.ingredientes}
+                                                </div>
+                                                ${kidsMeal.preparacion ? `
+                                                    <div class="meal-preparation">
+                                                        <strong>Preparación:</strong> ${kidsMeal.preparacion}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    content.appendChild(mealSection);
+                });
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+            
+            updateTodoSection(todoData) {
+                const content = document.getElementById('tvTodoContent');
+                if (!content) return;
+                
+                console.log('📋 TV: Datos de To-Do recibidos:', todoData);
+                
+                if (!todoData || todoData.length === 0) {
+                    content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay tareas pendientes</p>';
+                    this.updateTodoStats(0, 0);
+                    return;
+                }
+
+                // Filtrar según el filtro actual
+                const filteredTodos = this.getFilteredTodos(todoData);
+                
+                if (filteredTodos.length === 0) {
+                    content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay tareas en esta categoría</p>';
+                    this.updateTodoStats(todoData.length, todoData.filter(t => t.completed).length);
+                    return;
+                }
+
+                // Ordenar tareas
+                const sortedTodos = this.sortTodos(filteredTodos);
+                
+                content.innerHTML = '';
+                
+                sortedTodos.forEach(todo => {
+                    const todoElement = document.createElement('div');
+                    todoElement.className = `tv-todo-item ${todo.completed ? 'completed' : ''}`;
+                    
+                    const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
+                    
+                    todoElement.innerHTML = `
+                        <div class="tv-todo-checkbox ${todo.completed ? 'checked' : ''}" data-todo-id="${todo.id}">
+                            ${todo.completed ? '✓' : ''}
+                        </div>
+                        <div class="tv-todo-content">
+                            <div class="tv-todo-title">${todo.title}</div>
+                            <div class="tv-todo-meta">
+                                <span class="tv-todo-category">${this.formatCategory(todo.category)}</span>
+                                <span class="tv-todo-priority ${todo.priority}">${this.formatPriority(todo.priority)}</span>
+                            </div>
+                            ${todo.dueDate ? `
+                                <div class="tv-todo-due-date ${isOverdue ? 'overdue' : ''}">
+                                    📅 ${this.formatDate(todo.dueDate)}
+                                </div>
+                            ` : ''}
+                            ${todo.notes ? `
+                                <div class="tv-todo-notes">${todo.notes}</div>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    content.appendChild(todoElement);
+                });
+
+                // Añadir event listeners para checkboxes
+                content.querySelectorAll('.tv-todo-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('click', () => {
+                        const todoId = checkbox.dataset.todoId;
+                        this.toggleTodoComplete(todoId);
+                    });
+                });
+
+                // Actualizar estadísticas
+                this.updateTodoStats(todoData.length, todoData.filter(t => t.completed).length);
+                
+                // Setup event listeners para filtros y voz
+                this.setupTodoEventListeners();
+            }
+            
+            updateTodoStats(total, completed) {
+                const totalCountElement = document.getElementById('tvTodoTotalCount');
+                const completedCountElement = document.getElementById('tvTodoCompletedCount');
+                
+                if (totalCountElement) totalCountElement.textContent = total;
+                if (completedCountElement) completedCountElement.textContent = completed;
+            }
+            
+            getFilteredTodos(todoData) {
+                const today = new Date().toISOString().split('T')[0];
+                
+                switch (this.currentTodoFilter) {
+                    case 'completed':
+                        return todoData.filter(t => t.completed);
+                    case 'pending':
+                        return todoData.filter(t => !t.completed);
+                    case 'today':
+                        return todoData.filter(t => t.dueDate === today);
+                    default:
+                        return todoData;
+                }
+            }
+            
+            sortTodos(todos) {
+                const priorityOrder = { urgente: 4, alta: 3, media: 2, baja: 1 };
+                
+                return todos.sort((a, b) => {
+                    // Primero por completado
+                    if (a.completed !== b.completed) {
+                        return a.completed ? 1 : -1;
+                    }
+                    
+                    // Luego por prioridad
+                    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+                    if (priorityDiff !== 0) {
+                        return priorityDiff;
+                    }
+                    
+                    // Finalmente por fecha de vencimiento
+                    if (a.dueDate && b.dueDate) {
+                        return new Date(a.dueDate) - new Date(b.dueDate);
+                    }
+                    
+                    return 0;
+                });
+            }
+            
+            formatCategory(category) {
+                const categories = {
+                    personal: 'Personal',
+                    trabajo: 'Trabajo',
+                    hogar: 'Hogar',
+                    compras: 'Compras',
+                    salud: 'Salud',
+                    finanzas: 'Finanzas',
+                    otros: 'Otros'
+                };
+                return categories[category] || category;
+            }
+            
+            formatPriority(priority) {
+                const priorities = {
+                    baja: 'Baja',
+                    media: 'Media',
+                    alta: 'Alta',
+                    urgente: 'Urgente'
+                };
+                return priorities[priority] || priority;
+            }
+            
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                const today = new Date();
+                const diffTime = date - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) {
+                    return 'Hoy';
+                } else if (diffDays === 1) {
+                    return 'Mañana';
+                } else if (diffDays === -1) {
+                    return 'Ayer';
+                } else if (diffDays > 0) {
+                    return `En ${diffDays} días`;
+                } else {
+                    return `Hace ${Math.abs(diffDays)} días`;
+                }
+            }
+            
+            toggleTodoComplete(todoId) {
+                const todo = this.todos.find(t => t.id === todoId);
+                if (todo) {
+                    const updates = {
+                        completed: !todo.completed,
+                        completedAt: !todo.completed ? new Date().toISOString() : null
+                    };
+                    this.updateTodo(todoId, updates);
+                }
+            }
+            
+            async updateTodo(todoId, updates) {
+                try {
+                    const response = await fetch(`${this.apiBase}/todos/${todoId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(updates)
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        const index = this.todos.findIndex(t => t.id === todoId);
+                        if (index !== -1) {
+                            this.todos[index] = { ...this.todos[index], ...result.data };
+                            this.updateTodoSection(this.todos);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Error actualizando todo:', error);
+                }
+            }
+            
+            setupTodoEventListeners() {
+                // Filtros
+                document.querySelectorAll('.tv-filter-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.tv-filter-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        this.currentTodoFilter = tab.dataset.filter;
+                        this.updateTodoSection(this.todos);
+                    });
+                });
+
+                // Botón de voz
+                document.getElementById('tvVoiceTodoBtn')?.addEventListener('click', () => {
+                    this.startTVVoiceRecording();
+                });
+
+                // Botón detener voz
+                document.getElementById('tvStopVoiceBtn')?.addEventListener('click', () => {
+                    this.stopTVVoiceRecording();
+                });
+
+                // Botón crear tarea desde voz
+                document.getElementById('tvCreateVoiceTodoBtn')?.addEventListener('click', () => {
+                    this.createTodoFromTVVoice();
+                });
+
+                // Botón cancelar voz
+                document.getElementById('tvCancelVoiceBtn')?.addEventListener('click', () => {
+                    this.hideTVVoiceInterface();
+                });
+            }
+            
+            updateCleaningSection(cleaningData) {
+                const content = document.getElementById('tvCleaningContent');
+                console.log('🧹 TV: Datos de limpieza recibidos:', cleaningData);
+                
+                if (!cleaningData || cleaningData.length === 0) {
+                    console.log('🧹 TV: No hay datos de limpieza');
+                    content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay tareas programadas</p>';
+                    return;
+                }
+
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+                
+                console.log('🧹 TV: Fecha actual (YYYY-MM-DD):', todayStr);
+                
+                // Filtrar tareas para hoy usando fecha_programada
+                const todayTasks = cleaningData.filter(task => {
+                    const taskDate = task.fecha_programada ? task.fecha_programada.split('T')[0] : null;
+                    return taskDate === todayStr;
+                });
+                
+                console.log('🧹 TV: Tareas de hoy:', todayTasks);
+                
+                if (todayTasks.length === 0) {
+                    // Mostrar fechas disponibles para depuración
+                    const availableDates = [...new Set(cleaningData.map(task => 
+                        task.fecha_programada ? task.fecha_programada.split('T')[0] : null
+                    ).filter(date => date))];
+                    
+                    console.log('🧹 TV: Fechas disponibles:', availableDates);
+                    
+                    content.innerHTML = `
+                        <p style="text-align: center; color: var(--text-secondary);">No hay tareas para hoy</p>
+                        <p style="text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                            Buscando fecha: ${todayStr}
+                        </p>
+                        <p style="text-align: center; color: var(--text-muted); font-size: 0.7rem;">
+                            Fechas disponibles: ${availableDates.slice(0, 3).join(', ')}
+                        </p>
+                    `;
+                    return;
+                }
+
+                content.innerHTML = '';
+                
+                todayTasks.forEach(task => {
+                    const taskElement = document.createElement('div');
+                    taskElement.className = 'cleaning-item';
+                    
+                    taskElement.innerHTML = `
+                        <div class="task-header">
+                            <span class="task-person">${task.member_nombre || 'Sin asignar'}</span>
+                            <span class="task-area">${task.area || ''}</span>
+                        </div>
+                        <div class="task-description">${task.task_nombre || 'Sin descripción'}</div>
+                        ${task.duracion_minutos ? `
+                            <div class="task-time">⏱️ ${task.duracion_minutos} minutos</div>
+                        ` : ''}
+                    `;
+                    
+                    content.appendChild(taskElement);
+                });
+            }
+            
+            updateCalendarSection(calendarData) {
+                const calendarGrid = document.getElementById('tvCalendarContent');
+                if (!calendarGrid) return;
+
+                const events = calendarData.events || [];
+                const today = new Date();
+                
+                const currentWeek = new Date(today);
+                const dayOfWeek = today.getDay();
+                const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                const monday = new Date(today.setDate(diff));
+                
+                const weekDisplay = document.getElementById('calendarWeekDisplay');
+                if (weekDisplay) {
+                    const sunday = new Date(monday);
+                    sunday.setDate(sunday.getDate() + 6);
+                    const startStr = monday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                    const endStr = sunday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                    weekDisplay.textContent = `${startStr} - ${endStr}`;
+                }
+
+                calendarGrid.innerHTML = '';
+
+                const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                const dayKeys = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+
+                for (let i = 0; i < 7; i++) {
+                    const currentDay = new Date(monday);
+                    currentDay.setDate(monday.getDate() + i);
+                    const dayKey = dayKeys[i];
+                    const dayDate = currentDay.toISOString().split('T')[0];
+                    
+                    const dayColumn = document.createElement('div');
+                    dayColumn.className = 'calendar-day-column';
+                    
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'calendar-day-header';
+                    const isToday = dayDate === today.toISOString().split('T')[0];
+                    dayHeader.innerHTML = `
+                        ${dayNames[i]}
+                        ${isToday ? ' 📅' : ''}
+                    `;
+                    dayColumn.appendChild(dayHeader);
+                    
+                    const dayEvents = events.filter(event => {
+                        const matchesDay = event.start && event.start.startsWith(dayDate);
+                        const matchesFilter = this.currentCalendarFilter === 'all' || 
+                                          this.getEventType(event) === this.currentCalendarFilter;
+                        return matchesDay && matchesFilter;
+                    });
+                    
+                    dayEvents.forEach(event => {
+                        const eventItem = document.createElement('div');
+                        eventItem.className = `calendar-event-item ${this.getEventType(event)}`;
+                        
+                        const startTime = event.start ? event.start.split('T')[1].substring(0, 5) : '';
+                        const eventIcon = this.getEventIcon(event);
+                        
+                        eventItem.innerHTML = `
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">${startTime}</div>
+                            <div>${eventIcon} ${event.title}</div>
+                        `;
+                        
+                        dayColumn.appendChild(eventItem);
+                    });
+                    
+                    calendarGrid.appendChild(dayColumn);
+                }
+
+                this.setupCalendarFilters();
+            }
+            
+            setupCalendarFilters() {
+                const filterButtons = document.querySelectorAll('.filter-btn');
+                
+                filterButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        filterButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        
+                        this.currentCalendarFilter = button.dataset.filter;
+                        this.loadRealData();
+                    });
+                });
+            }
+            
+            updateStatCards(familyData, menuData, cleaningData, calendarData) {
+                // Menu stat
+                const menuStat = document.getElementById('menuStatValue');
+                if (menuData && menuData.menu_data) {
+                    const today = new Date();
+                    const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+                    const currentDay = dayNames[today.getDay()];
+                    
+                    let menuParsed;
+                    try {
+                        menuParsed = typeof menuData.menu_data === 'string' 
+                            ? JSON.parse(menuData.menu_data) 
+                            : menuData.menu_data;
+                    } catch (error) {
+                        menuStat.textContent = 'Error';
+                        return;
+                    }
+                    
+                    const adultMenu = menuParsed.menu_adultos?.[currentDay];
+                    const kidsMenu = menuParsed.menu_ninos?.[currentDay];
+                    
+                    if (adultMenu || kidsMenu) {
+                        const meals = new Set();
+                        if (adultMenu) Object.keys(adultMenu).forEach(meal => meals.add(meal));
+                        if (kidsMenu) Object.keys(kidsMenu).forEach(meal => meals.add(meal));
+                        menuStat.textContent = meals.size;
+                    } else {
+                        menuStat.textContent = '0';
+                    }
+                } else {
+                    menuStat.textContent = '0';
+                }
+                
+                // Shopping stat
+                const shoppingStat = document.getElementById('shoppingStatValue');
+                if (menuData && menuData.lista_compra) {
+                    try {
+                        const shoppingList = typeof menuData.lista_compra === 'string' 
+                            ? JSON.parse(menuData.lista_compra) 
+                            : menuData.lista_compra;
+                        
+                        let totalItems = 0;
+                        Object.values(shoppingList).forEach(items => {
+                            const categoryItems = Array.isArray(items) ? items : (items.items || []);
+                            totalItems += categoryItems.length;
+                        });
+                        
+                        shoppingStat.textContent = totalItems;
+                    } catch (error) {
+                        shoppingStat.textContent = '0';
+                    }
+                } else {
+                    shoppingStat.textContent = '0';
+                }
+                
+                // Cleaning stat
+                const cleaningStat = document.getElementById('cleaningStatValue');
+                const today = new Date();
+                const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+                const currentDay = dayNames[today.getDay()];
+                
+                if (cleaningData && cleaningData.length > 0) {
+                    const todayTasks = cleaningData.filter(task => task.dia === currentDay);
+                    cleaningStat.textContent = `${todayTasks.length}/${cleaningData.length}`;
+                } else {
+                    cleaningStat.textContent = '0/0';
+                }
+                
+                // Calendar stat
+                const calendarStat = document.getElementById('calendarStatValue');
+                if (calendarData && calendarData.events) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayEvents = calendarData.events.filter(event => 
+                        event.start && event.start.startsWith(today)
+                    );
+                    calendarStat.textContent = todayEvents.length;
+                } else {
+                    calendarStat.textContent = '0';
+                }
+            }
+            
+            getMealIcon(meal) {
+                const icons = {
+                    'desayuno': 'sunrise',
+                    'almuerzo': 'sun',
+                    'cena': 'moon',
+                    'merienda': 'coffee'
+                };
+                return icons[meal] || 'utensils';
+            }
+            
+            formatMealName(meal) {
+                const mealNames = {
+                    'desayuno': '🌅 Desayuno',
+                    'almuerzo': '☀️ Almuerzo',
+                    'cena': '🌙 Cena',
+                    'merienda': '🍎 Merienda'
+                };
+                return mealNames[meal] || meal.charAt(0).toUpperCase() + meal.slice(1);
+            }
+            
+            formatCategoryName(category) {
+                const categoryNames = {
+                    'verduras': '🥬 Verduras',
+                    'carniceria': '🥩 Carnicería',
+                    'pescaderia': '🐟 Pescadería',
+                    'huevos_lacteos': '🥚 Huevos y Lácteos',
+                    'despensa': '🥫 Despensa',
+                    'frutas': '🍎 Frutas',
+                    'congelados': '🧊 Congelados',
+                    'bebidas': '🥤 Bebidas',
+                    'limpieza': '🧹 Limpieza',
+                    'higiene': '🧴 Higiene',
+                    'otros': '📦 Otros'
+                };
+                
+                return categoryNames[category.toLowerCase()] || `📦 ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+            }
+            
+            getEventType(event) {
+                const title = (event.title || '').toLowerCase();
+                const source = (event.source || '').toLowerCase();
+                
+                if (source.includes('google') || title.includes('reunión') || title.includes('cita') || title.includes('meeting')) {
+                    return 'google';
+                } else if (title.includes('tarea') || title.includes('limpieza') || title.includes('limpiar') || title.includes('cleaning')) {
+                    return 'cleaning';
+                } else if (title.includes('menú') || title.includes('comida') || title.includes('cena') || title.includes('almuerzo')) {
+                    return 'menu';
+                } else {
+                    return 'otros';
+                }
+            }
+            
+            getEventIcon(event) {
+                const type = this.getEventType(event);
+                const icons = {
+                    'google': '📅',
+                    'cleaning': '🧹',
+                    'menu': '🍽️',
+                    'otros': '📌'
+                };
+                return icons[type] || '📅';
+            }
+            
+            // ============================================
+            // TV VOICE RECOGNITION FUNCTIONALITY
+            // ============================================
+            
+            startTVVoiceRecording() {
+                // Verificar si el navegador soporta reconocimiento de voz
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    console.log('❌ TV: Navegador no soporta reconocimiento de voz');
+                    return;
+                }
+
+                // Inicializar reconocimiento de voz
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.tvRecognition = new SpeechRecognition();
+                
+                // Configurar reconocimiento
+                this.tvRecognition.lang = 'es-ES'; // Español
+                this.tvRecognition.continuous = true;
+                this.tvRecognition.interimResults = true;
+                this.tvRecognition.maxAlternatives = 1;
+
+                // Eventos del reconocimiento
+                this.tvRecognition.onstart = () => {
+                    console.log('🎤 TV: Iniciando reconocimiento de voz...');
+                    this.tvIsRecording = true;
+                    this.tvVoiceTranscript = '';
+                    this.showTVVoiceInterface();
+                    this.updateTVVoiceInterface('recording', 'Escuchando...');
+                };
+
+                this.tvRecognition.onresult = (event) => {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    this.tvVoiceTranscript = finalTranscript + interimTranscript;
+                    this.updateTVTranscript(this.tvVoiceTranscript);
+                    
+                    // Habilitar botón de crear si hay texto
+                    const createBtn = document.getElementById('tvCreateVoiceTodoBtn');
+                    if (createBtn) {
+                        createBtn.disabled = this.tvVoiceTranscript.trim().length === 0;
+                    }
+                };
+
+                this.tvRecognition.onerror = (event) => {
+                    console.error('❌ TV: Error en reconocimiento de voz:', event.error);
+                    this.stopTVVoiceRecording();
+                };
+
+                this.tvRecognition.onend = () => {
+                    console.log('🎤 TV: Reconocimiento de voz finalizado');
+                    if (this.tvIsRecording) {
+                        this.updateTVVoiceInterface('processing', 'Procesando...');
+                        
+                        // Si hay transcripción, mostrar botón de crear
+                        if (this.tvVoiceTranscript.trim().length > 0) {
+                            this.updateTVVoiceInterface('completed', 'Tarea lista para crear');
+                        } else {
+                            setTimeout(() => this.hideTVVoiceInterface(), 2000);
+                        }
+                    }
+                    this.tvIsRecording = false;
+                };
+
+                // Iniciar reconocimiento
+                try {
+                    this.tvRecognition.start();
+                } catch (error) {
+                    console.error('❌ TV: Error iniciando reconocimiento:', error);
+                }
+            }
+
+            stopTVVoiceRecording() {
+                if (this.tvRecognition && this.tvIsRecording) {
+                    this.tvRecognition.stop();
+                    this.tvIsRecording = false;
+                }
+            }
+
+            showTVVoiceInterface() {
+                const voiceInterface = document.getElementById('tvVoiceInterface');
+                if (voiceInterface) {
+                    voiceInterface.style.display = 'block';
+                    this.updateTVVoiceInterface('ready', 'Di tu tarea...');
+                    this.updateTVTranscript('');
+                    
+                    // Deshabilitar botón de crear inicialmente
+                    const createBtn = document.getElementById('tvCreateVoiceTodoBtn');
+                    if (createBtn) {
+                        createBtn.disabled = true;
+                    }
+                }
+            }
+
+            hideTVVoiceInterface() {
+                const voiceInterface = document.getElementById('tvVoiceInterface');
+                if (voiceInterface) {
+                    voiceInterface.style.display = 'none';
+                }
+                this.tvVoiceTranscript = '';
+                this.tvIsRecording = false;
+            }
+
+            updateTVVoiceInterface(state, text) {
+                const voiceInterface = document.getElementById('tvVoiceInterface');
+                const voiceText = document.getElementById('tvVoiceText');
+                
+                if (voiceInterface) {
+                    // Remover clases de estado anteriores
+                    voiceInterface.classList.remove('recording', 'processing', 'completed');
+                    
+                    // Añadir nueva clase de estado
+                    voiceInterface.classList.add(state);
+                }
+                
+                if (voiceText) {
+                    voiceText.textContent = text;
+                }
+            }
+
+            updateTVTranscript(text) {
+                const transcriptElement = document.getElementById('tvTranscriptText');
+                if (transcriptElement) {
+                    transcriptElement.textContent = text || 'Di tu tarea...';
+                }
+            }
+
+            async createTodoFromTVVoice() {
+                const transcript = this.tvVoiceTranscript.trim();
+                if (!transcript) {
+                    console.log('❌ TV: No hay texto para crear la tarea');
+                    return;
+                }
+
+                // Extraer información inteligente del texto
+                const todoData = this.parseTVVoiceCommand(transcript);
+                
+                const todo = {
+                    id: Date.now().toString(),
+                    title: todoData.title,
+                    category: todoData.category,
+                    priority: todoData.priority,
+                    dueDate: todoData.dueDate,
+                    notes: todoData.notes,
+                    completed: false,
+                    createdAt: new Date().toISOString(),
+                    completedAt: null
+                };
+
+                try {
+                    // Intentar guardar en backend
+                    const response = await fetch(`${this.apiBase}/todos`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(todo)
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        this.todos.push(result.data);
+                        this.updateTodoSection(this.todos);
+                        this.hideTVVoiceInterface();
+                        console.log('✅ TV: Tarea creada por voz correctamente');
+                    } else {
+                        throw new Error(result.message || 'Error guardando tarea');
+                    }
+                } catch (error) {
+                    console.error('❌ TV: Error guardando todo por voz:', error);
+                    // Fallback: guardar localmente
+                    this.todos.push(todo);
+                    this.updateTodoSection(this.todos);
+                    this.hideTVVoiceInterface();
+                    console.log('📋 TV: Tarea guardada localmente');
+                }
+            }
+
+            parseTVVoiceCommand(text) {
+                const todo = {
+                    title: text,
+                    category: 'personal',
+                    priority: 'media',
+                    dueDate: null,
+                    notes: ''
+                };
+
+                const lowerText = text.toLowerCase();
+
+                // Detectar categorías
+                const categories = {
+                    'trabajo': ['trabajo', 'oficina', 'reunión', 'proyecto', 'tarea laboral'],
+                    'hogar': ['casa', 'hogar', 'limpiar', 'cocina', 'comprar', 'mandado'],
+                    'compras': ['comprar', 'compras', 'supermercado', 'mercado', 'tienda'],
+                    'salud': ['médico', 'doctor', 'cita médica', 'ejercicio', 'gimnasio', 'salud'],
+                    'finanzas': ['pago', 'factura', 'banco', 'dinero', 'impuestos', 'finanzas'],
+                    'personal': ['personal', 'llamar', 'correo', 'cita', 'amigos', 'familia']
+                };
+
+                for (const [category, keywords] of Object.entries(categories)) {
+                    if (keywords.some(keyword => lowerText.includes(keyword))) {
+                        todo.category = category;
+                        break;
+                    }
+                }
+
+                // Detectar prioridades
+                if (lowerText.includes('urgente') || lowerText.includes('emergencia')) {
+                    todo.priority = 'urgente';
+                } else if (lowerText.includes('importante') || lowerText.includes('alta prioridad')) {
+                    todo.priority = 'alta';
+                } else if (lowerText.includes('baja prioridad') || lowerText.includes('cuando pueda')) {
+                    todo.priority = 'baja';
+                }
+
+                // Detectar fechas
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const nextWeek = new Date(today);
+                nextWeek.setDate(nextWeek.getDate() + 7);
+
+                if (lowerText.includes('hoy')) {
+                    todo.dueDate = today.toISOString().split('T')[0];
+                } else if (lowerText.includes('mañana')) {
+                    todo.dueDate = tomorrow.toISOString().split('T')[0];
+                } else if (lowerText.includes('próxima semana') || lowerText.includes('la semana que viene')) {
+                    todo.dueDate = nextWeek.toISOString().split('T')[0];
+                }
+
+                // Extraer título limpio (eliminar palabras clave)
+                let title = text;
+                const keywordsToRemove = [...Object.values(categories).flat(), 
+                    'urgente', 'importante', 'alta', 'baja', 'hoy', 'mañana', 
+                    'próxima semana', 'la semana que viene', 'añadir', 'crear', 'nueva'];
+                
+                keywordsToRemove.forEach(keyword => {
+                    const regex = new RegExp(keyword, 'gi');
+                    title = title.replace(regex, '').trim();
+                });
+
+                // Limpiar espacios múltiples y capitalizar
+                todo.title = title.replace(/\s+/g, ' ').trim();
+                if (todo.title) {
+                    todo.title = todo.title.charAt(0).toUpperCase() + todo.title.slice(1);
+                }
+
+                return todo;
+            }
+        }
+        
+        // Initialize TV View
+        document.addEventListener('DOMContentLoaded', () => {
+            new TVViewManager();
+        });
+    </script>
+</body>
+</html>

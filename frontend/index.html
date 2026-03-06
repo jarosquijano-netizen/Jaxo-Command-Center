@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Command Center - Dashboard</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css?v=20260306">
+    <link rel="stylesheet" href="css/barcelona-theme.css">
+    <link rel="stylesheet" href="css/calendar.css?v=20260201">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i data-lucide="home"></i>
+                <h1>Family Center</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-link">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="#family" class="nav-link active">
+                    <i data-lucide="users"></i> Perfiles Familiares
+                </a>
+                <a href="#menu" class="nav-link">
+                    <i data-lucide="utensils"></i> Menú Semanal
+                </a>
+                <a href="#shopping" class="nav-link">
+                    <i data-lucide="shopping-cart"></i> Lista de Compras
+                </a>
+                <a href="#cleaning" class="nav-link">
+                    <i data-lucide="sparkles"></i> Plan de Limpieza
+                </a>
+                <a href="#calendar" class="nav-link">
+                    <i data-lucide="calendar"></i> Calendario
+                </a>
+                <a href="#todo" class="nav-link">
+                    <i data-lucide="check-square"></i> To-Do List
+                </a>
+                <a href="#settings" class="nav-link">
+                    <i data-lucide="settings"></i> Configuración
+                </a>
+                <a href="#tv" class="nav-link">
+                    <i data-lucide="tv"></i> Vista TV
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="module-section active">
+                <!-- Quick Stats Header -->
+                <div class="quick-stats-header glass-card fade-in">
+                    <div class="quick-stats-top">
+                        <div>
+                            <h1 class="dashboard-title">Family Command Center - Backoffice</h1>
+                            <p class="dashboard-date" id="currentDate">Domingo, 1 De Febrero</p>
+                        </div>
+                        <div class="family-avatars">
+                            <!-- Los avatares se cargarán dinámicamente -->
+                        </div>
+                    </div>
+                    
+                    <!-- Stat Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card fade-in stagger-1">
+                            <div class="stat-icon" style="background: rgba(255, 107, 53, 0.2); color: var(--barcelona-orange);">
+                                <i data-lucide="utensils"></i>
+                            </div>
+                            <div class="stat-value">Paella</div>
+                            <div class="stat-label">Menú</div>
+                        </div>
+                        <div class="stat-card fade-in stagger-2">
+                            <div class="stat-icon" style="background: rgba(212, 175, 55, 0.2); color: var(--barcelona-yellow);">
+                                <i data-lucide="shopping-cart"></i>
+                            </div>
+                            <div class="stat-value">8 items</div>
+                            <div class="stat-label">Compras</div>
+                        </div>
+                        <div class="stat-card fade-in stagger-3">
+                            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--barcelona-green);">
+                                <i data-lucide="star"></i>
+                            </div>
+                            <div class="stat-value">2/4</div>
+                            <div class="stat-label">Limpieza</div>
+                        </div>
+                        <div class="stat-card fade-in stagger-4">
+                            <div class="stat-icon" style="background: rgba(0, 102, 255, 0.2); color: var(--barcelona-blue);">
+                                <i data-lucide="calendar"></i>
+                            </div>
+                            <div class="stat-value">2 hoy</div>
+                            <div class="stat-label">Eventos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Dashboard Grid -->
+                <div class="dashboard-grid">
+                    <!-- Weekly Menu -->
+                    <div class="dashboard-card glass-card fade-in stagger-1">
+                        <div class="card-header">
+                            <h3>📅 Menú de Hoy</h3>
+                            <span class="current-day" id="menuCurrentDay"></span>
+                        </div>
+                        
+                        <div class="menu-content">
+                            <!-- El contenido del menú se cargará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Shopping List -->
+                    <div class="dashboard-card glass-card fade-in stagger-2">
+                        <div class="card-header">
+                            <h3>🛒 Lista de Compras</h3>
+                        </div>
+                        
+                        <div class="progress-section">
+                            <div class="progress-info">
+                                <span class="progress-text">3 de 12</span>
+                                <span class="progress-percent">25%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill progress-yellow" style="width: 25%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="shopping-list-content">
+                            <!-- La lista de compras se cargará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Cleaning Tasks -->
+                    <div class="dashboard-card glass-card fade-in stagger-3">
+                        <div class="card-header">
+                            <h3>🧹 Tareas de Hoy</h3>
+                            <span class="current-day" id="cleaningCurrentDay"></span>
+                        </div>
+                        
+                        <div class="cleaning-tasks-content">
+                            <!-- Las tareas de limpieza se cargarán dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Calendar Events - Ocupa 3 espacios -->
+                    <div class="dashboard-card dashboard-card-large glass-card fade-in stagger-4">
+                        <div class="card-header">
+                            <div class="header-top">
+                                <h3>📅 Calendario Semanal</h3>
+                            </div>
+                            
+                            <!-- Calendar Filters -->
+                            <div class="calendar-filters">
+                                <div class="filter-buttons">
+                                    <button class="filter-btn active" data-filter="all" title="Todos los eventos">
+                                        <i data-lucide="calendar"></i>
+                                        <span>Todos</span>
+                                    </button>
+                                    <button class="filter-btn" data-filter="google" title="Google Calendar">
+                                        <i data-lucide="calendar-days"></i>
+                                        <span>Google</span>
+                                    </button>
+                                    <button class="filter-btn" data-filter="cleaning" title="Tareas de limpieza">
+                                        <i data-lucide="sparkles"></i>
+                                        <span>Limpieza</span>
+                                    </button>
+                                    <button class="filter-btn" data-filter="menu" title="Menú y comidas">
+                                        <i data-lucide="utensils"></i>
+                                        <span>Menú</span>
+                                    </button>
+                                    <button class="filter-btn" data-filter="otros" title="Otros eventos">
+                                        <i data-lucide="bookmark"></i>
+                                        <span>Otros</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="header-bottom">
+                                <div class="calendar-nav-buttons">
+                                    <button class="nav-btn" id="prevWeekBtn">
+                                        <i data-lucide="chevron-left"></i>
+                                    </button>
+                                    <span class="week-display" id="calendarWeekDisplay">Semana actual</span>
+                                    <button class="nav-btn" id="nextWeekBtn">
+                                        <i data-lucide="chevron-right"></i>
+                                    </button>
+                                    <button class="nav-btn" id="todayWeekBtn">
+                                        <i data-lucide="calendar-days"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="calendar-week-grid" id="calendarWeekGrid">
+                            <!-- El calendario semanal se cargará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Family Section -->
+            <section id="family" class="module-section active">
+                <div class="content-header">
+                    <div>
+                        <h2>Perfiles Familiares</h2>
+                        <p class="subtitle">Gestiona los miembros de tu familia</p>
+                    </div>
+                    <button class="btn-primary" onclick="familyManager.showAddMemberForm()">
+                        <i data-lucide="user-plus"></i> Añadir Miembro
+                    </button>
+                </div>
+                
+                <div class="members-grid">
+                    <!-- Los miembros se cargarán dinámicamente -->
+                </div>
+            </section>
+            
+            <!-- Cleaning Section -->
+            <section id="cleaning" class="module-section">
+                <div class="content-header">
+                    <div class="header-left">
+                        <div class="header-icon">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <div>
+                            <h2>Plan de Limpieza</h2>
+                            <p class="subtitle">Asignación inteligente de tareas</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="cleaningManager.generateWeek()">
+                            <i data-lucide="refresh-cw"></i>
+                            Generar Semana
+                        </button>
+                        <button class="btn btn-secondary" onclick="cleaningManager.showStats()">
+                            <i data-lucide="bar-chart"></i>
+                            Estadísticas
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Week Navigation -->
+                <div class="week-navigation">
+                    <button class="nav-btn" onclick="cleaningManager.previousWeek()">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <div class="week-info">
+                        <div class="week-label">Semana</div>
+                        <span id="week-range">20 - 26 Enero 2026</span>
+                    </div>
+                    <button class="nav-btn" onclick="cleaningManager.nextWeek()">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Filters -->
+                <div class="cleaning-filters">
+                    <div class="custom-dropdown">
+                        <div class="dropdown-trigger" onclick="cleaningManager.toggleDropdown('member-dropdown')">
+                            <span id="member-selected">Todos los miembros</span>
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                        <div id="member-dropdown" class="dropdown-content">
+                            <div class="dropdown-item" onclick="cleaningManager.selectMember('')">Todos los miembros</div>
+                        </div>
+                    </div>
+                    <div class="custom-dropdown">
+                        <div class="dropdown-trigger" onclick="cleaningManager.toggleDropdown('area-dropdown')">
+                            <span id="area-selected">Todas las áreas</span>
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                        <div id="area-dropdown" class="dropdown-content">
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('')">Todas las áreas</div>
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('cocina')">Cocina</div>
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('bano')">Baños</div>
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('salon')">Salón</div>
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('dormitorio')">Dormitorios</div>
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('general')">General</div>
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('exterior')">Exterior</div>
+                            <div class="dropdown-item" onclick="cleaningManager.selectArea('mascotas')">Mascotas</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Weekly Calendar Grid -->
+                <div class="week-grid" id="week-grid">
+                    <!-- Days will be generated by JavaScript -->
+                </div>
+                
+                <!-- Weekly Summary -->
+                <div class="weekly-summary">
+                    <div class="summary-header">
+                        <div class="summary-icon">
+                            <i data-lucide="bar-chart"></i>
+                        </div>
+                        <div>
+                            <h3>Resumen Semana</h3>
+                            <p class="summary-subtitle">Estadísticas por miembro</p>
+                        </div>
+                    </div>
+                    <div class="summary-grid" id="summary-grid">
+                        <!-- Member summaries will be generated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Menu Section -->
+            <section id="menu" class="module-section">
+                <div class="content-header">
+                    <div>
+                        <h2>🍳 Menú Semanal</h2>
+                        <p class="subtitle">Planifica tus comidas con IA</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="generateMenuBtn">
+                            <i data-lucide="sparkles"></i> Generar Menú
+                        </button>
+                        <button class="btn-secondary" id="shoppingListBtn">
+                            <i data-lucide="shopping-cart"></i> Lista Compra
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Week Navigation -->
+                <div class="week-navigation">
+                    <button class="nav-btn" id="prevWeekBtn">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <div class="week-info">
+                        <div class="week-label">Semana del</div>
+                        <span id="currentWeekDisplay">20 - 26 Enero 2026</span>
+                    </div>
+                    <button class="nav-btn" id="nextWeekBtn">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- View Mode Toggle -->
+                <div class="view-controls">
+                    <div class="view-toggle">
+                        <button class="toggle-btn" data-view-mode="adultos">
+                            🧑 Adultos
+                        </button>
+                        <button class="toggle-btn" data-view-mode="ninos">
+                            👶 Niños
+                        </button>
+                        <button class="toggle-btn active" data-view-mode="ambos">
+                            📋 Ambos
+                        </button>
+                    </div>
+                    <div class="meal-filter">
+                        <select id="mealFilter">
+                            <option value="all">Todas las comidas</option>
+                            <option value="desayuno">Desayuno</option>
+                            <option value="comida">Comida</option>
+                            <option value="merienda">Merienda</option>
+                            <option value="cena">Cena</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Menu Grid -->
+                <div class="menu-container">
+                    <div class="menu-grid" id="menuGrid">
+                        <!-- Menu content will be generated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Menu Statistics -->
+                <div class="menu-statistics">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i data-lucide="bar-chart-3"></i>
+                        </div>
+                        <div>
+                            <h3>📊 Resumen Semanal</h3>
+                            <p class="stat-subtitle">Estadísticas del menú</p>
+                        </div>
+                    </div>
+                    <div class="stat-grid" id="menuStatistics">
+                        <!-- Statistics will be generated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Shopping Section -->
+            <section id="shopping" class="module-section">
+                <div class="content-header">
+                    <div>
+                        <h2>Lista de Compras</h2>
+                        <p class="subtitle">Exportable a PDF</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="refreshShoppingBtn">
+                            <i data-lucide="refresh-cw"></i> Actualizar
+                        </button>
+                        <button class="btn btn-secondary" id="exportPdfBtn">
+                            <i data-lucide="download"></i> Exportar PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Shopping List Content -->
+                <div class="shopping-list-container">
+                    <div class="shopping-list-header">
+                        <div class="week-navigation">
+                            <button class="nav-btn" id="prevWeekShopping">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <div class="week-info">
+                                <span class="week-label">Semana del</span>
+                                <span id="shoppingWeekDisplay">Cargando...</span>
+                            </div>
+                            <button class="nav-btn" id="nextWeekShopping">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                            <button class="nav-btn" id="todayWeekShopping">
+                                <i data-lucide="calendar-days"></i>
+                            </button>
+                        </div>
+                        <div class="shopping-stats">
+                            <span class="total-items">Total items: <span id="totalItems">0</span></span>
+                            <span class="completed-items">Completados: <span id="completedItems">0</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="shopping-list-content" id="shoppingListContent">
+                        <div class="loading">Cargando lista de compras...</div>
+                    </div>
+                </div>
+            </section>
+            
+            
+            <!-- Calendar Section -->
+            <section id="calendar" class="module-section">
+                <div class="content-header">
+                    <div>
+                        <h2>Calendario</h2>
+                        <p class="subtitle">Sincronización con Google Calendar</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="syncCalendarBtn">
+                            <i data-lucide="refresh-cw"></i> Sincronizar
+                        </button>
+                        <button class="btn btn-secondary" id="addEventBtn">
+                            <i data-lucide="plus"></i> Añadir Evento
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Week Navigation -->
+                <div class="week-navigation">
+                    <button class="nav-btn" id="prevWeek">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <div class="week-info">
+                        <div class="week-label">Semana del</div>
+                        <span id="weekDisplay">Cargando...</span>
+                    </div>
+                    <button class="nav-btn" id="nextWeek">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                    <button class="nav-btn" id="todayWeek">
+                        <i data-lucide="calendar-days"></i>
+                    </button>
+                </div>
+                
+                <!-- Filters -->
+                <div class="calendar-filters">
+                    <div class="filter-group">
+                        <label class="filter-label">Filtrar por:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" data-filter="all">
+                                <i data-lucide="calendar"></i> Todos
+                            </button>
+                            <button class="filter-btn" data-filter="google">
+                                <i data-lucide="calendar-days"></i> Google
+                            </button>
+                            <button class="filter-btn" data-filter="cleaning">
+                                <i data-lucide="sparkles"></i> Limpieza
+                            </button>
+                            <button class="filter-btn" data-filter="menu">
+                                <i data-lucide="utensils"></i> Menú
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Calendar Grid -->
+                <div class="calendar-container" id="calendarGrid">
+                    <!-- Calendar content will be generated by JavaScript -->
+                </div>
+            </section>
+            
+            <!-- To-Do List Section -->
+            <section id="todo" class="module-section">
+                <div class="content-header">
+                    <div>
+                        <h2>To-Do List</h2>
+                        <p class="subtitle">Gestión de tareas y recordatorios</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addTodoBtn">
+                            <i data-lucide="plus"></i> Añadir Tarea
+                        </button>
+                        <button class="btn btn-secondary" id="clearCompletedBtn">
+                            <i data-lucide="trash-2"></i> Limpiar Completadas
+                        </button>
+                        <button class="btn btn-primary" id="voiceTodoBtn">
+                            <i data-lucide="mic"></i> Voz
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Todo Filters -->
+                <div class="todo-filters">
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all">Todas</button>
+                        <button class="filter-tab" data-filter="pending">Pendientes</button>
+                        <button class="filter-tab" data-filter="completed">Completadas</button>
+                        <button class="filter-tab" data-filter="today">Hoy</button>
+                    </div>
+                    <div class="todo-stats">
+                        <span class="stat-item">
+                            <span class="stat-number" id="todoTotalCount">0</span>
+                            <span class="stat-label">Total</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-number" id="todoCompletedCount">0</span>
+                            <span class="stat-label">Completadas</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-number" id="todoPendingCount">0</span>
+                            <span class="stat-label">Pendientes</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Todo List -->
+                <div class="todo-container">
+                    <div class="todo-list" id="todoList">
+                        <!-- Los items se cargarán dinámicamente -->
+                    </div>
+                    
+                    <!-- Voice Interface -->
+                    <div class="voice-interface" id="voiceInterface" style="display: none;">
+                        <div class="voice-header">
+                            <h3>🎤 Comando de Voz</h3>
+                            <button class="btn btn-secondary" id="stopVoiceBtn">
+                                <i data-lucide="square"></i> Detener
+                            </button>
+                        </div>
+                        <div class="voice-status">
+                            <div class="voice-indicator" id="voiceIndicator">
+                                <div class="pulse-ring"></div>
+                                <i data-lucide="mic"></i>
+                            </div>
+                            <p class="voice-text" id="voiceText">Escuchando...</p>
+                        </div>
+                        <div class="voice-transcript" id="voiceTranscript">
+                            <p id="transcriptText">Di tu tarea...</p>
+                        </div>
+                        <div class="voice-actions">
+                            <button class="btn btn-primary" id="createVoiceTodoBtn" disabled>
+                                <i data-lucide="plus"></i> Crear Tarea
+                            </button>
+                            <button class="btn btn-secondary" id="cancelVoiceBtn">
+                                <i data-lucide="x"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Todo Form (hidden by default) -->
+                    <div class="todo-form-container" id="todoFormContainer" style="display: none;">
+                        <form class="todo-form" id="todoForm">
+                            <div class="form-group">
+                                <label for="todoTitle">Título</label>
+                                <input type="text" id="todoTitle" required placeholder="¿Qué necesitas hacer?">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="todoCategory">Categoría</label>
+                                    <select id="todoCategory">
+                                        <option value="personal">Personal</option>
+                                        <option value="trabajo">Trabajo</option>
+                                        <option value="hogar">Hogar</option>
+                                        <option value="compras">Compras</option>
+                                        <option value="salud">Salud</option>
+                                        <option value="finanzas">Finanzas</option>
+                                        <option value="otros">Otros</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="todoPriority">Prioridad</label>
+                                    <select id="todoPriority">
+                                        <option value="baja">Baja</option>
+                                        <option value="media">Media</option>
+                                        <option value="alta">Alta</option>
+                                        <option value="urgente">Urgente</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="todoDueDate">Fecha límite</label>
+                                <input type="date" id="todoDueDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="todoNotes">Notas</label>
+                                <textarea id="todoNotes" rows="3" placeholder="Notas adicionales..."></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i data-lucide="save"></i> Guardar Tarea
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="cancelTodoBtn">
+                                    <i data-lucide="x"></i> Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Settings Section -->
+            <section id="settings" class="module-section">
+                <div class="content-header">
+                    <div>
+                        <h2>Configuración</h2>
+                        <p class="subtitle">Ajustes generales del sistema</p>
+                    </div>
+                </div>
+                
+                <div class="settings-container">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="general">General</button>
+                        <button class="tab-btn" data-tab="house">Casa</button>
+                        <button class="tab-btn" data-tab="menu">Menú</button>
+                        <button class="tab-btn" data-tab="cleaning">Limpieza</button>
+                        <button class="tab-btn" data-tab="api">API Keys</button>
+                    </div>
+                    
+                    <div class="settings-content">
+                        <div class="tab-content active" id="general-tab">
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label>Nombre de la Familia</label>
+                                    <input type="text" id="nombre_familia" placeholder="Familia de Joe">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ciudad</label>
+                                    <input type="text" id="ciudad" placeholder="Barcelona">
+                                </div>
+                                <div class="form-group">
+                                    <label>Idioma</label>
+                                    <select id="idioma">
+                                        <option value="es">Español</option>
+                                        <option value="en">English</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Zona Horaria</label>
+                                    <select id="zona_horaria">
+                                        <option value="Europe/Madrid">Europe/Madrid</option>
+                                        <option value="Europe/Paris">Europe/Paris</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="house-tab">
+                            <div class="settings-form">
+                                <!-- Información Básica -->
+                                <div class="form-section collapsible" data-section="basic">
+                                    <h4 class="section-header">
+                                        <i data-lucide="home"></i>
+                                        Información Básica
+                                        <i data-lucide="chevron-down" class="chevron"></i>
+                                    </h4>
+                                    <div class="section-content">
+                                        <div class="form-group">
+                                            <label>Tipo de Vivienda</label>
+                                            <select id="tipo_vivienda">
+                                                <option value="piso">Piso</option>
+                                                <option value="casa">Casa</option>
+                                                <option value="duplex">Dúplex</option>
+                                                <option value="atico">Ático</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Metros Cuadrados</label>
+                                            <input type="number" id="metros_cuadrados" placeholder="95">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Número de Plantas</label>
+                                            <input type="number" id="numero_plantas" value="1" min="1">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Habitaciones -->
+                                <div class="form-section collapsible" data-section="rooms">
+                                    <h4 class="section-header">
+                                        <i data-lucide="door-open"></i>
+                                        Habitaciones
+                                        <i data-lucide="chevron-down" class="chevron"></i>
+                                    </h4>
+                                    <div class="section-content">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label>Dormitorios</label>
+                                                <input type="number" id="dormitorios" value="3" min="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Baños</label>
+                                                <input type="number" id="banos" value="2" min="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Aseos</label>
+                                                <input type="number" id="aseos" value="0" min="0">
+                                            </div>
+                                        </div>
+                                        <div class="checkbox-group">
+                                            <label>
+                                                <input type="checkbox" id="tiene_salon" checked>
+                                                Tiene Salón
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_comedor_separado">
+                                                Comedor Separado
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_cocina_separada" checked>
+                                                Cocina Separada
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_office">
+                                                Despacho/Estudio
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_lavadero" checked>
+                                                Lavadero
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_trastero">
+                                                Trastero
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Espacios Exteriores -->
+                                <div class="form-section collapsible" data-section="exterior">
+                                    <h4 class="section-header">
+                                        <i data-lucide="trees"></i>
+                                        Espacios Exteriores
+                                        <i data-lucide="chevron-down" class="chevron"></i>
+                                    </h4>
+                                    <div class="section-content">
+                                        <div class="checkbox-group">
+                                            <label>
+                                                <input type="checkbox" id="tiene_terraza" checked>
+                                                Terraza
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_balcon" checked>
+                                                Balcón
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_jardin">
+                                                Jardín
+                                            </label>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Metros Exteriores</label>
+                                            <input type="number" id="metros_exterior" placeholder="12">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Mascotas -->
+                                <div class="form-section collapsible" data-section="pets">
+                                    <h4 class="section-header">
+                                        <i data-lucide="heart"></i>
+                                        Mascotas
+                                        <i data-lucide="chevron-down" class="chevron"></i>
+                                    </h4>
+                                    <div class="section-content">
+                                        <div class="form-group">
+                                            <label>
+                                                <input type="checkbox" id="tiene_mascotas">
+                                                Tiene Mascotas
+                                            </label>
+                                        </div>
+                                        <div id="mascotas-details" style="display: none;">
+                                            <div class="form-group">
+                                                <label>Tipos de Mascotas</label>
+                                                <div class="checkbox-group">
+                                                    <label>
+                                                        <input type="checkbox" name="tipo_mascota" value="perro"> Perro
+                                                    </label>
+                                                    <label>
+                                                        <input type="checkbox" name="tipo_mascota" value="gato"> Gato
+                                                    </label>
+                                                    <label>
+                                                        <input type="checkbox" name="tipo_mascota" value="pajaro"> Pájaro
+                                                    </label>
+                                                    <label>
+                                                        <input type="checkbox" name="tipo_mascota" value="pez"> Pez
+                                                    </label>
+                                                    <label>
+                                                        <input type="checkbox" name="tipo_mascota" value="otro"> Otro
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Nombres de Mascotas</label>
+                                                <input type="text" id="nombres_mascotas" placeholder="Luna, Michi...">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Plantas -->
+                                <div class="form-section collapsible" data-section="plants">
+                                    <h4 class="section-header">
+                                        <i data-lucide="leaf"></i>
+                                        Plantas
+                                        <i data-lucide="chevron-down" class="chevron"></i>
+                                    </h4>
+                                    <div class="section-content">
+                                        <div class="form-group">
+                                            <label>
+                                                <input type="checkbox" id="tiene_plantas">
+                                                Tiene Plantas
+                                            </label>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Cantidad de Plantas</label>
+                                            <select id="cantidad_plantas">
+                                                <option value="pocas">Pocas (1-5)</option>
+                                                <option value="algunas">Algunas (6-15)</option>
+                                                <option value="muchas">Muchas (16+)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Equipamiento Limpieza -->
+                                <div class="form-section collapsible" data-section="equipment">
+                                    <h4 class="section-header">
+                                        <i data-lucide="wrench"></i>
+                                        Equipamiento Limpieza
+                                        <i data-lucide="chevron-down" class="chevron"></i>
+                                    </h4>
+                                    <div class="section-content">
+                                        <div class="checkbox-group">
+                                            <label>
+                                                <input type="checkbox" id="tiene_lavavajillas" checked>
+                                                Lavavajillas
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_aspiradora" checked>
+                                                Aspiradora
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_robot_aspiradora">
+                                                Robot Aspiradora
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_secadora" checked>
+                                                Secadora
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_plancha_vapor">
+                                                Plancha Vapor
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_chimenea">
+                                                Chimenea
+                                            </label>
+                                            <label>
+                                                <input type="checkbox" id="tiene_piscina">
+                                                Piscina
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Preferencias Limpieza -->
+                                <div class="form-section collapsible" data-section="preferences">
+                                    <h4 class="section-header">
+                                        <i data-lucide="sparkles"></i>
+                                        Preferencias Limpieza
+                                        <i data-lucide="chevron-down" class="chevron"></i>
+                                    </h4>
+                                    <div class="section-content">
+                                        <div class="form-group">
+                                            <label>Frecuencia Limpieza Profunda</label>
+                                            <select id="frecuencia_limpieza_profunda">
+                                                <option value="semanal">Semanal</option>
+                                                <option value="quincenal">Quincenal</option>
+                                                <option value="mensual">Mensual</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Día Limpieza Profunda</label>
+                                            <select id="dia_limpieza_profunda">
+                                                <option value="lunes">Lunes</option>
+                                                <option value="martes">Martes</option>
+                                                <option value="miercoles">Miércoles</option>
+                                                <option value="jueves">Jueves</option>
+                                                <option value="viernes">Viernes</option>
+                                                <option value="sabado" selected>Sábado</option>
+                                                <option value="domingo">Domingo</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Áreas Prioritarias</label>
+                                            <div class="checkbox-group">
+                                                <label>
+                                                    <input type="checkbox" name="area_prioritaria" value="cocina"> Cocina
+                                                </label>
+                                                <label>
+                                                    <input type="checkbox" name="area_prioritaria" value="banos"> Baños
+                                                </label>
+                                                <label>
+                                                    <input type="checkbox" name="area_prioritaria" value="salon"> Salón
+                                                </label>
+                                                <label>
+                                                    <input type="checkbox" name="area_prioritaria" value="dormitorios"> Dormitorios
+                                                </label>
+                                                <label>
+                                                    <input type="checkbox" name="area_prioritaria" value="exterior"> Exterior
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Productos Preferidos</label>
+                                            <input type="text" id="productos_preferidos" placeholder="Usar solo productos ecológicos">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Notas de Limpieza</label>
+                                            <textarea id="notas_limpieza" rows="3" placeholder="Instrucciones especiales..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="menu-tab">
+                            <div class="settings-form">
+                                <div class="form-section">
+                                    <h4>Días del Menú</h4>
+                                    <div class="checkbox-group">
+                                        <label>
+                                            <input type="checkbox" name="dias_menu_lunes"> Lunes
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_menu_martes"> Martes
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_menu_miercoles"> Miércoles
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_menu_jueves"> Jueves
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_menu_viernes"> Viernes
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_menu_sabado"> Sábado
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_menu_domingo"> Domingo
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-section">
+                                    <h4>Comidas por Día</h4>
+                                    <div class="checkbox-group">
+                                        <label>
+                                            <input type="checkbox" name="comidas_desayuno"> Desayuno
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="comidas_comida"> Comida
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="comidas_merienda"> Merienda
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="comidas_cena"> Cena
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Presupuesto Semanal (€)</label>
+                                    <input type="number" id="presupuesto_semanal" placeholder="500">
+                                </div>
+                                <div class="form-group">
+                                    <label>Supermercado Preferido</label>
+                                    <select id="supermercado_preferido">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Mercadona">Mercadona</option>
+                                        <option value="Carrefour">Carrefour</option>
+                                        <option value="Lidl">Lidl</option>
+                                        <option value="Bonpreu">Bonpreu</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="cleaning-tab">
+                            <div class="settings-form">
+                                <div class="form-section">
+                                    <h4>Días de Limpieza Profunda</h4>
+                                    <div class="checkbox-group">
+                                        <label>
+                                            <input type="checkbox" name="dias_limpieza_lunes"> Lunes
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_limpieza_martes"> Martes
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_limpieza_miercoles"> Miércoles
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_limpieza_jueves"> Jueves
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_limpieza_viernes"> Viernes
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_limpieza_sabado"> Sábado
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" name="dias_limpieza_domingo"> Domingo
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="incluir_ninos_tareas">
+                                        Incluir niños en tareas
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label>Edad Mínima Tareas Simples</label>
+                                    <input type="number" id="edad_minima_tareas_simples" placeholder="4">
+                                </div>
+                                <div class="form-group">
+                                    <label>Edad Mínima Tareas Medias</label>
+                                    <input type="number" id="edad_minima_tareas_medias" placeholder="10">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="api-tab">
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label>Anthropic API Key</label>
+                                    <input type="password" id="anthropic_api_key" placeholder="sk-ant-api03-...">
+                                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">
+                                        Clave API para Claude AI. Se usará para generar menús y recomendaciones.
+                                    </small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Google Credentials (JSON)</label>
+                                    <textarea id="google_credentials" rows="6" placeholder='{"type": "service_account", ...}'></textarea>
+                                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">
+                                        Opcional: Para sincronización con Google Calendar y Drive.
+                                    </small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Google Calendar</label>
+                                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                                        <button type="button" class="btn-secondary" onclick="settingsManager.connectGoogleCalendar()">Conectar</button>
+                                        <button type="button" class="btn-secondary" onclick="settingsManager.disconnectGoogleCalendar()">Desconectar</button>
+                                        <button type="button" class="btn-primary" onclick="settingsManager.importFromGoogle()">Importar Semana</button>
+                                        <button type="button" class="btn-secondary" onclick="settingsManager.viewImportedEvents()">Ver Importados</button>
+                                        <span id="googleCalendarStatus" style="color: var(--text-secondary);"></span>
+                                    </div>
+                                    <div style="margin-top: 8px;">
+                                        <label style="display:block; margin-bottom: 4px; color: var(--text-muted);">Calendario origen</label>
+                                        <select id="google_calendar_id" style="width: 100%;">
+                                            <option value="primary">Primary</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-actions">
+                        <button class="btn-primary" onclick="settingsManager.saveSettings()">
+                            <i data-lucide="save"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- TV View Section -->
+            <section id="tv" class="module-section">
+                <div class="content-header">
+                    <div>
+                        <h2>Vista TV</h2>
+                        <p class="subtitle">Pantalla para cocina con auto-refresh</p>
+                    </div>
+                </div>
+                
+                <div class="tv-view-container">
+                    <div class="tv-view-card glass-card">
+                        <div class="tv-view-header">
+                            <h3>📺 Vista para Televisión</h3>
+                            <p class="tv-description">Vista optimizada para TV de 24" en la cocina con dashboard en tiempo real</p>
+                        </div>
+                        
+                        <div class="tv-view-content">
+                            <div class="tv-preview">
+                                <div class="tv-preview-header">
+                                    <h4>Family Command Center - TV View</h4>
+                                    <span class="tv-preview-size">Optimizado para 24"</span>
+                                </div>
+                                
+                                <div class="tv-preview-grid">
+                                    <div class="preview-card">
+                                        <div class="preview-icon">🍽️</div>
+                                        <span>Menú de Hoy</span>
+                                    </div>
+                                    <div class="preview-card">
+                                        <div class="preview-icon">🛒</div>
+                                        <span>Lista Compras</span>
+                                    </div>
+                                    <div class="preview-card">
+                                        <div class="preview-icon">🧹</div>
+                                        <span>Tareas Hoy</span>
+                                    </div>
+                                    <div class="preview-card">
+                                        <div class="preview-icon">📅</div>
+                                        <span>Semana</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tv-view-actions">
+                                <button class="btn btn-primary btn-large" onclick="window.open('http://localhost:9000/tv', '_blank')">
+                                    <i data-lucide="tv"></i>
+                                    Abrir Vista TV
+                                </button>
+                                
+                                <div class="tv-view-info">
+                                    <div class="info-item">
+                                        <i data-lucide="monitor"></i>
+                                        <span>URL: http://localhost:9000/tv</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i data-lucide="refresh-cw"></i>
+                                        <span>Auto-refresh cada 5 minutos</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i data-lucide="maximize-2"></i>
+                                        <span>Full screen optimizado</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal para añadir miembro -->
+    <div id="add-member-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Añadir Nuevo Miembro</h3>
+            <form id="add-member-form">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Edad</label>
+                    <input type="number" name="age" required>
+                </div>
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select name="role" required>
+                        <option value="adult">Adulto</option>
+                        <option value="child">Niño</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Preferencias Alimentarias (separadas por comas)</label>
+                    <input type="text" name="dietary_preferences" placeholder="vegetariano, sin gluten...">
+                </div>
+                <div class="form-group">
+                    <label>Alergias (separadas por comas)</label>
+                    <input type="text" name="allergies" placeholder="nueces, mariscos...">
+                </div>
+                <div class="form-group">
+                    <label>Comidas Favoritas (separadas por comas)</label>
+                    <input type="text" name="favorite_foods" placeholder="pizza, pasta...">
+                </div>
+                <div class="form-group">
+                    <label>Comidas No Gustan (separadas por comas)</label>
+                    <input type="text" name="disliked_foods" placeholder="brócoli, espinacas...">
+                </div>
+                <div class="form-group">
+                    <label>Capacidad de Limpieza (1-5)</label>
+                    <input type="number" name="cleaning_capacity" min="1" max="5" value="1">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Guardar</button>
+                    <button type="button" class="btn-secondary" onclick="familyManager.hideAddMemberForm()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menu Modals -->
+    <!-- Generate Menu Modal -->
+    <div id="generateMenuModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✨ Generar Menú Semanal</h3>
+                <button class="close-btn" onclick="menuManager.closeModal('generateMenuModal')">✕</button>
+            </div>
+            
+            <form id="generateMenuForm">
+                <div class="form-group">
+                    <label>¿Qué semana quieres generar?</label>
+                    <select name="week_selection" id="weekSelection" required>
+                        <option value="current">Semana Actual</option>
+                        <option value="next">Semana Próxima</option>
+                        <option value="custom">Fecha Específica</option>
+                    </select>
+                    <input type="date" name="week_start" id="customDate" style="display: none; margin-top: 10px;" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Días a incluir</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="dias" value="lunes" checked> Lunes</label>
+                        <label><input type="checkbox" name="dias" value="martes" checked> Martes</label>
+                        <label><input type="checkbox" name="dias" value="miercoles" checked> Miércoles</label>
+                        <label><input type="checkbox" name="dias" value="jueves" checked> Jueves</label>
+                        <label><input type="checkbox" name="dias" value="viernes" checked> Viernes</label>
+                        <label><input type="checkbox" name="dias" value="sabado" checked> Sábado</label>
+                        <label><input type="checkbox" name="dias" value="domingo" checked> Domingo</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Comidas</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="comidas" value="desayuno" checked> Desayuno</label>
+                        <label><input type="checkbox" name="comidas" value="comida" checked> Comida</label>
+                        <label><input type="checkbox" name="comidas" value="merienda" checked> Merienda</label>
+                        <label><input type="checkbox" name="comidas" value="cena" checked> Cena</label>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Presupuesto semanal (€)</label>
+                        <input type="number" name="presupuesto" value="100" min="50" max="500">
+                    </div>
+                    <div class="form-group">
+                        <label>Supermercado preferido</label>
+                        <select name="supermercado">
+                            <option value="Mercadona">Mercadona</option>
+                            <option value="Consum">Consum</option>
+                            <option value="Carrefour">Carrefour</option>
+                            <option value="Lidl">Lidl</option>
+                            <option value="Aldi">Aldi</option>
+                            <option value="Dia">Dia</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Preferencias especiales</label>
+                    <textarea name="preferencias" placeholder="Ej: Más pescado, evitar cerdo, platos para cumpleaños..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="regenerate">
+                        Forzar regeneración (sobreescribir menú existente)
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="incluir_lista" checked>
+                        Incluir lista de compra
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="considerar_ratings" checked>
+                        Considerar calificaciones anteriores
+                    </label>
+                </div>
+            </form>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="menuManager.closeModal('generateMenuModal')">
+                    Cancelar
+                </button>
+                <button type="button" class="btn-primary" onclick="menuManager.generateMenu()">
+                    ✨ Generar con IA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meal Details Modal -->
+    <div id="mealDetailsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <!-- Content will be generated dynamically -->
+        </div>
+    </div>
+
+    <!-- Shopping List Modal -->
+    <div id="shoppingListModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🛒 Lista de Compra</h3>
+                <button class="close-btn" onclick="menuManager.closeModal('shoppingListModal')">✕</button>
+            </div>
+            
+            <div class="shopping-list-actions">
+                <button class="btn-secondary">
+                    <i data-lucide="printer"></i> Imprimir
+                </button>
+                <button class="btn-secondary">
+                    <i data-lucide="download"></i> Exportar PDF
+                </button>
+                <button class="btn-secondary">
+                    <i data-lucide="share-2"></i> Compartir
+                </button>
+            </div>
+            
+            <div class="shopping-list-content" id="shoppingListContent">
+                <!-- Shopping list will be generated dynamically -->
+            </div>
+        </div>?v=20260201b
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Generando menú con IA...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/dashboard.js?v=20260201"></script>
+    <script src="js/api.js?v=20260201"></script>
+    <script src="js/navigation.js?v=20260201"></script>
+    <script src="js/family.js?v=20260201"></script>
+    <script src="js/menu.js?v=20260201"></script>
+    <script src="js/cleaning.js?v=20260201"></script>
+    <script src="js/calendar.js?v=20260201"></script>
+    <script src="js/shopping.js?v=20260201"></script>
+    <script src="js/todo.js?v=20260306"></script>
+    <script src="js/settings.js?v=20260201"></script>
+    <script>
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Iniciando Family Command Center Dashboard...');
+            
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+                console.log('✅ Iconos Lucide inicializados');
+            }
+            
+            // Wait for all managers to be ready
+            setTimeout(() => {
+                console.log('⏰ Esperando que los managers estén listos...');
+                
+                if (typeof familyManager !== 'undefined') {
+                    familyManager.loadMembers();
+                }
+                
+                if (typeof menuManager !== 'undefined') {
+                    menuManager.loadCurrentWeekMenu();
+                }
+                
+                // Navigation básica
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const target = e.target.closest('.nav-link').getAttribute('href').substring(1);
+                        console.log('🔗 Click en navegación hacia:', target);
+                        
+                        // Cambiar sección activa
+                        document.querySelectorAll('.module-section').forEach(section => {
+                            console.log('🔗 Quitando clase active de:', section.id);
+                            section.classList.remove('active');
+                        });
+                        document.querySelectorAll('.nav-link').forEach(navLink => {
+                            navLink.classList.remove('active');
+                        });
+                        
+                        // Activar nueva sección
+                        const targetSection = document.getElementById(target);
+                        if (targetSection) {
+                            console.log('🔗 Activando sección:', target);
+                            targetSection.classList.add('active');
+                            console.log('🔗 Clases de la sección:', targetSection.className);
+                            console.log('🔗 Estilo computed display:', getComputedStyle(targetSection).display);
+                        }
+                        e.target.closest('.nav-link').classList.add('active');
+                        
+                        // Cargar datos específicos de la sección
+                        if (target === 'menu' && menuManager) {
+                            setTimeout(() => {
+                                menuManager.loadCurrentWeekMenu();
+                            }, 100);
+                        } else if (target === 'family' && familyManager) {
+                            setTimeout(() => {
+                                familyManager.loadMembers();
+                            }, 100);
+                        } else if (target === 'cleaning' && cleaningManager) {
+                            setTimeout(() => {
+                                cleaningManager.loadCurrentWeek();
+                            }, 100);
+                        } else if (target === 'calendar' && calendarManager) {
+                            setTimeout(() => {
+                                console.log('🔗 Llamando a calendarManager.loadCurrentWeek()');
+                                calendarManager.loadCurrentWeek();
+                            }, 100);
+                        }
+                    });
+                });
+            }, 500);
+        });
+    </script>
+    
+    <script>
+        // Inicializar managers cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Iniciando Family Command Center...');
+            
+            // Inicializar MenuManager
+            if (typeof MenuManager !== 'undefined') {
+                window.menuManager = new MenuManager();
+                console.log('✅ MenuManager inicializado');
+            } else {
+                console.error('❌ MenuManager no encontrado');
+            }
+            
+            // Inicializar DashboardManager
+            if (typeof DashboardManager !== 'undefined') {
+                window.dashboardManager = new DashboardManager();
+                console.log('✅ DashboardManager inicializado');
+                
+                // Esperar un momento para que los managers carguen datos
+                setTimeout(() => {
+                    console.log('🔄 Forzando carga de datos del dashboard...');
+                    window.dashboardManager.loadRealData();
+                }, 2000);
+            } else {
+                console.error('❌ DashboardManager no encontrado');
+            }
+        });
+    </script>
+</body>
+</html>
