@@ -62,6 +62,14 @@ def create_app(config_name='default'):
             'version': '1.0.0'
         })
     
+    # Main frontend route
+    @app.route('/')
+    def index():
+        """Servir la aplicación principal"""
+        import os
+        frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+        return send_from_directory(frontend_path, 'index.html')
+    
     # TV View endpoint
     @app.route('/tv')
     def tv_view():
