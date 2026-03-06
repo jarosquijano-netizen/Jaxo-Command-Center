@@ -70,6 +70,14 @@ def create_app(config_name='default'):
         frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
         return send_from_directory(frontend_path, 'index.html')
     
+    # Static files route
+    @app.route('/<path:filename>')
+    def static_files(filename):
+        """Servir archivos estáticos (CSS, JS, imágenes)"""
+        import os
+        frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+        return send_from_directory(frontend_path, filename)
+    
     # TV View endpoint
     @app.route('/tv')
     def tv_view():
