@@ -16,8 +16,19 @@ class AIService:
     
     def __init__(self):
         """Inicializar el servicio de IA"""
-        self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
-        self.model = "claude-sonnet-4-20250514"
+        try:
+            api_key = Config.ANTHROPIC_API_KEY
+            if api_key and api_key != 'your-api-key-here':
+                self.client = anthropic.Anthropic(api_key=api_key)
+                self.model = "claude-sonnet-4-20250514"
+            else:
+                self.client = None
+                self.model = None
+                logger.warning("Anthropic API key not configured")
+        except Exception as e:
+            logger.error(f"Error initializing Anthropic client: {e}")
+            self.client = None
+            self.model = None
     
     def generate_weekly_menu(self, family_members: List[Dict], settings: Dict, 
                              house_config: Dict, historical_ratings: Optional[List[Dict]] = None) -> Dict:
