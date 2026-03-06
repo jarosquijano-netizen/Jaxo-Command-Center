@@ -3,7 +3,7 @@
  * Cliente para comunicarse con el backend Flask
  */
 
-const API_BASE_URL = 'http://localhost:9000';
+const API_BASE_URL = window.location.origin;
 
 /**
  * Cliente API genérico
