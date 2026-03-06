@@ -101,6 +101,10 @@ def create_app(config_name='default'):
     return app
 
 
+# Create app instance for production deployment
+app = create_app()
+
+
 if __name__ == '__main__':
     app = create_app()
     
