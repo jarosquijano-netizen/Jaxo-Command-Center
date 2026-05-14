@@ -59,6 +59,12 @@ class MenuManager {
         // Navegación de semanas
         document.getElementById('prevWeekBtn')?.addEventListener('click', () => this.navigateWeek(-1));
         document.getElementById('nextWeekBtn')?.addEventListener('click', () => this.navigateWeek(1));
+
+        // Modal generate buttons (replaces inline onclick)
+        document.getElementById('closeGenerateModalBtn')?.addEventListener('click', () => this.closeModal('generateMenuModal'));
+        document.getElementById('cancelGenerateMenuBtn')?.addEventListener('click', () => this.closeModal('generateMenuModal'));
+        document.getElementById('confirmGenerateMenuBtn')?.addEventListener('click', () => this.generateMenu());
+        document.getElementById('closeShoppingModalBtn')?.addEventListener('click', () => this.closeModal('shoppingListModal'));
     }
 
     async loadCurrentWeekMenu() {

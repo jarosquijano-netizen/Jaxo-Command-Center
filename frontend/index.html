@@ -1188,7 +1188,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>✨ Generar Menú Semanal</h3>
-                <button class="close-btn" onclick="window.menuManager && menuManager.closeModal('generateMenuModal')">✕</button>
+                <button class="close-btn" id="closeGenerateModalBtn">✕</button>
             </div>
             
             <form id="generateMenuForm">
@@ -1271,10 +1271,10 @@
             </form>
             
             <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="window.menuManager && menuManager.closeModal('generateMenuModal')">
+                <button type="button" class="btn-secondary" id="cancelGenerateMenuBtn">
                     Cancelar
                 </button>
-                <button type="button" class="btn-primary" onclick="window.menuManager && menuManager.generateMenu()">
+                <button type="button" class="btn-primary" id="confirmGenerateMenuBtn">
                     ✨ Generar con IA
                 </button>
             </div>
@@ -1293,7 +1293,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>🛒 Lista de Compra</h3>
-                <button class="close-btn" onclick="window.menuManager && menuManager.closeModal('shoppingListModal')">✕</button>
+                <button class="close-btn" id="closeShoppingModalBtn">✕</button>
             </div>
             
             <div class="shopping-list-actions">

@@ -63,13 +63,17 @@ def create_app(config_name='default'):
     # Health check endpoint
     @app.route('/health')
     def health_check():
-        """Endpoint para verificar que el servidor está corriendo"""
-        return jsonify({
-            'status': 'ok',
-            'message': 'Family Command Center is running',
-            'version': '1.0.0'
-        })
-    
+        return jsonify({'status': 'ok', 'message': 'Family Command Center is running', 'version': '1.0.0'})
+
+    # No-cache for HTML pages so browsers always get fresh JS version strings
+    @app.after_request
+    def no_cache_html(response):
+        if response.content_type and 'text/html' in response.content_type:
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        return response
+
     # Main frontend route
     @app.route('/')
     def index():
