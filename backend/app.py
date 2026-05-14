@@ -25,7 +25,12 @@ def create_app(config_name='default'):
     
     # Inicializar extensiones
     db.init_app(app)
-    CORS(app, origins=app.config['CORS_ORIGINS'])
+    cors_origins = app.config['CORS_ORIGINS']
+    if cors_origins == '*':
+        CORS(app)
+    else:
+        origins_list = cors_origins.split(',') if isinstance(cors_origins, str) else cors_origins
+        CORS(app, origins=origins_list)
     
     # Configurar logging
     logging.basicConfig(

@@ -15,9 +15,12 @@ class Config:
     # Paths
     BASE_DIR = Path(__file__).parent.parent
     
-    # Database
-    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://localhost/family_command_center')
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    # Database — Railway provides DATABASE_URL as postgres://, SQLAlchemy needs postgresql://
+    _db_url = os.getenv('DATABASE_URL', 'sqlite:///family_command_center.db')
+    if _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    DATABASE_URL = _db_url
+    SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = os.getenv('FLASK_DEBUG', 'False') == 'True'
     
@@ -30,8 +33,8 @@ class Config:
     HOST = os.getenv('HOST', '0.0.0.0')
     PORT = int(os.getenv('PORT', 9000))
     
-    # CORS
-    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:8080,http://127.0.0.1:5500').split(',')
+    # CORS — Flask sirve el frontend, mismo origen, '*' es seguro para este setup
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*')
     
     # API Keys
     ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
