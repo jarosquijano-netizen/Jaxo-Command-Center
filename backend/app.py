@@ -113,14 +113,18 @@ def create_app(config_name='default'):
             'code': 500
         }), 500
     
-    # TODO: Crear tablas (temporal - luego usar migrations)
     with app.app_context():
         try:
-            db.create_all()
-            print("✅ Tablas de base de datos creadas/verificadas")
+            if os.getenv('RESET_DB', 'false').lower() == 'true':
+                print("⚠️  RESET_DB=true — dropping and recreating all tables...")
+                db.drop_all()
+                db.create_all()
+                print("✅ Base de datos reseteada con esquema actualizado")
+            else:
+                db.create_all()
+                print("✅ Tablas de base de datos creadas/verificadas")
         except Exception as e:
             print(f"⚠️  Error creando tablas: {e}")
-            print("Verifica que la base de datos esté accesible")
     
     return app
 
