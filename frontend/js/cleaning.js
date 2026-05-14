@@ -66,10 +66,15 @@ class CleaningManager {
     async loadMembers() {
         try {
             const response = await api.get('/api/family/members');
-            this.members = response.data.filter(m => m.activo);
+            if (response.success && Array.isArray(response.data)) {
+                this.members = response.data.filter(m => m.activo);
+            } else {
+                this.members = [];
+            }
             console.log('✅ Miembros cargados:', this.members);
         } catch (error) {
             console.error('❌ Error cargando miembros:', error);
+            this.members = [];
         }
     }
 
@@ -327,14 +332,12 @@ class CleaningManager {
         const summaryGrid = document.getElementById('summary-grid');
         if (!summaryGrid) return;
         
-        // Verificar que los miembros estén cargados
+        summaryGrid.innerHTML = '';
+
         if (!this.members || this.members.length === 0) {
-            console.warn('⚠️ Miembros no cargados, esperando...');
-            setTimeout(() => this.renderSummary(), 500);
+            summaryGrid.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No hay miembros registrados</p>';
             return;
         }
-        
-        summaryGrid.innerHTML = '';
         
         // Calculate stats per member
         const memberStats = {};
