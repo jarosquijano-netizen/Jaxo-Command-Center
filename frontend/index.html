@@ -25,10 +25,10 @@
             </div>
             
             <nav class="sidebar-nav">
-                <a href="#dashboard" class="nav-link">
+                <a href="#dashboard" class="nav-link active">
                     <i data-lucide="layout-dashboard"></i> Dashboard
                 </a>
-                <a href="#family" class="nav-link active">
+                <a href="#family" class="nav-link">
                     <i data-lucide="users"></i> Perfiles Familiares
                 </a>
                 <a href="#menu" class="nav-link">
@@ -208,7 +208,7 @@
             </section>
             
             <!-- Family Section -->
-            <section id="family" class="module-section active">
+            <section id="family" class="module-section">
                 <div class="content-header">
                     <div>
                         <h2>Perfiles Familiares</h2>
@@ -1181,53 +1181,6 @@
         </main>
     </div>
 
-    <!-- Modal para añadir miembro -->
-    <div id="add-member-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3>Añadir Nuevo Miembro</h3>
-            <form id="add-member-form">
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label>Edad</label>
-                    <input type="number" name="age" required>
-                </div>
-                <div class="form-group">
-                    <label>Rol</label>
-                    <select name="role" required>
-                        <option value="adult">Adulto</option>
-                        <option value="child">Niño</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Preferencias Alimentarias (separadas por comas)</label>
-                    <input type="text" name="dietary_preferences" placeholder="vegetariano, sin gluten...">
-                </div>
-                <div class="form-group">
-                    <label>Alergias (separadas por comas)</label>
-                    <input type="text" name="allergies" placeholder="nueces, mariscos...">
-                </div>
-                <div class="form-group">
-                    <label>Comidas Favoritas (separadas por comas)</label>
-                    <input type="text" name="favorite_foods" placeholder="pizza, pasta...">
-                </div>
-                <div class="form-group">
-                    <label>Comidas No Gustan (separadas por comas)</label>
-                    <input type="text" name="disliked_foods" placeholder="brócoli, espinacas...">
-                </div>
-                <div class="form-group">
-                    <label>Capacidad de Limpieza (1-5)</label>
-                    <input type="number" name="cleaning_capacity" min="1" max="5" value="1">
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Guardar</button>
-                    <button type="button" class="btn-secondary" onclick="familyManager.hideAddMemberForm()">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- Menu Modals -->
     <!-- Generate Menu Modal -->
@@ -1439,7 +1392,7 @@
                             }, 100);
                         } else if (target === 'family' && familyManager) {
                             setTimeout(() => {
-                                familyManager.loadMembers();
+                                familyManager.loadMembers().then(() => familyManager.render());
                             }, 100);
                         } else if (target === 'cleaning' && cleaningManager) {
                             setTimeout(() => {

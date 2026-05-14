@@ -126,33 +126,57 @@ def update_member(member_id):
     try:
         member = FamilyMember.query.get_or_404(member_id)
         data = request.get_json()
-        
-        # Actualizar campos
-        if 'name' in data:
-            member.name = data['name']
-        if 'age' in data:
-            member.age = data['age']
-        if 'role' in data:
-            member.role = data['role']
-        if 'avatar_url' in data:
-            member.avatar_url = data['avatar_url']
-        if 'dietary_preferences' in data:
-            member.dietary_preferences = json.dumps(data['dietary_preferences'])
-        if 'allergies' in data:
-            member.allergies = json.dumps(data['allergies'])
-        if 'favorite_foods' in data:
-            member.favorite_foods = json.dumps(data['favorite_foods'])
-        if 'disliked_foods' in data:
-            member.disliked_foods = json.dumps(data['disliked_foods'])
-        if 'cleaning_capacity' in data:
-            member.cleaning_capacity = data['cleaning_capacity']
-        if 'work_schedule' in data:
-            member.work_schedule = json.dumps(data['work_schedule'])
-        if 'school_schedule' in data:
-            member.school_schedule = json.dumps(data['school_schedule'])
-        
+
+        # Campos básicos
+        for field in ['nombre', 'edad', 'tipo', 'rol_hogar', 'avatar_color', 'emoji']:
+            if field in data:
+                setattr(member, field, data[field])
+
+        if 'activo' in data:
+            member.activo = bool(data['activo'])
+
+        # Campos booleanos
+        for field in ['puede_cocinar', 'puede_limpiar', 'puede_compras', 'le_gustan_snacks']:
+            if field in data:
+                setattr(member, field, bool(data[field]))
+
+        # Campos enteros
+        for field in ['porcentaje_tareas_limpieza', 'porcentaje_tareas_cocina', 'tiempo_max_cocinar']:
+            if field in data and data[field] is not None:
+                setattr(member, field, int(data[field]))
+
+        # Campos float
+        if 'horas_por_dia' in data and data['horas_por_dia'] is not None:
+            member.horas_por_dia = float(data['horas_por_dia'])
+
+        # Campos string simples
+        string_fields = [
+            'horario_disponible', 'objetivo_alimentario', 'estilo_alimentacion',
+            'nivel_picante', 'restricciones_religiosas', 'preocupacion_principal',
+            'nivel_cocina', 'tipo_desayuno', 'plato_favorito', 'plato_menos_favorito',
+            'comentarios', 'come_solo', 'nivel_exigencia', 'acepta_comida_nueva',
+            'desayuno_preferido', 'plato_nunca_comeria', 'comentarios_padres',
+            'horario_entrada', 'horario_salida', 'notas_empleador'
+        ]
+        for field in string_fields:
+            if field in data:
+                setattr(member, field, data[field])
+
+        # Campos JSON (arrays)
+        json_fields = [
+            'tareas_excluidas', 'disponibilidad_dias', 'cocinas_favoritas',
+            'ingredientes_favoritos', 'ingredientes_no_gustan', 'alergias',
+            'intolerancias', 'verduras_aceptadas', 'verduras_rechazadas',
+            'texturas_no_gustan', 'snacks_favoritos', 'dias_trabajo',
+            'responsabilidades_principales'
+        ]
+        for field in json_fields:
+            if field in data:
+                value = data[field]
+                setattr(member, field, json.dumps(value) if isinstance(value, list) else value)
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'data': member.to_dict(),
