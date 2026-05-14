@@ -44,9 +44,10 @@ def create_app(config_name='default'):
     # from routes.shopping_routes import shopping_bp
     from routes.cleaning_routes import cleaning_bp
     from routes.settings_routes import settings_bp
-    # Google routes desactivadas temporalmente (conflicto cryptography en este entorno)
+    from routes.calendar_routes import calendar_bp
+    from routes.todo_routes import todo_bp
+    # Google OAuth routes desactivadas (conflicto cryptography)
     # from routes.google_routes import google_bp
-    # from routes.calendar_routes import calendar_bp
     # from routes.dashboard_routes import dashboard_bp
 
     app.register_blueprint(family_bp, url_prefix='/api/family')
@@ -54,8 +55,9 @@ def create_app(config_name='default'):
     # app.register_blueprint(shopping_bp, url_prefix='/api/shopping')
     app.register_blueprint(cleaning_bp, url_prefix='/api/cleaning')
     app.register_blueprint(settings_bp, url_prefix='/api/settings')
+    app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
+    app.register_blueprint(todo_bp, url_prefix='/api/todos')
     # app.register_blueprint(google_bp, url_prefix='/api/google')
-    # app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     # app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     
     # Health check endpoint

@@ -6,7 +6,6 @@ class TodoManager {
     constructor() {
         this.todos = [];
         this.currentFilter = 'all';
-        this.apiBase = 'http://localhost:9000/api';
         this.recognition = null;
         this.isRecording = false;
         this.voiceTranscript = '';
@@ -74,13 +73,11 @@ class TodoManager {
 
     async loadTodos() {
         try {
-            const response = await fetch(`${this.apiBase}/todos`);
-            const result = await response.json();
-            this.todos = result.success ? result.data : [];
-            console.log('✅ Todos cargados:', this.todos);
+            const result = await api.get('/api/todos');
+            this.todos = result.success ? result.data : this.getLocalTodos();
         } catch (error) {
             console.error('❌ Error cargando todos:', error);
-            this.todos = this.getLocalTodos(); // Fallback a localStorage
+            this.todos = this.getLocalTodos();
         }
     }
 
@@ -118,15 +115,7 @@ class TodoManager {
         };
 
         try {
-            const response = await fetch(`${this.apiBase}/todos`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(todo)
-            });
-
-            const result = await response.json();
+            const result = await api.post('/api/todos', todo);
             if (result.success) {
                 this.todos.push(result.data);
                 this.saveTodosToLocal();
@@ -149,15 +138,7 @@ class TodoManager {
 
     async updateTodo(todoId, updates) {
         try {
-            const response = await fetch(`${this.apiBase}/todos/${todoId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updates)
-            });
-
-            const result = await response.json();
+            const result = await api.put(`/api/todos/${todoId}`, updates);
             if (result.success) {
                 const index = this.todos.findIndex(t => t.id === todoId);
                 if (index !== -1) {
@@ -182,11 +163,7 @@ class TodoManager {
 
     async deleteTodo(todoId) {
         try {
-            const response = await fetch(`${this.apiBase}/todos/${todoId}`, {
-                method: 'DELETE'
-            });
-
-            const result = await response.json();
+            const result = await api.delete(`/api/todos/${todoId}`);
             if (result.success) {
                 this.todos = this.todos.filter(t => t.id !== todoId);
                 this.saveTodosToLocal();
@@ -688,16 +665,7 @@ class TodoManager {
         };
 
         try {
-            // Intentar guardar en backend
-            const response = await fetch(`${this.apiBase}/todos`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(todo)
-            });
-
-            const result = await response.json();
+            const result = await api.post('/api/todos', todo);
             if (result.success) {
                 this.todos.push(result.data);
                 this.saveTodosToLocal();

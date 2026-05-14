@@ -12,8 +12,6 @@ class DashboardManager {
         this.currentCalendarFilter = 'all';
         this.daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         this.daysShort = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        this.apiBase = 'http://localhost:9000/api';
-        
         this.init();
     }
 
@@ -149,8 +147,7 @@ class DashboardManager {
 
     async fetchFamilyMembers() {
         try {
-            const response = await fetch(`${this.apiBase}/family/members`);
-            const result = await response.json();
+            const result = await api.get('/api/family/members');
             return result.success ? result.data : [];
         } catch (error) {
             console.error('Error fetching family members:', error);
@@ -160,16 +157,10 @@ class DashboardManager {
 
     async fetchCurrentMenu() {
         try {
-            // Primero intentar con current, si no hay datos, usar latest
-            let response = await fetch(`${this.apiBase}/menu/current`);
-            let result = await response.json();
-            
+            let result = await api.get('/api/menu/current');
             if (!result.success || !result.data) {
-                console.log('📝 Menú actual vacío, buscando último con datos...');
-                response = await fetch(`${this.apiBase}/menu/latest`);
-                result = await response.json();
+                result = await api.get('/api/menu/latest');
             }
-            
             return result.success ? result.data : null;
         } catch (error) {
             console.error('Error fetching menu:', error);
@@ -179,8 +170,7 @@ class DashboardManager {
 
     async fetchCleaningSchedule() {
         try {
-            const response = await fetch(`${this.apiBase}/cleaning/schedule`);
-            const result = await response.json();
+            const result = await api.get('/api/cleaning/schedule');
             return result.success ? result.data : [];
         } catch (error) {
             console.error('Error fetching cleaning schedule:', error);
@@ -190,8 +180,7 @@ class DashboardManager {
 
     async fetchCalendarEvents() {
         try {
-            const response = await fetch(`${this.apiBase}/calendar/week`);
-            const result = await response.json();
+            const result = await api.get('/api/calendar/week');
             return result.success ? result.data : { events: [] };
         } catch (error) {
             console.error('Error fetching calendar events:', error);
@@ -581,9 +570,7 @@ class DashboardManager {
             const sunday = new Date(monday);
             sunday.setDate(sunday.getDate() + 6);
             
-            const response = await fetch(`${this.apiBase}/calendar/week?start=${monday.toISOString().split('T')[0]}&end=${sunday.toISOString().split('T')[0]}`);
-            const result = await response.json();
-            
+            const result = await api.get(`/api/calendar/week?start=${monday.toISOString().split('T')[0]}&end=${sunday.toISOString().split('T')[0]}`);
             if (result.success) {
                 this.updateCalendarSection(result.data);
             }
@@ -732,18 +719,12 @@ class DashboardManager {
 
     async toggleCleaningTask(taskId, completed) {
         try {
-            const response = await fetch(`${this.apiBase}/cleaning/schedule/${taskId}/complete`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    completed: completed,
-                    completed_by: 1 // TODO: Obtener ID del usuario actual
-                })
+            const response = await api.put(`/api/cleaning/schedule/${taskId}/complete`, {
+                completed: completed,
+                completed_by: 1
             });
 
-            if (response.ok) {
+            if (response.success !== false) {
                 // Recargar datos de limpieza
                 const cleaningData = await this.fetchCleaningSchedule();
                 this.updateCleaningSection(cleaningData);
