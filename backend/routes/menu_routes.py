@@ -12,6 +12,29 @@ logger = logging.getLogger(__name__)
 menu_bp = Blueprint('menu', __name__)
 
 
+@menu_bp.route('/week/<string:week_start_str>', methods=['GET'])
+def get_menu_by_week(week_start_str):
+    """Obtiene el menú de una semana por fecha en la URL (YYYY-MM-DD)"""
+    try:
+        try:
+            week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({
+                'success': False,
+                'message': 'Formato de fecha inválido. Use YYYY-MM-DD'
+            }), 400
+
+        menu = menu_service.get_weekly_menu(week_start)
+        if menu:
+            return jsonify({'success': True, 'data': menu})
+        else:
+            return jsonify({'success': False, 'message': 'No hay menú para esta semana'}), 200
+
+    except Exception as e:
+        logger.error(f"Error en get_menu_by_week: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+
 @menu_bp.route('/weekly', methods=['GET'])
 def get_weekly_menu():
     """

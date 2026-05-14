@@ -2,8 +2,6 @@ class ShoppingManager {
     constructor() {
         this.currentShoppingList = null;
         this.currentWeek = null;
-        this.apiBase = 'http://localhost:9000/api';
-        
         this.init();
     }
 
@@ -59,9 +57,8 @@ class ShoppingManager {
             let weekStart = targetWeek;
             if (!weekStart) {
                 // Por defecto, buscar el menú más reciente
-                const response = await fetch(`${this.apiBase}/menu/latest`);
-                const result = await response.json();
-                
+                const result = await api.get('/api/menu/latest');
+
                 if (result.success && result.data) {
                     const menuData = result.data;
                     this.currentShoppingList = menuData.lista_compra;
@@ -87,8 +84,7 @@ class ShoppingManager {
 
     async loadShoppingListForWeek(weekStart) {
         try {
-            const response = await fetch(`${this.apiBase}/menu/week/${weekStart}`);
-            const result = await response.json();
+            const result = await api.get(`/api/menu/week/${weekStart}`);
             
             if (result.success && result.data) {
                 const menuData = result.data;
