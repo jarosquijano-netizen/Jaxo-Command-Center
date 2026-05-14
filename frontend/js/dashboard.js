@@ -1,1106 +1,361 @@
 // ============================================
-// DASHBOARD MANAGER - Integración con Base de Datos
+// DASHBOARD MANAGER — Glassmorphic Bento Layout
 // ============================================
 
 class DashboardManager {
     constructor() {
-        this.currentMenuDay = new Date().getDay();
-        this.currentCleaningDay = new Date().getDay();
-        this.currentCalendarDay = new Date().getDay();
-        this.currentShoppingList = null;
-        this.currentWeek = null;
-        this.currentCalendarFilter = 'all';
+        this.currentCalendarMonday = this.getThisMonday();
         this.daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        this.daysShort = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         this.init();
     }
 
     async init() {
         this.updateCurrentDate();
-        this.setupEventListeners();
-        this.setupDayTabs();
-        
-        // Initialize Lucide icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        
-        // Cargar datos reales
+        window.dashboardManager = this;
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
         await this.loadRealData();
-        
-        // Configurar auto-actualización diaria
+        this.setupCalendarNav();
         this.setupDailyRefresh();
     }
 
-    setupDailyRefresh() {
-        // Verificar si ya es un nuevo día
-        const checkForNewDay = () => {
-            const now = new Date();
-            const currentDay = now.getDate();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-            
-            // Obtener el día almacenado
-            const storedDay = localStorage.getItem('dashboard_last_day');
-            const storedDate = storedDay ? new Date(storedDay) : null;
-            
-            if (storedDate) {
-                const storedDayNum = storedDate.getDate();
-                const storedMonth = storedDate.getMonth();
-                const storedYear = storedDate.getFullYear();
-                
-                // Si es un día nuevo, recargar datos
-                if (currentDay !== storedDayNum || currentMonth !== storedMonth || currentYear !== storedYear) {
-                    console.log('🌅 Nuevo día detectado, actualizando dashboard...');
-                    this.loadRealData();
-                    
-                    // Actualizar fecha del día almacenado
-                    localStorage.setItem('dashboard_last_day', now.toISOString());
-                }
-            } else {
-                // Primera vez que se carga, guardar la fecha
-                localStorage.setItem('dashboard_last_day', now.toISOString());
-            }
-        };
-        
-        // Verificar cada minuto si es un nuevo día
-        setInterval(checkForNewDay, 60000); // Cada minuto
-        
-        // Verificar inmediatamente
-        checkForNewDay();
-        
-        // También configurar actualización a medianoche (12:00 PM)
-        this.scheduleMiddayRefresh();
-        
-        // Configurar actualización al inicio de cada día (00:05 AM)
-        this.scheduleMidnightRefresh();
+    // ─── Date helpers ───────────────────────────────────────────────────
+
+    getThisMonday() {
+        const today = new Date();
+        const d = today.getDay(); // 0=Sun
+        const diff = today.getDate() - d + (d === 0 ? -6 : 1);
+        return new Date(today.getFullYear(), today.getMonth(), diff);
     }
 
-    scheduleMiddayRefresh() {
+    updateCurrentDate() {
         const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(12, 0, 0, 0); // Mañana a las 12:00 PM
-        
-        const timeUntilMidday = tomorrow - now;
-        
-        if (timeUntilMidday > 0) {
-            setTimeout(() => {
-                console.log('🌞️ Actualización del mediodía - recargando dashboard...');
-                this.loadRealData();
-                this.scheduleMiddayRefresh(); // Programar el siguiente día
-            }, timeUntilMidday);
-        }
+        const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+        const txt = now.toLocaleDateString('es-ES', opts);
+        const el = document.getElementById('currentDate');
+        if (el) el.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
     }
 
-    scheduleMidnightRefresh() {
-        const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 5, 0, 0); // Mañana a las 00:05 AM
-        
-        const timeUntilMidnight = tomorrow - now;
-        
-        if (timeUntilMidnight > 0) {
-            setTimeout(() => {
-                console.log('🌙️ Actualización de medianoche - recargando dashboard...');
-                this.loadRealData();
-                this.scheduleMidnightRefresh(); // Programar el siguiente día
-            }, timeUntilMidnight);
-        }
-    }
+    // ─── Data loading ────────────────────────────────────────────────────
 
     async loadRealData() {
         try {
-            console.log('🔄 Dashboard: Cargando datos reales...');
-            
-            // Cargar datos en paralelo
             const [familyData, menuData, cleaningData, calendarData] = await Promise.all([
                 this.fetchFamilyMembers(),
                 this.fetchCurrentMenu(),
                 this.fetchCleaningSchedule(),
-                this.fetchCalendarEvents()
+                this.fetchCalendarEvents(this.currentCalendarMonday),
             ]);
 
-            console.log('📊 Datos recibidos:', {
-                familyData: familyData?.length || 0,
-                menuData: menuData ? 'OK' : 'NULL',
-                cleaningData: cleaningData?.length || 0,
-                calendarData: calendarData?.events?.length || 0
-            });
-
-            // Actualizar dashboard con datos reales
-            this.updateFamilyAvatars(familyData);
-            this.updateMenuSection(menuData);
-            this.updateShoppingListSection(menuData);
-            this.updateCleaningSection(cleaningData);
-            this.updateCalendarSection(calendarData);
-            this.updateStatCards(familyData, menuData, cleaningData, calendarData);
-            
-            console.log('✅ Dashboard: Datos actualizados correctamente');
-            
-        } catch (error) {
-            console.error('❌ Error cargando datos reales:', error);
-            this.showError('Error cargando datos del servidor');
+            this.renderFamilyAvatars(familyData);
+            this.renderMeals(menuData);
+            this.renderCalendar(calendarData, this.currentCalendarMonday);
+            this.renderCleaning(cleaningData);
+            this.renderStatCards(familyData, menuData, cleaningData, calendarData);
+        } catch (err) {
+            console.error('❌ Dashboard load error:', err);
         }
     }
 
     async fetchFamilyMembers() {
         try {
-            const result = await api.get('/api/family/members');
-            return result.success ? result.data : [];
-        } catch (error) {
-            console.error('Error fetching family members:', error);
-            return [];
-        }
+            const r = await api.get('/api/family/members');
+            return r.success ? r.data : [];
+        } catch { return []; }
     }
 
     async fetchCurrentMenu() {
         try {
-            let result = await api.get('/api/menu/current');
-            if (!result.success || !result.data) {
-                result = await api.get('/api/menu/latest');
-            }
-            return result.success ? result.data : null;
-        } catch (error) {
-            console.error('Error fetching menu:', error);
-            return null;
-        }
+            let r = await api.get('/api/menu/current');
+            if (!r.success || !r.data) r = await api.get('/api/menu/latest');
+            return r.success ? r.data : null;
+        } catch { return null; }
     }
 
     async fetchCleaningSchedule() {
         try {
-            const result = await api.get('/api/cleaning/schedule');
-            return result.success ? result.data : [];
-        } catch (error) {
-            console.error('Error fetching cleaning schedule:', error);
-            return [];
-        }
+            const r = await api.get('/api/cleaning/schedule');
+            return r.success ? r.data : [];
+        } catch { return []; }
     }
 
-    async fetchCalendarEvents() {
+    async fetchCalendarEvents(monday) {
         try {
-            const result = await api.get('/api/calendar/week');
-            return result.success ? result.data : { events: [] };
-        } catch (error) {
-            console.error('Error fetching calendar events:', error);
-            return { events: [] };
-        }
+            const start = monday.toISOString().split('T')[0];
+            const end = new Date(monday.getTime() + 6 * 86400000).toISOString().split('T')[0];
+            const r = await api.get(`/api/calendar/week?start=${start}&end=${end}`);
+            return r.success ? r.data : { events: [] };
+        } catch { return { events: [] }; }
     }
 
-    updateFamilyAvatars(members) {
-        const avatarsContainer = document.querySelector('.family-avatars');
-        if (!avatarsContainer || !members.length) return;
+    // ─── Renderers ───────────────────────────────────────────────────────
 
-        avatarsContainer.innerHTML = '';
-        
-        members.forEach(member => {
-            const avatar = document.createElement('div');
-            avatar.className = `avatar-circle avatar-${member.nombre.toLowerCase()}`;
-            avatar.title = member.nombre;
-            avatar.textContent = member.nombre.charAt(0).toUpperCase();
-            
-            // Usar color personalizado si existe
-            if (member.avatar_color) {
-                avatar.style.background = member.avatar_color;
-            }
-            
-            avatarsContainer.appendChild(avatar);
-        });
+    renderFamilyAvatars(members) {
+        const container = document.getElementById('dash-family-avatars');
+        if (!container || !members.length) return;
+        container.innerHTML = members.map(m => `
+            <div class="avatar-circle" title="${m.nombre}"
+                 style="background:${m.avatar_color || '#4d8eff'}">
+                ${m.nombre.charAt(0).toUpperCase()}
+            </div>`).join('');
     }
 
-    updateMenuSection(menuData) {
-        if (!menuData) {
-            console.log('No hay datos de menú disponibles');
-            return;
+    renderMeals(menuData) {
+        const container = document.getElementById('dash-meals-content');
+        if (!container) return;
+
+        const mealSlots = [
+            { key: 'desayuno',  label: 'DESAYUNO',  icon: 'breakfast_dining', cls: 'primary' },
+            { key: 'almuerzo',  label: 'ALMUERZO',  icon: 'set_meal',         cls: 'secondary', accent: true },
+            { key: 'merienda',  label: 'MERIENDA',  icon: 'nutrition',        cls: 'tertiary' },
+            { key: 'cena',      label: 'CENA',      icon: 'egg_alt',          cls: 'muted' },
+        ];
+
+        let dayMenu = {};
+        if (menuData?.menu_data) {
+            try {
+                const parsed = typeof menuData.menu_data === 'string'
+                    ? JSON.parse(menuData.menu_data) : menuData.menu_data;
+                const dayNames = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
+                const today = dayNames[new Date().getDay()];
+                dayMenu = parsed.menu_adultos?.[today] || parsed.menu_ninos?.[today] || {};
+            } catch { /* ignore */ }
         }
 
-        const menuContent = document.querySelector('.menu-content');
-        if (!menuContent) return;
-
-        // Parsear datos del menú
-        let menuParsed;
-        try {
-            menuParsed = typeof menuData.menu_data === 'string' 
-                ? JSON.parse(menuData.menu_data) 
-                : menuData.menu_data;
-        } catch (error) {
-            console.error('Error parseando menu data:', error);
-            return;
-        }
-
-        console.log('🍽️ Menu data parsed:', menuParsed);
-
-        // Obtener el día actual (hoy)
-        const today = new Date();
-        const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-        const currentDay = dayNames[today.getDay()];
-        
-        console.log(`📅 Mostrando menú para hoy: ${currentDay}`);
-        
-        // Buscar en ambos menús (adultos y niños) para el día actual
-        const adultMenu = menuParsed.menu_adultos?.[currentDay];
-        const kidsMenu = menuParsed.menu_ninos?.[currentDay];
-        
-        if (!adultMenu && !kidsMenu) {
-            console.log(`No hay menú para hoy (${currentDay})`);
-            menuContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay menú para hoy</p>';
-            return;
-        }
-
-        // Actualizar contenido del menú sin encabezado duplicado
-        menuContent.innerHTML = '';
-        
-        // Comidas disponibles en el menú de hoy
-        const availableMeals = new Set();
-        if (adultMenu) {
-            Object.keys(adultMenu).forEach(meal => availableMeals.add(meal));
-        }
-        if (kidsMenu) {
-            Object.keys(kidsMenu).forEach(meal => availableMeals.add(meal));
-        }
-
-        // Mostrar cada comida disponible para hoy
-        availableMeals.forEach(meal => {
-            const mealSection = document.createElement('div');
-            mealSection.className = 'meal-section';
-            
-            // Obtener datos del plato
-            const adultMeal = adultMenu?.[meal];
-            const kidsMeal = kidsMenu?.[meal];
-            
-            // Extraer nombre del plato
-            const adultPlate = adultMeal?.plato || 'Sin definir';
-            const kidsPlate = kidsMeal?.plato || 'Sin definir';
-            
-            mealSection.innerHTML = `
-                <div class="meal-header">
-                    <i data-lucide="${this.getMealIcon(meal)}" class="meal-icon"></i>
-                    <span class="meal-title">${this.formatMealName(meal)}</span>
+        container.innerHTML = mealSlots.map(slot => {
+            const data = dayMenu[slot.key] || dayMenu['comida'];
+            const name = data?.plato || '—';
+            const desc = data?.preparacion ? data.preparacion.split('.')[0] : '';
+            return `
+            <div class="dash-meal-row">
+                <p class="dash-meal-label${slot.accent ? ' dash-meal-label--secondary' : ''}">${slot.label}</p>
+                <div class="dash-meal-item">
+                    <div class="dash-meal-icon dash-meal-icon--${slot.cls}">
+                        <span class="material-symbols-outlined">${slot.icon}</span>
+                    </div>
+                    <div>
+                        <p class="dash-meal-name">${name}</p>
+                        ${desc ? `<p class="dash-meal-desc">${desc}</p>` : ''}
+                    </div>
                 </div>
-                <div class="meal-content">
-                    ${adultMeal ? `
-                        <div class="meal-group">
-                            <div class="meal-group-label adultos-label">Adultos</div>
-                            <div class="meal-item">
-                                <div class="meal-plate">${adultPlate}</div>
-                                ${adultMeal.ingredientes ? `
-                                    <div class="meal-details">
-                                        <div class="meal-ingredients">
-                                            <strong>Ingredientes:</strong> ${adultMeal.ingredientes}
-                                        </div>
-                                        ${adultMeal.preparacion ? `
-                                            <div class="meal-preparation">
-                                                <strong>Preparación:</strong> ${adultMeal.preparacion}
-                                            </div>
-                                        ` : ''}
-                                        ${adultMeal.tiempo ? `
-                                            <div class="meal-time">
-                                                <strong>Tiempo:</strong> ${adultMeal.tiempo}
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    ` : ''}
-                    ${kidsMeal ? `
-                        <div class="meal-group">
-                            <div class="meal-group-label ninas-label">Niñas</div>
-                            <div class="meal-item">
-                                <div class="meal-plate">${kidsPlate}</div>
-                                ${kidsMeal.ingredientes ? `
-                                    <div class="meal-details">
-                                        <div class="meal-ingredients">
-                                            <strong>Ingredientes:</strong> ${kidsMeal.ingredientes}
-                                        </div>
-                                        ${kidsMeal.preparacion ? `
-                                            <div class="meal-preparation">
-                                                <strong>Preparación:</strong> ${kidsMeal.preparacion}
-                                            </div>
-                                        ` : ''}
-                                        ${kidsMeal.tiempo ? `
-                                            <div class="meal-time">
-                                                <strong>Tiempo:</strong> ${kidsMeal.tiempo}
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-            
-            menuContent.appendChild(mealSection);
-        });
-
-        // Re-inicializar icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+            </div>`;
+        }).join('');
     }
 
-    getMealIcon(meal) {
-        const icons = {
-            'desayuno': 'sun',
-            'comida': 'sun',
-            'almuerzo': 'sun',
-            'merienda': 'coffee',
-            'cena': 'moon'
+    renderCalendar(calendarData, monday) {
+        this.renderCalendarDays(monday);
+        this.renderCalendarEvents(calendarData, monday);
+    }
+
+    renderCalendarDays(monday) {
+        const container = document.getElementById('dash-cal-days');
+        if (!container) return;
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        container.innerHTML = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(monday.getTime() + i * 86400000);
+            const dStr = d.toISOString().split('T')[0];
+            const isToday = dStr === todayStr;
+            return `
+            <div class="dash-cal-day${isToday ? ' dash-cal-day--today' : ''}">
+                <span class="dash-cal-day-number">${d.getDate()}</span>
+                ${isToday ? '<span class="dash-cal-day-lbl">hoy</span>' : ''}
+            </div>`;
+        }).join('');
+    }
+
+    renderCalendarEvents(calendarData, monday) {
+        const container = document.getElementById('dash-cal-events');
+        if (!container) return;
+
+        const events = calendarData?.events || [];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Show today's events; fallback to the whole week if none
+        let todayEvents = events.filter(e => e.start?.startsWith(todayStr));
+        if (!todayEvents.length && events.length) todayEvents = events.slice(0, 3);
+
+        if (!todayEvents.length) {
+            container.innerHTML = '<p class="dash-cal-empty">Sin eventos para hoy</p>';
+            return;
+        }
+
+        const colors = ['', '--tertiary', '--primary'];
+        container.innerHTML = todayEvents.slice(0, 4).map((ev, i) => {
+            const time = ev.start?.includes('T') ? ev.start.split('T')[1].substring(0, 5) : '';
+            const colorCls = colors[i % colors.length];
+            return `
+            <div class="dash-cal-event${colorCls}">
+                <p class="dash-cal-event-time">${time || '—'}</p>
+                <div>
+                    <p class="dash-cal-event-title">${ev.title || 'Evento'}</p>
+                    ${ev.location ? `<p class="dash-cal-event-sub">${ev.location}</p>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    renderCleaning(cleaningData) {
+        const container = document.getElementById('dash-cleaning-list');
+        if (!container) return;
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const tasks = cleaningData.filter(t => t.fecha_programada?.startsWith(todayStr));
+
+        if (!tasks.length) {
+            container.innerHTML = '<p class="dash-empty-msg">Sin tareas de limpieza hoy</p>';
+            return;
+        }
+
+        container.innerHTML = tasks.slice(0, 6).map(task => {
+            const memberName = task.member_nombre || '?';
+            const avatarColor = task.member_color || '#4d8eff';
+            const memberColor = this.getMemberAccentColor(memberName);
+            const checked = task.completada;
+            return `
+            <div class="dash-clean-task">
+                <div class="dash-clean-task-left">
+                    <div class="dash-clean-avatar" style="background:${avatarColor}; border-color:${avatarColor}40">
+                        ${memberName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <p class="dash-clean-name">${task.task_nombre}</p>
+                        <p class="dash-clean-member" style="color:${memberColor}">${memberName.toUpperCase()}</p>
+                    </div>
+                </div>
+                <button class="dash-clean-check${checked ? ' done' : ''}"
+                        onclick="dashboardManager.toggleCleaningTask(${task.id}, ${!checked})">
+                    <span class="material-symbols-outlined" style="font-variation-settings:'FILL' ${checked ? 1 : 0}">
+                        ${checked ? 'check_circle' : 'radio_button_unchecked'}
+                    </span>
+                </button>
+            </div>`;
+        }).join('');
+    }
+
+    getMemberAccentColor(name) {
+        const map = {
+            'papá':   '#adc6ff', 'papa': '#adc6ff',
+            'mamá':   '#4cd7f6', 'mama': '#4cd7f6',
+            'abuelo': '#d0bcff',
         };
-        return icons[meal] || 'utensils';
+        return map[name.toLowerCase()] || '#adc6ff';
     }
 
-    formatMealName(meal) {
-        const names = {
-            'desayuno': 'Desayuno',
-            'comida': 'Comida',
-            'almuerzo': 'Almuerzo',
-            'merienda': 'Merienda',
-            'cena': 'Cena'
-        };
-        return names[meal] || meal.charAt(0).toUpperCase() + meal.slice(1);
-    }
-
-    updateCleaningSection(cleaningData) {
-        const cleaningContent = document.querySelector('.cleaning-tasks-content');
-        if (!cleaningContent) return;
-
-        // Obtener tareas de hoy
-        const today = new Date().toISOString().split('T')[0];
-        const todayTasks = cleaningData.filter(task => 
-            task.fecha_programada && task.fecha_programada.startsWith(today)
-        );
-
-        // Actualizar contenido sin encabezado duplicado
-        cleaningContent.innerHTML = '';
-
-        if (todayTasks.length === 0) {
-            cleaningContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay tareas de limpieza para hoy</p>';
-            return;
-        }
-
-        // Agrupar tareas por área
-        const tasksByArea = {};
-        todayTasks.forEach(task => {
-            if (!tasksByArea[task.area]) {
-                tasksByArea[task.area] = [];
-            }
-            tasksByArea[task.area].push(task);
-        });
-
-        // Mostrar tareas por área
-        Object.entries(tasksByArea).forEach(([area, tasks]) => {
-            const areaSection = document.createElement('div');
-            areaSection.className = 'cleaning-area-section';
-            
-            areaSection.innerHTML = `
-                <div class="area-header">
-                    <h4 style="margin: 0 0 10px 0; color: var(--text-secondary); text-transform: capitalize;">${area}</h4>
-                </div>
-                <div class="tasks-list">
-                    ${tasks.map(task => `
-                        <div class="cleaning-task ${task.completada ? 'completed' : ''}">
-                            <input type="checkbox" ${task.completada ? 'checked' : ''} 
-                                   onchange="dashboardManager.toggleCleaningTask(${task.id}, this.checked)">
-                            <div class="task-info">
-                                <div class="task-name">${task.task_nombre}</div>
-                                <div class="task-details">
-                                    <span class="task-duration">${task.duracion_minutos || 0} min</span>
-                                    ${task.member_nombre ? `<span class="task-member">• ${task.member_nombre}</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            cleaningContent.appendChild(areaSection);
-        });
-
-        // Re-inicializar icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    }
-
-    updateCalendarSection(calendarData) {
-        const calendarGrid = document.getElementById('calendarWeekGrid');
-        if (!calendarGrid) return;
-
-        const events = calendarData.events || [];
-        const today = new Date();
-        
-        // Obtener el inicio de la semana actual (lunes)
-        const currentWeek = new Date(today);
-        const dayOfWeek = today.getDay();
-        const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-        const monday = new Date(today.setDate(diff));
-        
-        // Actualizar display de la semana
-        const weekDisplay = document.getElementById('calendarWeekDisplay');
-        if (weekDisplay) {
-            const sunday = new Date(monday);
-            sunday.setDate(sunday.getDate() + 6);
-            const startStr = monday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-            const endStr = sunday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-            weekDisplay.textContent = `${startStr} - ${endStr}`;
-        }
-
-        // Limpiar grid
-        calendarGrid.innerHTML = '';
-
-        // Crear días de la semana
-        const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        const dayKeys = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-
-        for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(monday);
-            currentDay.setDate(monday.getDate() + i);
-            const dayKey = dayKeys[i];
-            const dayDate = currentDay.toISOString().split('T')[0];
-            
-            // Crear columna del día
-            const dayColumn = document.createElement('div');
-            dayColumn.className = 'calendar-day-column';
-            
-            // Header del día
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'calendar-day-header';
-            const isToday = dayDate === today.toISOString().split('T')[0];
-            dayHeader.innerHTML = `
-                ${dayNames[i]}
-                ${isToday ? ' 📅' : ''}
-            `;
-            dayColumn.appendChild(dayHeader);
-            
-            // Filtrar eventos para este día según el filtro actual
-            const dayEvents = events.filter(event => {
-                const matchesDay = event.start && event.start.startsWith(dayDate);
-                const matchesFilter = this.currentCalendarFilter === 'all' || 
-                                  this.getEventType(event) === this.currentCalendarFilter;
-                return matchesDay && matchesFilter;
-            });
-            
-            // Renderizar eventos del día
-            dayEvents.forEach(event => {
-                const eventItem = document.createElement('div');
-                eventItem.className = `calendar-event-item ${this.getEventType(event)}`;
-                
-                const startTime = event.start ? event.start.split('T')[1].substring(0, 5) : '';
-                const eventIcon = this.getEventIcon(event);
-                
-                eventItem.innerHTML = `
-                    <div style="font-size: 0.7rem; color: var(--text-muted);">${startTime}</div>
-                    <div>${eventIcon} ${event.title}</div>
-                `;
-                
-                dayColumn.appendChild(eventItem);
-            });
-            
-            calendarGrid.appendChild(dayColumn);
-        }
-
-        // Configurar navegación y filtros
-        this.setupCalendarNavigation(monday);
-        this.setupCalendarFilters();
-    }
-
-    setupCalendarFilters() {
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Actualizar botón activo
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
-                // Actualizar filtro
-                this.currentCalendarFilter = button.dataset.filter;
-                
-                // Recargar calendario con el nuevo filtro
-                this.loadCalendarWeek(this.getCurrentMonday());
-            });
-        });
-    }
-
-    getCurrentMonday() {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-        return new Date(today.setDate(diff));
-    }
-
-    setupCalendarNavigation(currentMonday) {
-        const prevBtn = document.getElementById('prevWeekBtn');
-        const nextBtn = document.getElementById('nextWeekBtn');
-        const todayBtn = document.getElementById('todayWeekBtn');
-        
-        if (prevBtn) {
-            prevBtn.onclick = () => {
-                const prevWeek = new Date(currentMonday);
-                prevWeek.setDate(prevWeek.getDate() - 7);
-                this.loadCalendarWeek(prevWeek);
-            };
-        }
-        
-        if (nextBtn) {
-            nextBtn.onclick = () => {
-                const nextWeek = new Date(currentMonday);
-                nextWeek.setDate(nextWeek.getDate() + 7);
-                this.loadCalendarWeek(nextWeek);
-            };
-        }
-        
-        if (todayBtn) {
-            todayBtn.onclick = () => {
-                const today = new Date();
-                const monday = new Date(today);
-                const dayOfWeek = today.getDay();
-                const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-                monday.setDate(diff);
-                this.loadCalendarWeek(monday);
-            };
-        }
-    }
-
-    async loadCalendarWeek(monday) {
-        try {
-            const sunday = new Date(monday);
-            sunday.setDate(sunday.getDate() + 6);
-            
-            const result = await api.get(`/api/calendar/week?start=${monday.toISOString().split('T')[0]}&end=${sunday.toISOString().split('T')[0]}`);
-            if (result.success) {
-                this.updateCalendarSection(result.data);
-            }
-        } catch (error) {
-            console.error('Error cargando semana del calendario:', error);
-        }
-    }
-
-    getEventType(event) {
-        // Determinar el tipo de evento basado en el título o fuente
-        const title = (event.title || '').toLowerCase();
-        const source = (event.source || '').toLowerCase();
-        
-        if (source.includes('google') || title.includes('reunión') || title.includes('cita') || title.includes('meeting')) {
-            return 'google';
-        } else if (title.includes('tarea') || title.includes('limpieza') || title.includes('limpiar') || title.includes('cleaning')) {
-            return 'tareas';
-        } else if (title.includes('menú') || title.includes('comida') || title.includes('cena') || title.includes('almuerzo')) {
-            return 'menu';
+    renderStatCards(familyData, menuData, cleaningData, calendarData) {
+        // Menú de Hoy
+        const menuEl = document.getElementById('dash-stat-menu-value');
+        const menuTypeEl = document.getElementById('dash-stat-menu-type');
+        if (menuData?.menu_data) {
+            try {
+                const parsed = typeof menuData.menu_data === 'string'
+                    ? JSON.parse(menuData.menu_data) : menuData.menu_data;
+                const dayNames = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
+                const today = dayNames[new Date().getDay()];
+                const day = parsed.menu_adultos?.[today] || parsed.menu_ninos?.[today] || {};
+                const firstMeal = Object.values(day)[0];
+                if (menuEl && firstMeal?.plato) {
+                    menuEl.textContent = firstMeal.plato.split(' ').slice(0, 3).join(' ');
+                }
+                if (menuTypeEl) {
+                    const mealKey = Object.keys(day)[0] || '';
+                    const names = { desayuno: 'Desayuno', almuerzo: 'Almuerzo Familiar', merienda: 'Merienda', cena: 'Cena' };
+                    menuTypeEl.textContent = names[mealKey] || 'Menú del día';
+                }
+            } catch { /* ignore */ }
         } else {
-            return 'otros';
+            if (menuEl) menuEl.textContent = 'Sin menú';
+            if (menuTypeEl) menuTypeEl.textContent = '—';
+        }
+
+        // Tareas Pendientes
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayTasks = cleaningData.filter(t => t.fecha_programada?.startsWith(todayStr));
+        const pending = todayTasks.filter(t => !t.completada).length;
+        const total = todayTasks.length;
+        const pct = total > 0 ? Math.round((total - pending) / total * 100) : 0;
+        const tasksEl = document.getElementById('dash-stat-tasks-count');
+        const tasksBar = document.getElementById('dash-stat-tasks-bar');
+        if (tasksEl) tasksEl.textContent = pending;
+        if (tasksBar) tasksBar.style.width = `${pct}%`;
+
+        // Próximo Evento
+        const evEl = document.getElementById('dash-stat-event-value');
+        const evTime = document.getElementById('dash-stat-event-time');
+        const events = (calendarData?.events || []).filter(e => {
+            const d = e.start?.split('T')[0];
+            return d >= todayStr;
+        }).sort((a, b) => a.start > b.start ? 1 : -1);
+        if (events.length && evEl) {
+            evEl.textContent = events[0].title || 'Evento';
+            const time = events[0].start?.includes('T')
+                ? events[0].start.split('T')[1].substring(0, 5) : '—';
+            if (evTime) evTime.textContent = time + (events[0].location ? ` · ${events[0].location}` : '');
+        } else {
+            if (evEl) evEl.textContent = 'Sin eventos';
+            if (evTime) evTime.textContent = '—';
+        }
+
+        // Lista de Compras
+        const shopEl = document.getElementById('dash-stat-shopping-count');
+        if (shopEl && menuData?.lista_compra) {
+            try {
+                const list = typeof menuData.lista_compra === 'string'
+                    ? JSON.parse(menuData.lista_compra) : menuData.lista_compra;
+                let count = 0;
+                Object.values(list).forEach(cat => {
+                    if (Array.isArray(cat)) count += cat.length;
+                    else if (cat.items) count += cat.items.length;
+                });
+                shopEl.textContent = count;
+            } catch { shopEl.textContent = '—'; }
         }
     }
 
-    getEventIcon(event) {
-        const eventType = this.getEventType(event);
-        const icons = {
-            'google': '📅',
-            'tareas': '🧹',
-            'menu': '🍽️',
-            'otros': '📌'
-        };
-        return icons[eventType] || '📌';
-    }
+    // ─── Calendar navigation ─────────────────────────────────────────────
 
-    setupEventFilters() {
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        const eventsContainer = document.querySelector('.events-container');
-        
-        if (!filterButtons.length || !eventsContainer) return;
-        
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Actualizar botón activo
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
-                // Filtrar eventos
-                const filter = button.dataset.filter;
-                const allEvents = eventsContainer.querySelectorAll('.calendar-event');
-                
-                allEvents.forEach(event => {
-                    if (filter === 'all') {
-                        event.style.display = 'block';
-                    } else {
-                        const eventType = event.dataset.eventType;
-                        event.style.display = eventType === filter ? 'block' : 'none';
-                    }
-                });
-            });
+    setupCalendarNav() {
+        document.getElementById('dashCalPrev')?.addEventListener('click', () => {
+            this.currentCalendarMonday = new Date(this.currentCalendarMonday.getTime() - 7 * 86400000);
+            this.refreshCalendar();
+        });
+        document.getElementById('dashCalNext')?.addEventListener('click', () => {
+            this.currentCalendarMonday = new Date(this.currentCalendarMonday.getTime() + 7 * 86400000);
+            this.refreshCalendar();
         });
     }
 
-    updateStatCards(familyData, menuData, cleaningData, calendarData) {
-        // Actualizar stat cards con datos reales
-        const menuCard = document.querySelector('.stat-card:nth-child(1) .stat-value');
-        const shoppingCard = document.querySelector('.stat-card:nth-child(2) .stat-value');
-        const cleaningCard = document.querySelector('.stat-card:nth-child(3) .stat-value');
-        const eventsCard = document.querySelector('.stat-card:nth-child(4) .stat-value');
-
-        // Menú - Plato principal del día
-        if (menuData && menuData.menu_data) {
-            try {
-                const menuParsed = typeof menuData.menu_data === 'string' 
-                    ? JSON.parse(menuData.menu_data) 
-                    : menuData.menu_data;
-                
-                // Obtener el día actual (igual que en updateMenuSection)
-                const today = new Date();
-                const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-                const currentDay = dayNames[today.getDay()];
-                
-                // Buscar en menu_adultos primero
-                let dayMenu = menuParsed.menu_adultos?.[currentDay];
-                if (!dayMenu) {
-                    dayMenu = menuParsed.menu_ninos?.[currentDay];
-                }
-                
-                if (dayMenu) {
-                    // Obtener la primera comida disponible
-                    const meals = Object.keys(dayMenu);
-                    if (meals.length > 0) {
-                        const firstMeal = meals[0];
-                        const plateName = dayMenu[firstMeal]?.plato || 'Sin menú';
-                        if (menuCard) menuCard.textContent = plateName.split(' ').slice(0, 3).join(' '); // Primeras 3 palabras
-                    }
-                } else {
-                    // Si no hay menú para hoy, mostrar mensaje
-                    if (menuCard) menuCard.textContent = 'Sin menú hoy';
-                }
-            } catch (error) {
-                console.error('Error actualizando stat card de menú:', error);
-                if (menuCard) menuCard.textContent = 'Error';
-            }
-        }
-
-        // Compras - Contar items de la lista de compras
-        if (menuData && menuData.lista_compra) {
-            try {
-                let shoppingList = typeof menuData.lista_compra === 'string' 
-                    ? JSON.parse(menuData.lista_compra) 
-                    : menuData.lista_compra;
-                
-                let totalItems = 0;
-                if (shoppingList && typeof shoppingList === 'object') {
-                    // Si es un objeto con categorías
-                    Object.values(shoppingList).forEach(category => {
-                        if (Array.isArray(category)) {
-                            totalItems += category.length;
-                        } else if (category.items && Array.isArray(category.items)) {
-                            totalItems += category.items.length;
-                        }
-                    });
-                }
-                
-                if (shoppingCard) shoppingCard.textContent = `${totalItems} items`;
-            } catch (error) {
-                console.error('Error actualizando stat card de compras:', error);
-            }
-        }
-
-        // Limpieza - Tareas de hoy completadas/total
-        const today = new Date().toISOString().split('T')[0];
-        const todayCleaningTasks = cleaningData.filter(task => 
-            task.fecha_programada && task.fecha_programada.startsWith(today)
-        );
-        const completedTasks = todayCleaningTasks.filter(task => task.completada).length;
-        if (cleaningCard) cleaningCard.textContent = `${completedTasks}/${todayCleaningTasks.length}`;
-
-        // Eventos - Eventos de hoy
-        const todayEvents = calendarData.events ? calendarData.events.filter(event => 
-            event.start && event.start.startsWith(today)
-        ) : [];
-        if (eventsCard) eventsCard.textContent = `${todayEvents.length} hoy`;
+    async refreshCalendar() {
+        const data = await this.fetchCalendarEvents(this.currentCalendarMonday);
+        this.renderCalendar(data, this.currentCalendarMonday);
     }
+
+    // ─── Cleaning toggle ─────────────────────────────────────────────────
 
     async toggleCleaningTask(taskId, completed) {
         try {
-            const response = await api.put(`/api/cleaning/schedule/${taskId}/complete`, {
-                completed: completed,
-                completed_by: 1
-            });
-
-            if (response.success !== false) {
-                // Recargar datos de limpieza
-                const cleaningData = await this.fetchCleaningSchedule();
-                this.updateCleaningSection(cleaningData);
-            }
-        } catch (error) {
-            console.error('Error actualizando tarea:', error);
-            this.showError('Error al actualizar tarea');
+            await api.put(`/api/cleaning/schedule/${taskId}/complete`, { completed, completed_by: 1 });
+            const data = await this.fetchCleaningSchedule();
+            this.renderCleaning(data);
+            const calData = await this.fetchCalendarEvents(this.currentCalendarMonday);
+            const menuData = await this.fetchCurrentMenu();
+            this.renderStatCards([], menuData, data, calData);
+        } catch (err) {
+            console.error('Error toggling task:', err);
         }
     }
 
-    getTaskIcon(area) {
-        const icons = {
-            'cocina': 'utensils',
-            'bano': 'bath',
-            'salon': 'sofa',
-            'dormitorio': 'bed',
-            'general': 'home',
-            'exterior': 'sun',
-            'mascotas': 'heart'
-        };
-        return icons[area] || 'check-circle';
-    }
+    // ─── Daily refresh ────────────────────────────────────────────────────
 
-    getMemberColor(memberName) {
-        const colors = {
-            'Papá': '#0066FF',
-            'Mamá': '#FF6B35',
-            'Abuelo': '#9B59B6',
-            'María': '#D4AF37',
-            'Lucía': '#10B981'
-        };
-        return colors[memberName] || '#4A90E2';
-    }
-
-    getEventColorClass(color) {
-        if (color.includes('D4AF37') || color.includes('FFD700')) return 'gold';
-        if (color.includes('FF6B35') || color.includes('FFA500')) return 'orange';
-        return '';
-    }
-
-    showError(message) {
-        // Implementar notificación de error
-        console.error(message);
-        // TODO: Mostrar toast o notificación visual
-    }
-
-    updateCurrentDate() {
+    setupDailyRefresh() {
         const now = new Date();
-        const options = { weekday: 'long', day: 'numeric', month: 'long' };
-        const formattedDate = now.toLocaleDateString('es-ES', options);
-        
-        const dateElement = document.getElementById('currentDate');
-        if (dateElement) {
-            const capitalized = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
-            dateElement.textContent = capitalized;
-        }
-        
-        const currentDayName = this.daysOfWeek[now.getDay()];
-        this.updateDayDisplays(currentDayName);
-    }
-
-    updateDayDisplays(dayName) {
-        const elements = ['menuCurrentDay', 'cleaningCurrentDay', 'calendarCurrentDay'];
-        elements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = dayName;
-            }
-        });
-    }
-
-    setupEventListeners() {
-        window.dashboardManager = this;
-    }
-
-    setupDayTabs() {
-        const menuTabs = document.querySelectorAll('#dashboard .day-tab');
-        menuTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const parent = e.target.closest('.dashboard-card, .calendar-section');
-                if (parent) {
-                    parent.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
-                    e.target.classList.add('active');
-                }
-            });
-        });
-    }
-
-    updateShoppingListSection(menuData) {
-        const shoppingContent = document.querySelector('.shopping-list-content');
-        if (!shoppingContent) return;
-
-        if (!menuData || !menuData.lista_compra) {
-            shoppingContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay lista de compras disponible</p>';
-            return;
-        }
-
-        // Parsear lista de compras
-        let shoppingList;
-        try {
-            shoppingList = typeof menuData.lista_compra === 'string' 
-                ? JSON.parse(menuData.lista_compra) 
-                : menuData.lista_compra;
-        } catch (error) {
-            console.error('Error parseando shopping list:', error);
-            shoppingContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Error cargando lista de compras</p>';
-            return;
-        }
-
-        console.log('🛒 Shopping list parsed:', shoppingList);
-
-        shoppingContent.innerHTML = '';
-        
-        if (!shoppingList || typeof shoppingList !== 'object') {
-            shoppingContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Lista de compras vacía</p>';
-            return;
-        }
-        
-        // Procesar diferentes formatos de lista de compras
-        let totalItems = 0;
-        
-        Object.entries(shoppingList).forEach(([categoryName, categoryData]) => {
-            const categoryElement = document.createElement('div');
-            categoryElement.className = 'shopping-category';
-            
-            let items = [];
-            let completedItems = 0;
-            
-            if (Array.isArray(categoryData)) {
-                // Formato simple: array de strings
-                items = categoryData.map(item => ({
-                    item: typeof item === 'string' ? item : item.item || item,
-                    completed: false,
-                    quantity: ''
-                }));
-            } else if (categoryData.items && Array.isArray(categoryData.items)) {
-                // Formato con objeto items
-                items = categoryData.items.map(item => ({
-                    item: item.item || item,
-                    completed: item.completed || false,
-                    quantity: item.quantity || ''
-                }));
-            }
-            
-            completedItems = items.filter(item => item.completed).length;
-            totalItems += items.length;
-            
-            if (items.length === 0) return; // Skip categorías vacías
-            
-            categoryElement.innerHTML = `
-                <div class="category-header">
-                    <span class="category-title">${categoryName} (${completedItems}/${items.length})</span>
-                    <i data-lucide="chevron-down"></i>
-                </div>
-                <div class="category-items">
-                    ${items.map(item => `
-                        <div class="shopping-item ${item.completed ? 'completed' : ''}">
-                            <input type="checkbox" ${item.completed ? 'checked' : ''} 
-                                   onchange="dashboardManager.toggleShoppingItem('${categoryName}', '${item.item}', this.checked)">
-                            <span>${item.item}${item.quantity ? ` (${item.quantity})` : ''}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            shoppingContent.appendChild(categoryElement);
-        });
-
-        if (totalItems === 0) {
-            shoppingContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Lista de compras vacía</p>';
-            return;
-        }
-
-        // Actualizar progress bar
-        this.updateShoppingProgressFromData(shoppingList);
-
-        // Setup event listeners para categorías
-        this.setupShoppingList();
-
-        // Re-inicializar icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    }
-
-    updateShoppingProgressFromData(shoppingList) {
-        let totalItems = 0;
-        let completedItems = 0;
-        
-        // Manejar diferentes formatos de shoppingList
-        if (Array.isArray(shoppingList)) {
-            // Formato antiguo: array de categorías
-            totalItems = shoppingList.reduce((sum, category) => sum + category.items.length, 0);
-            completedItems = shoppingList.reduce((sum, category) => 
-                sum + category.items.filter(item => item.completed).length, 0);
-        } else if (shoppingList && typeof shoppingList === 'object') {
-            // Formato nuevo: objeto con categorías
-            Object.values(shoppingList).forEach(category => {
-                if (Array.isArray(category)) {
-                    // Array simple de items
-                    totalItems += category.length;
-                    completedItems += category.filter(item => item.completed).length;
-                } else if (category.items && Array.isArray(category.items)) {
-                    // Objeto con propiedad items
-                    totalItems += category.items.length;
-                    completedItems += category.items.filter(item => item.completed).length;
-                }
-            });
-        }
-        
-        const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-
-        const progressText = document.querySelector('.shopping-list-content .progress-text');
-        const progressPercent = document.querySelector('.shopping-list-content .progress-percent');
-        const progressBar = document.querySelector('.shopping-list-content .progress-fill');
-
-        if (progressText) progressText.textContent = `${completedItems} de ${totalItems}`;
-        if (progressPercent) progressPercent.textContent = `${percentage}%`;
-        if (progressBar) progressBar.style.width = `${percentage}%`;
-    }
-
-    async toggleShoppingItem(category, item, completed) {
-        try {
-            // TODO: Implementar API para actualizar items de la lista de compras
-            console.log(`Toggle shopping item: ${category} - ${item} = ${completed}`);
-            
-            // Por ahora, solo actualizar visualmente
-            const shoppingData = await this.fetchCurrentMenu();
-            if (shoppingData) {
-                this.updateShoppingListSection(shoppingData);
-            }
-        } catch (error) {
-            console.error('Error actualizando item de compra:', error);
-            this.showError('Error al actualizar item de compra');
-        }
-    }
-
-    setupShoppingList() {
-        const categoryHeaders = document.querySelectorAll('.category-header');
-        categoryHeaders.forEach(header => {
-            header.addEventListener('click', (e) => {
-                const category = e.target.closest('.shopping-category');
-                const items = category.querySelector('.category-items');
-                const icon = category.querySelector('.category-header i[data-lucide]');
-                
-                if (items.style.display === 'none') {
-                    items.style.display = 'block';
-                    if (icon) icon.setAttribute('data-lucide', 'chevron-down');
-                } else {
-                    items.style.display = 'none';
-                    if (icon) icon.setAttribute('data-lucide', 'chevron-right');
-                }
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            });
-        });
-    }
-
-    updateShoppingProgress() {
-        const checkboxes = document.querySelectorAll('.shopping-item input[type="checkbox"]');
-        const checked = document.querySelectorAll('.shopping-item input[type="checkbox"]:checked');
-        const total = checkboxes.length;
-        const completed = checked.length;
-        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-        const progressText = document.querySelector('.shopping-list-content .progress-text');
-        const progressPercent = document.querySelector('.shopping-list-content .progress-percent');
-        const progressBar = document.querySelector('.shopping-list-content .progress-fill');
-
-        if (progressText) progressText.textContent = `${completed} de ${total}`;
-        if (progressPercent) progressPercent.textContent = `${percentage}%`;
-        if (progressBar) progressBar.style.width = `${percentage}%`;
-    }
-
-    updateCleaningProgress(tasks = null) {
-        if (!tasks) {
-            const checkboxes = document.querySelectorAll('.cleaning-task input[type="checkbox"]');
-            const checked = document.querySelectorAll('.cleaning-task input[type="checkbox"]:checked');
-            const total = checkboxes.length;
-            const completed = checked.length;
-            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-            const progressText = document.querySelector('.cleaning-tasks-content .progress-text');
-            const progressPercent = document.querySelector('.cleaning-tasks-content .progress-percent');
-            const progressBar = document.querySelector('.cleaning-tasks-content .progress-fill');
-
-            if (progressText) progressText.textContent = `${completed} de ${total}`;
-            if (progressPercent) progressPercent.textContent = `${percentage}%`;
-            if (progressBar) progressBar.style.width = `${percentage}%`;
-        } else {
-            const completed = tasks.filter(task => task.completada).length;
-            const total = tasks.length;
-            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-            const progressText = document.querySelector('.cleaning-tasks-content .progress-text');
-            const progressPercent = document.querySelector('.cleaning-tasks-content .progress-percent');
-            const progressBar = document.querySelector('.cleaning-tasks-content .progress-fill');
-
-            if (progressText) progressText.textContent = `${completed} de ${total}`;
-            if (progressPercent) progressPercent.textContent = `${percentage}%`;
-            if (progressBar) progressBar.style.width = `${percentage}%`;
-        }
-    }
-
-    // Navigation methods
-    previousMenuDay() {
-        this.currentMenuDay = (this.currentMenuDay - 1 + 7) % 7;
-        this.updateMenuDay();
-    }
-
-    nextMenuDay() {
-        this.currentMenuDay = (this.currentMenuDay + 1) % 7;
-        this.updateMenuDay();
-    }
-
-    previousCalendarDay() {
-        this.currentCalendarDay = (this.currentCalendarDay - 1 + 7) % 7;
-        this.updateCalendarDay();
-    }
-
-    nextCalendarDay() {
-        this.currentCalendarDay = (this.currentCalendarDay + 1) % 7;
-        this.updateCalendarDay();
-    }
-
-    updateMenuDay() {
-        const dayName = this.daysOfWeek[this.currentMenuDay];
-        const menuCurrentDay = document.getElementById('menuCurrentDay');
-        if (menuCurrentDay) {
-            menuCurrentDay.textContent = dayName;
-        }
-        
-        const menuCard = document.querySelector('.dashboard-card');
-        if (menuCard) {
-            const tabs = menuCard.querySelectorAll('.day-tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
-            const activeTab = menuCard.querySelector(`.day-tab[data-day="${this.getDayShort(this.currentMenuDay)}"]`);
-            if (activeTab) activeTab.classList.add('active');
-        }
-        
-        // Recargar menú para el nuevo día
-        this.fetchCurrentMenu().then(menuData => {
-            this.updateMenuSection(menuData);
-        });
-    }
-
-    updateCalendarDay() {
-        const dayName = this.daysOfWeek[this.currentCalendarDay];
-        const calendarCurrentDay = document.getElementById('calendarCurrentDay');
-        if (calendarCurrentDay) {
-            calendarCurrentDay.textContent = dayName;
-        }
-        
-        const calendarSection = document.querySelector('.calendar-section');
-        if (calendarSection) {
-            const tabs = calendarSection.querySelectorAll('.day-tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
-            const activeTab = calendarSection.querySelector(`.day-tab[data-day="${this.getDayShort(this.currentCalendarDay)}"]`);
-            if (activeTab) activeTab.classList.add('active');
-        }
-        
-        // Recargar eventos para el nuevo día
-        this.fetchCalendarEvents().then(calendarData => {
-            this.updateCalendarSection(calendarData);
-        });
-    }
-
-    getDayShort(dayIndex) {
-        const shorts = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'];
-        return shorts[dayIndex];
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 5, 0);
+        setTimeout(() => {
+            this.loadRealData();
+            this.setupDailyRefresh();
+        }, tomorrow - now);
     }
 }
 
-// Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new DashboardManager();
-});
+document.addEventListener('DOMContentLoaded', () => { new DashboardManager(); });

@@ -66,152 +66,157 @@
         <main class="main-content">
             <!-- Dashboard Section -->
             <section id="dashboard" class="module-section active">
-                <!-- Quick Stats Header -->
-                <div class="quick-stats-header glass-card fade-in">
-                    <div class="quick-stats-top">
-                        <div>
-                            <h1 class="dashboard-title">JAXo Command Center</h1>
-                            <p class="dashboard-date" id="currentDate">Domingo, 1 De Febrero</p>
-                        </div>
-                        <div class="family-avatars">
-                            <!-- Los avatares se cargarán dinámicamente -->
+
+                <!-- Page Header -->
+                <div class="dash-page-header">
+                    <div>
+                        <h1 class="dash-page-title">Dashboard</h1>
+                        <p class="dash-page-date" id="currentDate">—</p>
+                    </div>
+                    <div class="family-avatars" id="dash-family-avatars"></div>
+                </div>
+
+                <!-- Quick Stats Row -->
+                <div class="dash-stats-row">
+                    <!-- Menú de Hoy -->
+                    <div class="dash-stat-card dash-stat-card--primary fade-in stagger-1">
+                        <p class="dash-stat-label">Menú de Hoy</p>
+                        <h3 class="dash-stat-value" id="dash-stat-menu-value">—</h3>
+                        <div class="dash-stat-sub dash-stat-sub--secondary">
+                            <span class="material-symbols-outlined" style="font-size:18px;">restaurant</span>
+                            <span id="dash-stat-menu-type">Cargando...</span>
                         </div>
                     </div>
-                    
-                    <!-- Stat Cards -->
-                    <div class="stats-grid">
-                        <div class="stat-card fade-in stagger-1">
-                            <div class="stat-icon" style="background: rgba(77, 142, 255, 0.15); color: #adc6ff;">
-                                <i data-lucide="utensils"></i>
-                            </div>
-                            <div class="stat-value">Paella</div>
-                            <div class="stat-label">Menú</div>
+                    <!-- Tareas Pendientes -->
+                    <div class="dash-stat-card fade-in stagger-2">
+                        <p class="dash-stat-label">Tareas Pendientes</p>
+                        <div class="dash-stat-numeric">
+                            <span class="dash-stat-number dash-stat-number--secondary" id="dash-stat-tasks-count">—</span>
+                            <span class="dash-stat-unit">activas</span>
                         </div>
-                        <div class="stat-card fade-in stagger-2">
-                            <div class="stat-icon" style="background: rgba(76, 215, 246, 0.15); color: #4cd7f6;">
-                                <i data-lucide="shopping-cart"></i>
-                            </div>
-                            <div class="stat-value">8 items</div>
-                            <div class="stat-label">Compras</div>
+                        <div class="dash-mini-progress">
+                            <div class="dash-mini-bar" id="dash-stat-tasks-bar" style="width:0%"></div>
                         </div>
-                        <div class="stat-card fade-in stagger-3">
-                            <div class="stat-icon" style="background: rgba(160, 120, 255, 0.15); color: #d0bcff;">
-                                <i data-lucide="star"></i>
-                            </div>
-                            <div class="stat-value">2/4</div>
-                            <div class="stat-label">Limpieza</div>
+                    </div>
+                    <!-- Próximo Evento -->
+                    <div class="dash-stat-card fade-in stagger-3">
+                        <p class="dash-stat-label">Próximo Evento</p>
+                        <h3 class="dash-stat-value" id="dash-stat-event-value">—</h3>
+                        <div class="dash-stat-sub dash-stat-sub--tertiary">
+                            <span class="material-symbols-outlined" style="font-size:18px;">schedule</span>
+                            <span id="dash-stat-event-time">—</span>
                         </div>
-                        <div class="stat-card fade-in stagger-4">
-                            <div class="stat-icon" style="background: rgba(77, 142, 255, 0.15); color: #adc6ff;">
-                                <i data-lucide="calendar"></i>
-                            </div>
-                            <div class="stat-value">2 hoy</div>
-                            <div class="stat-label">Eventos</div>
+                    </div>
+                    <!-- Lista de Compras -->
+                    <div class="dash-stat-card fade-in stagger-4">
+                        <p class="dash-stat-label">Lista de Compras</p>
+                        <div class="dash-stat-numeric">
+                            <span class="dash-stat-number" id="dash-stat-shopping-count">—</span>
+                            <span class="dash-stat-unit">artículos</span>
+                        </div>
+                        <div class="dash-stat-sub dash-stat-sub--primary">
+                            <span class="material-symbols-outlined" style="font-size:18px;">shopping_cart</span>
+                            <span>Ver detalles</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Main Dashboard Grid -->
-                <div class="dashboard-grid">
-                    <!-- Weekly Menu -->
-                    <div class="dashboard-card glass-card fade-in stagger-1">
-                        <div class="card-header">
-                            <h3>📅 Menú de Hoy</h3>
-                            <span class="current-day" id="menuCurrentDay"></span>
-                        </div>
-                        
-                        <div class="menu-content">
-                            <!-- El contenido del menú se cargará dinámicamente -->
-                        </div>
-                    </div>
+                <!-- Bento Grid: 3 + 6 + 3 columns -->
+                <div class="dash-bento">
 
-                    <!-- Shopping List -->
-                    <div class="dashboard-card glass-card fade-in stagger-2">
-                        <div class="card-header">
-                            <h3>🛒 Lista de Compras</h3>
-                        </div>
-                        
-                        <div class="progress-section">
-                            <div class="progress-info">
-                                <span class="progress-text">3 de 12</span>
-                                <span class="progress-percent">25%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill progress-yellow" style="width: 25%"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="shopping-list-content">
-                            <!-- La lista de compras se cargará dinámicamente -->
-                        </div>
-                    </div>
-
-                    <!-- Cleaning Tasks -->
-                    <div class="dashboard-card glass-card fade-in stagger-3">
-                        <div class="card-header">
-                            <h3>🧹 Tareas de Hoy</h3>
-                            <span class="current-day" id="cleaningCurrentDay"></span>
-                        </div>
-                        
-                        <div class="cleaning-tasks-content">
-                            <!-- Las tareas de limpieza se cargarán dinámicamente -->
-                        </div>
-                    </div>
-
-                    <!-- Calendar Events - Ocupa 3 espacios -->
-                    <div class="dashboard-card dashboard-card-large glass-card fade-in stagger-4">
-                        <div class="card-header">
-                            <div class="header-top">
-                                <h3>📅 Calendario Semanal</h3>
-                            </div>
-                            
-                            <!-- Calendar Filters -->
-                            <div class="calendar-filters">
-                                <div class="filter-buttons">
-                                    <button class="filter-btn active" data-filter="all" title="Todos los eventos">
-                                        <i data-lucide="calendar"></i>
-                                        <span>Todos</span>
-                                    </button>
-                                    <button class="filter-btn" data-filter="google" title="Google Calendar">
-                                        <i data-lucide="calendar-days"></i>
-                                        <span>Google</span>
-                                    </button>
-                                    <button class="filter-btn" data-filter="cleaning" title="Tareas de limpieza">
-                                        <i data-lucide="sparkles"></i>
-                                        <span>Limpieza</span>
-                                    </button>
-                                    <button class="filter-btn" data-filter="menu" title="Menú y comidas">
-                                        <i data-lucide="utensils"></i>
-                                        <span>Menú</span>
-                                    </button>
-                                    <button class="filter-btn" data-filter="otros" title="Otros eventos">
-                                        <i data-lucide="bookmark"></i>
-                                        <span>Otros</span>
-                                    </button>
+                    <!-- Left: Today's Meals -->
+                    <section class="dash-panel dash-panel--meals glass-card fade-in stagger-1">
+                        <h2 class="dash-panel-title">
+                            <span class="material-symbols-outlined">lunch_dining</span>
+                            Comidas
+                        </h2>
+                        <div class="dash-meals-list" id="dash-meals-content">
+                            <!-- skeleton rows -->
+                            <div class="dash-meal-row">
+                                <p class="dash-meal-label">DESAYUNO</p>
+                                <div class="dash-meal-item">
+                                    <div class="dash-meal-icon dash-meal-icon--primary">
+                                        <span class="material-symbols-outlined">breakfast_dining</span>
+                                    </div>
+                                    <div><p class="dash-meal-name">—</p></div>
                                 </div>
                             </div>
-                            
-                            <div class="header-bottom">
-                                <div class="calendar-nav-buttons">
-                                    <button class="nav-btn" id="prevWeekBtn">
-                                        <i data-lucide="chevron-left"></i>
-                                    </button>
-                                    <span class="week-display" id="calendarWeekDisplay">Semana actual</span>
-                                    <button class="nav-btn" id="nextWeekBtn">
-                                        <i data-lucide="chevron-right"></i>
-                                    </button>
-                                    <button class="nav-btn" id="todayWeekBtn">
-                                        <i data-lucide="calendar-days"></i>
-                                    </button>
+                            <div class="dash-meal-row">
+                                <p class="dash-meal-label dash-meal-label--secondary">ALMUERZO</p>
+                                <div class="dash-meal-item">
+                                    <div class="dash-meal-icon dash-meal-icon--secondary">
+                                        <span class="material-symbols-outlined">set_meal</span>
+                                    </div>
+                                    <div><p class="dash-meal-name">—</p></div>
+                                </div>
+                            </div>
+                            <div class="dash-meal-row">
+                                <p class="dash-meal-label">MERIENDA</p>
+                                <div class="dash-meal-item">
+                                    <div class="dash-meal-icon dash-meal-icon--tertiary">
+                                        <span class="material-symbols-outlined">nutrition</span>
+                                    </div>
+                                    <div><p class="dash-meal-name">—</p></div>
+                                </div>
+                            </div>
+                            <div class="dash-meal-row">
+                                <p class="dash-meal-label">CENA</p>
+                                <div class="dash-meal-item">
+                                    <div class="dash-meal-icon dash-meal-icon--muted">
+                                        <span class="material-symbols-outlined">egg_alt</span>
+                                    </div>
+                                    <div><p class="dash-meal-name">—</p></div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="calendar-week-grid" id="calendarWeekGrid">
-                            <!-- El calendario semanal se cargará dinámicamente -->
+                    </section>
+
+                    <!-- Center: Weekly Calendar -->
+                    <section class="dash-panel dash-panel--calendar glass-card fade-in stagger-2">
+                        <div class="dash-cal-header">
+                            <h2 class="dash-panel-title">
+                                <span class="material-symbols-outlined">calendar_month</span>
+                                Calendario Semanal
+                            </h2>
+                            <div class="dash-cal-nav">
+                                <button class="dash-cal-btn" id="dashCalPrev">
+                                    <span class="material-symbols-outlined">chevron_left</span>
+                                </button>
+                                <button class="dash-cal-btn" id="dashCalNext">
+                                    <span class="material-symbols-outlined">chevron_right</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
+
+                        <!-- Day labels -->
+                        <div class="dash-cal-day-labels">
+                            <span>Lun</span><span>Mar</span><span>Mié</span>
+                            <span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+                        </div>
+
+                        <!-- Day cells -->
+                        <div class="dash-cal-day-cells" id="dash-cal-days">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Events list -->
+                        <div class="dash-cal-events" id="dash-cal-events">
+                            <p class="dash-cal-empty">Sin eventos para hoy</p>
+                        </div>
+                    </section>
+
+                    <!-- Right: Cleaning Tasks -->
+                    <section class="dash-panel dash-panel--cleaning glass-card fade-in stagger-3">
+                        <h2 class="dash-panel-title">
+                            <span class="material-symbols-outlined">cleaning_services</span>
+                            Limpieza
+                        </h2>
+                        <div class="dash-cleaning-list" id="dash-cleaning-list">
+                            <p class="dash-empty-msg">Cargando tareas...</p>
+                        </div>
+                    </section>
+
+                </div><!-- /.dash-bento -->
             </section>
             
             <!-- Family Section -->
