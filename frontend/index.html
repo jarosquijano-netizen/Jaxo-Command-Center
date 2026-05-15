@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="css/main.css?v=20260515">
-    <link rel="stylesheet" href="css/barcelona-theme.css?v=20260515">
+    <link rel="stylesheet" href="css/main.css?v=20260516">
+    <link rel="stylesheet" href="css/barcelona-theme.css?v=20260516">
     <link rel="stylesheet" href="css/calendar.css?v=20260201">
 
     <!-- Lucide Icons -->
@@ -217,22 +217,38 @@
 
 </section>
             
-            <!-- Family Section -->
-            <section id="family" class="module-section">
-                <div class="content-header">
-                    <div>
-                        <h2>Perfiles Familiares</h2>
-                        <p class="subtitle">Gestiona los miembros de tu familia</p>
-                    </div>
-                    <button class="btn-primary" onclick="familyManager.showAddMemberForm()">
-                        <span class="material-symbols-outlined">person_add</span> Añadir Miembro
-                    </button>
-                </div>
-                
-                <div class="members-grid">
-                    <!-- Los miembros se cargarán dinámicamente -->
-                </div>
-            </section>
+<!-- Family Section -->
+<section id="family" class="module-section">
+
+    <!-- Page Header -->
+    <header class="fp-header">
+        <div>
+            <h1 class="fp-title">Perfiles de Familia</h1>
+            <p class="fp-subtitle">Gestiona las preferencias y habilidades de los miembros de tu hogar.</p>
+        </div>
+        <button class="fp-new-btn glass-card" onclick="familyManager.showAddMemberForm()">
+            <span class="material-symbols-outlined">add_circle</span>
+            <span>Nuevo Perfil</span>
+        </button>
+    </header>
+
+    <!-- Profile Bento Grid — rendered by JS -->
+    <div class="fp-grid" id="fp-grid">
+        <p class="fp-loading">Cargando perfiles...</p>
+    </div>
+
+    <!-- AI Insight Chip -->
+    <div class="fp-ai-chip glass-card" id="fp-ai-chip" style="display:none">
+        <div class="fp-ai-icon">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">psychology</span>
+        </div>
+        <div class="fp-ai-body">
+            <p class="fp-ai-label">Sugerencia AI de JAXo</p>
+            <p class="fp-ai-text" id="fp-ai-text">Analizando perfiles familiares...</p>
+        </div>
+    </div>
+
+</section>
             
             <!-- Cleaning Section -->
             <section id="cleaning" class="module-section">

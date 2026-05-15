@@ -42,94 +42,253 @@ class FamilyManager {
     // ============================================================
 
     render() {
-        const membersGrid = document.querySelector('#family .members-grid');
-        if (!membersGrid) return;
+        this.renderMembers();
+    }
 
-        if (this.members.length === 0) {
-            membersGrid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon"><span class="material-symbols-outlined" style="font-size:48px">family_restroom</span></div>
-                    <h3>No hay perfiles aún</h3>
-                    <p>Añade los miembros de tu familia para que la IA pueda generar menús personalizados.</p>
-                    <button class="btn-primary" onclick="familyManager.showAddMemberForm()">
-                        <i data-lucide="user-plus"></i> Añadir primer miembro
-                    </button>
-                </div>`;
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+    renderMembers() {
+        const grid = document.getElementById('fp-grid');
+        if (!grid) return;
+
+        const addBtn = `
+            <div class="fp-card-secondary glass-card" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:200px;border:2px dashed rgba(255,255,255,0.1) !important;background:transparent !important"
+                 onclick="familyManager.showAddMemberForm()">
+                <div style="text-align:center;color:var(--color-outline)">
+                    <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px">person_add</span>
+                    <p style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0">Añadir Miembro</p>
+                </div>
+            </div>`;
+
+        if (!this.members.length) {
+            grid.innerHTML = addBtn;
             return;
         }
 
-        membersGrid.innerHTML = this.members.map(m => this.renderMemberCard(m)).join('');
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        const adults  = this.members.filter(m => m.tipo === 'adulto');
+        const kids    = this.members.filter(m => m.tipo === 'nino' || m.tipo === 'niño');
+        const ordered = [...adults, ...kids];
+
+        const cards = ordered.map((m, i) => {
+            if (m.tipo === 'adulto' && i === 0) return this.renderHeroCard(m);
+            if (m.tipo === 'adulto') {
+                const isGuest = m.rol_hogar === 'invitado' || m.rol_hogar === 'empleado_hogar';
+                return isGuest ? this.renderSecondaryCard(m) : this.renderAdultCard(m);
+            }
+            if (m.tipo === 'nino' || m.tipo === 'niño') return this.renderKidCard(m, i);
+            return this.renderSecondaryCard(m);
+        });
+
+        grid.innerHTML = cards.join('') + addBtn;
+        this.renderAIChip();
     }
 
-    renderMemberCard(member) {
-        const completeness = this.calcCompleteness(member);
-        const isNino = member.tipo === 'nino';
-        const isEmpleado = member.rol_hogar === 'empleado_hogar';
-        const roleLabel = isEmpleado ? 'Empleado' : (isNino ? 'Niño/a' : 'Adulto/a');
-        const roleBadgeClass = isEmpleado ? 'badge-empleado' : (isNino ? 'badge-nino' : 'badge-adulto');
-
-        const completenessColor = completeness >= 80 ? '#10B981' : completeness >= 50 ? '#F59E0B' : '#EF4444';
-        const completenessLabel = completeness >= 80 ? 'Perfil completo' : completeness >= 50 ? 'Perfil parcial' : 'Perfil incompleto';
-
-        const allergiesHtml = member.alergias && member.alergias.length
-            ? member.alergias.slice(0, 3).map(a => `<span class="tag tag-alergia">${a}</span>`).join('')
-            : '';
-
-        const taskBadges = [
-            member.puede_cocinar ? 'cocina' : '',
-            member.puede_limpiar ? 'limpieza' : '',
-            member.puede_compras ? 'compras' : '',
-        ].filter(Boolean).join(' ');
+    renderHeroCard(m) {
+        const color = m.avatar_color || '#4d8eff';
+        const initial = (m.nombre || '?').charAt(0).toUpperCase();
+        const restrictions = m.alergias_restricciones
+            ? m.alergias_restricciones.split(',').map(r => r.trim()).filter(Boolean)
+            : [];
+        const rolLabel = m.rol_hogar === 'empleado_hogar' ? 'Empleado del Hogar'
+            : (m.tipo === 'adulto' ? 'Administrador de Hogar' : m.tipo);
+        const skillLevel = m.nivel_cocina || (m.puede_cocinar ? 'Básico' : '—');
 
         return `
-        <div class="member-card glass-card" data-id="${member.id}">
-            <div class="member-card-header">
-                <div class="member-avatar-wrap">
-                    <div class="member-avatar" style="background: ${member.avatar_color}">
-                        <span class="material-symbols-outlined" style="font-size:20px">${isNino ? 'child_care' : 'person'}</span>
+            <div class="fp-card-hero glass-card" data-id="${m.id}">
+                <div class="fp-avatar-wrap">
+                    <div class="fp-avatar-ring">
+                        <div class="fp-avatar-inner" style="background:${color}">${initial}</div>
                     </div>
-                    <div class="completeness-ring" title="${completenessLabel}: ${completeness}%"
-                         style="--pct:${completeness}; --color:${completenessColor}">
-                        <span>${completeness}%</span>
+                    ${m.tipo === 'adulto' ? `<span class="fp-avatar-badge">${m.nombre.split(' ')[0]}</span>` : ''}
+                </div>
+                <div class="fp-hero-info">
+                    <div class="fp-hero-top">
+                        <div>
+                            <h2 class="fp-member-name">${m.nombre}</h2>
+                            <p class="fp-member-role">${rolLabel}</p>
+                        </div>
+                        ${m.puede_cocinar ? `
+                        <div class="fp-skill-badge">
+                            <span class="material-symbols-outlined">skillet</span>
+                            <span>Nivel: ${skillLevel}</span>
+                        </div>` : ''}
+                    </div>
+                    <div class="fp-hero-details">
+                        <div class="fp-detail-box">
+                            <p class="fp-detail-label">Restricciones</p>
+                            ${restrictions.length
+                                ? restrictions.map(r => `<span class="fp-restriction-tag">${r}</span>`).join(' ')
+                                : `<p class="fp-detail-value" style="color:var(--color-outline)">Sin restricciones</p>`}
+                        </div>
+                        <div class="fp-detail-box">
+                            <p class="fp-detail-label">Especialidad</p>
+                            <p class="fp-detail-value">${m.especialidad || m.preferencias || 'General'}</p>
+                        </div>
+                    </div>
+                    <div class="fp-card-actions">
+                        <button class="fp-card-btn" onclick="familyManager.editMember(${m.id})">
+                            <span class="material-symbols-outlined">edit</span> Editar
+                        </button>
+                        <button class="fp-card-btn fp-card-btn--danger" onclick="familyManager.deleteMember(${m.id})">
+                            <span class="material-symbols-outlined">delete</span> Eliminar
+                        </button>
                     </div>
                 </div>
-                <div class="member-card-info">
-                    <h3>${member.nombre}</h3>
-                    <div class="member-meta">
-                        <span class="badge ${roleBadgeClass}">${roleLabel}</span>
-                        <span class="member-age">${member.edad} años</span>
-                    </div>
-                    ${taskBadges ? `<div class="task-badges">${taskBadges}</div>` : ''}
+            </div>`;
+    }
+
+    renderAdultCard(m) {
+        const color = m.avatar_color || '#4cd7f6';
+        const initial = (m.nombre || '?').charAt(0).toUpperCase();
+        const skillPct = m.nivel_cocina === 'Avanzado' ? 85
+            : m.nivel_cocina === 'Intermedio' ? 65
+            : m.nivel_cocina === 'Experto' ? 95
+            : m.puede_cocinar ? 40 : 20;
+        const skillLabel = m.nivel_cocina || (m.puede_cocinar ? 'Básico' : 'Aprendiz');
+        const tags = m.alergias_restricciones
+            ? m.alergias_restricciones.split(',').map(r => r.trim()).filter(Boolean)
+            : [];
+        const colorClass = color.includes('4cd7') || color.includes('00b') ? '--secondary' : '--primary';
+
+        return `
+            <div class="fp-card-adult glass-card" data-id="${m.id}">
+                <div class="fp-avatar-md fp-avatar-md${colorClass}">
+                    <div class="fp-avatar-md-inner" style="background:${color}">${initial}</div>
                 </div>
-                <div class="member-card-actions">
-                    <button class="btn-icon" title="Editar perfil" onclick="familyManager.editMember(${member.id})">
-                        <i data-lucide="edit-2"></i>
+                <h2 class="fp-member-name">${m.nombre}</h2>
+                <p class="fp-member-role">${m.edad ? m.edad + ' años' : 'Adulto'}</p>
+                ${m.puede_cocinar ? `
+                <div class="fp-skill-row">
+                    <div class="fp-skill-row-top">
+                        <span>Cocina</span><span>${skillLabel}</span>
+                    </div>
+                    <div class="fp-skill-bar-bg">
+                        <div class="fp-skill-bar-fill" style="width:${skillPct}%"></div>
+                    </div>
+                </div>` : ''}
+                ${tags.length ? `
+                <div class="fp-tags">
+                    ${tags.map(t => `<span class="fp-tag">${t}</span>`).join('')}
+                </div>` : ''}
+                <div class="fp-card-actions" style="margin-top:auto;padding-top:16px">
+                    <button class="fp-card-btn" onclick="familyManager.editMember(${m.id})">
+                        <span class="material-symbols-outlined">edit</span> Editar
                     </button>
-                    <button class="btn-icon btn-danger" title="Eliminar" onclick="familyManager.deleteMember(${member.id})">
-                        <i data-lucide="trash-2"></i>
+                    <button class="fp-card-btn fp-card-btn--danger" onclick="familyManager.deleteMember(${m.id})">
+                        <span class="material-symbols-outlined">delete</span>
                     </button>
                 </div>
-            </div>
+            </div>`;
+    }
 
-            ${member.plato_favorito ? `
-            <div class="member-card-detail">
-                <i data-lucide="heart"></i>
-                <span>Favorito: <strong>${member.plato_favorito}</strong></span>
-            </div>` : ''}
+    renderKidCard(m, index) {
+        const isOdd = index % 2 === 0;
+        const colorKey = isOdd ? 'cyan' : 'blue';
+        const color = m.avatar_color || (isOdd ? '#4cd7f6' : '#4d8eff');
+        const initial = (m.nombre || '?').charAt(0).toUpperCase();
+        const picky = m.nivel_tiquismiquis || (m.puede_limpiar ? 3 : 7);
+        const pickyIcon = picky >= 7 ? 'warning' : 'star';
+        const pickyColor = picky >= 7 ? 'var(--color-primary-fixed-dim)' : 'var(--color-secondary-fixed)';
+        const fav = m.preferencias || m.solo_acepta || 'Sin preferencia registrada';
+        const favLabel = m.solo_acepta ? 'Solo acepta' : 'Favorito de la semana';
 
-            ${allergiesHtml ? `
-            <div class="member-card-tags">
-                <span class="tags-label">Alergias:</span>
-                ${allergiesHtml}
-            </div>` : ''}
+        return `
+            <div class="fp-card-kid fp-card-kid--${colorKey} glass-card" data-id="${m.id}">
+                <div class="fp-kid-top">
+                    <div class="fp-kid-avatar fp-kid-avatar--${isOdd ? 'odd' : 'even'}"
+                         style="background:${color}">
+                        ${initial}
+                    </div>
+                    <div class="fp-kid-age-block">
+                        <span class="fp-kid-age fp-kid-age--${colorKey}">${m.edad || '?'}</span>
+                        <span class="fp-kid-age-label fp-kid-age-label--${colorKey}">Años</span>
+                    </div>
+                </div>
+                <h3 class="fp-kid-name">${m.nombre}</h3>
+                <div class="fp-kid-level">
+                    <span class="material-symbols-outlined"
+                          style="color:${pickyColor};font-variation-settings:'FILL' 1">${pickyIcon}</span>
+                    <span class="fp-kid-level-text" style="color:${pickyColor}">
+                        Nivel Tiquismiquis: ${picky}/10
+                    </span>
+                </div>
+                <div class="fp-kid-fav">
+                    <p class="fp-kid-fav-label">${favLabel}</p>
+                    <p class="fp-kid-fav-value">${fav}</p>
+                </div>
+                <div class="fp-card-actions">
+                    <button class="fp-card-btn" onclick="familyManager.editMember(${m.id})">
+                        <span class="material-symbols-outlined">edit</span> Editar
+                    </button>
+                    <button class="fp-card-btn fp-card-btn--danger" onclick="familyManager.deleteMember(${m.id})">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
+            </div>`;
+    }
 
-            ${completeness < 80 ? `
-            <button class="btn-complete-profile" onclick="familyManager.editMember(${member.id})">
-                <i data-lucide="arrow-right"></i> Completar perfil
-            </button>` : ''}
-        </div>`;
+    renderSecondaryCard(m) {
+        const color = m.avatar_color || '#8c909f';
+        const initial = (m.nombre || '?').charAt(0).toUpperCase();
+        const restrictions = m.alergias_restricciones
+            ? m.alergias_restricciones.split(',').slice(0, 1).join(', ')
+            : null;
+        const rolLabel = m.rol_hogar === 'empleado_hogar' ? 'Empleado del Hogar'
+            : m.rol_hogar === 'invitado' ? 'Invitado Especial'
+            : 'Miembro';
+
+        return `
+            <div class="fp-card-secondary glass-card" data-id="${m.id}">
+                <div class="fp-sec-top">
+                    <div class="fp-avatar-sm" style="background:${color}">${initial}</div>
+                    <div>
+                        <h3 class="fp-sec-name">${m.nombre}</h3>
+                        <p class="fp-sec-role">${rolLabel}</p>
+                    </div>
+                </div>
+                <div class="fp-info-rows">
+                    ${restrictions ? `
+                    <div class="fp-info-row">
+                        <span class="material-symbols-outlined" style="color:var(--color-error)">heart_broken</span>
+                        <div class="fp-info-row-text">
+                            <p class="fp-info-row-label">Dietético</p>
+                            <p class="fp-info-row-value">${restrictions}</p>
+                        </div>
+                    </div>` : ''}
+                    <div class="fp-info-row">
+                        <span class="material-symbols-outlined" style="color:var(--color-secondary)">verified</span>
+                        <div class="fp-info-row-text">
+                            <p class="fp-info-row-label">Estado JAXo</p>
+                            <p class="fp-info-row-value">Perfil ${m.activo ? 'Activo' : 'Supervisado'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="fp-card-actions">
+                    <button class="fp-card-btn" onclick="familyManager.editMember(${m.id})">
+                        <span class="material-symbols-outlined">edit</span> Editar
+                    </button>
+                    <button class="fp-card-btn fp-card-btn--danger" onclick="familyManager.deleteMember(${m.id})">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    renderAIChip() {
+        const chip = document.getElementById('fp-ai-chip');
+        const text = document.getElementById('fp-ai-text');
+        if (!chip || !this.members.length) return;
+
+        const kids = this.members.filter(m => m.tipo === 'nino' || m.tipo === 'niño');
+        const restricted = this.members.filter(m => m.alergias_restricciones);
+
+        if (kids.length || restricted.length) {
+            const kidName = kids[0]?.nombre || '';
+            const restName = restricted[0]?.nombre || '';
+            const suggestion = kidName
+                ? `Bowl de Quinoa y Pollo al Vapor`
+                : 'Menú equilibrado para toda la familia';
+            if (text) text.innerHTML = `Basado en los perfiles familiares, la cena ideal de hoy es: <strong>${suggestion}</strong>.`;
+            chip.style.display = 'inline-flex';
+        }
     }
 
     calcCompleteness(member) {
