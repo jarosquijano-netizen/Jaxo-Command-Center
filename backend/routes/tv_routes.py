@@ -75,8 +75,8 @@ def _normalise_meal(raw):
         return {'nombre': raw, 'tiempo': None, 'dificultad': None, 'calorias': None}
     if isinstance(raw, dict):
         return {
-            'nombre': raw.get('nombre') or raw.get('name', ''),
-            'tiempo': raw.get('tiempo') or raw.get('time'),
+            'nombre': raw.get('nombre') or raw.get('plato') or raw.get('name', ''),
+            'tiempo': raw.get('tiempo') or raw.get('tiempo_prep') or raw.get('time'),
             'dificultad': raw.get('dificultad') or raw.get('difficulty'),
             'calorias': raw.get('calorias') or raw.get('kcal') or raw.get('calories'),
         }
