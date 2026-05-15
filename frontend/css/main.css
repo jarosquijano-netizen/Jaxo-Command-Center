@@ -2776,7 +2776,8 @@ body {
     margin-bottom: var(--spacing-md);
 }
 
-.voice-indicator i {
+.voice-indicator i,
+.voice-indicator span.material-symbols-outlined {
     font-size: 2rem;
     color: var(--gaudi-gold);
     z-index: 2;
@@ -2842,7 +2843,8 @@ body {
 }
 
 /* Voice Recording State */
-.voice-interface.recording .voice-indicator i {
+.voice-interface.recording .voice-indicator i,
+.voice-interface.recording .voice-indicator span.material-symbols-outlined {
     color: #f44336;
 }
 
@@ -2867,7 +2869,8 @@ body {
 }
 
 /* Voice Processing State */
-.voice-interface.processing .voice-indicator i {
+.voice-interface.processing .voice-indicator i,
+.voice-interface.processing .voice-indicator span.material-symbols-outlined {
     color: var(--barcelona-orange);
 }
 

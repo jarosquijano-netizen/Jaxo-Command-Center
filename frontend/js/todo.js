@@ -9,6 +9,7 @@ class TodoManager {
         this.recognition = null;
         this.isRecording = false;
         this.voiceTranscript = '';
+        this.finalTranscript = '';
         this.init();
     }
 
@@ -510,28 +511,27 @@ class TodoManager {
             console.log('Iniciando reconocimiento de voz...');
             this.isRecording = true;
             this.voiceTranscript = '';
+            this.finalTranscript = '';
             this.showVoiceInterface();
             this.updateVoiceInterface('recording', 'Escuchando...');
         };
 
         this.recognition.onresult = (event) => {
             let interimTranscript = '';
-            let finalTranscript = '';
 
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const transcript = event.results[i][0].transcript;
-                
                 if (event.results[i].isFinal) {
-                    finalTranscript += transcript + ' ';
+                    this.finalTranscript += transcript + ' ';
                 } else {
                     interimTranscript += transcript;
                 }
             }
 
-            this.voiceTranscript = finalTranscript + interimTranscript;
+            // finalTranscript accumulates across all onresult events; interim is current phrase only
+            this.voiceTranscript = this.finalTranscript + interimTranscript;
             this.updateTranscript(this.voiceTranscript);
-            
-            // Habilitar botón de crear si hay texto
+
             const createBtn = document.getElementById('createVoiceTodoBtn');
             if (createBtn) {
                 createBtn.disabled = this.voiceTranscript.trim().length === 0;
@@ -563,18 +563,18 @@ class TodoManager {
 
         this.recognition.onend = () => {
             console.log('Reconocimiento de voz finalizado');
-            if (this.isRecording) {
-                this.updateVoiceInterface('processing', 'Procesando...');
-                
-                // Si hay transcripción, mostrar botón de crear
-                if (this.voiceTranscript.trim().length > 0) {
-                    this.updateVoiceInterface('completed', 'Tarea lista para crear');
-                } else {
-                    this.showNotification('No se detectó ninguna tarea', 'info');
-                    setTimeout(() => this.hideVoiceInterface(), 2000);
-                }
-            }
             this.isRecording = false;
+            const voiceInterface = document.getElementById('voiceInterface');
+            if (!voiceInterface || voiceInterface.style.display === 'none') return;
+
+            if (this.voiceTranscript.trim().length > 0) {
+                this.updateVoiceInterface('completed', 'Tarea lista para crear');
+                const createBtn = document.getElementById('createVoiceTodoBtn');
+                if (createBtn) createBtn.disabled = false;
+            } else {
+                this.showNotification('No se detectó ninguna tarea', 'info');
+                setTimeout(() => this.hideVoiceInterface(), 2000);
+            }
         };
 
         // Iniciar reconocimiento
@@ -610,11 +610,14 @@ class TodoManager {
     }
 
     hideVoiceInterface() {
-        const voiceInterface = document.getElementById('voiceInterface');
-        if (voiceInterface) {
-            voiceInterface.style.display = 'none';
+        if (this.recognition && this.isRecording) {
+            this.isRecording = false;
+            try { this.recognition.stop(); } catch (_) {}
         }
+        const voiceInterface = document.getElementById('voiceInterface');
+        if (voiceInterface) voiceInterface.style.display = 'none';
         this.voiceTranscript = '';
+        this.finalTranscript = '';
         this.isRecording = false;
     }
 
