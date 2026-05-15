@@ -47,6 +47,7 @@ def create_app(config_name='default'):
     from routes.calendar_routes import calendar_bp
     from routes.todo_routes import todo_bp
     from routes.google_routes import google_bp
+    from routes.tv_routes import tv_bp
     # from routes.dashboard_routes import dashboard_bp
 
     app.register_blueprint(family_bp, url_prefix='/api/family')
@@ -57,6 +58,7 @@ def create_app(config_name='default'):
     app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     app.register_blueprint(todo_bp, url_prefix='/api/todos')
     app.register_blueprint(google_bp, url_prefix='/api/google')
+    app.register_blueprint(tv_bp)          # /tv — no prefix, route defined in blueprint
     # app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     
     # Health check endpoint
@@ -89,13 +91,7 @@ def create_app(config_name='default'):
         frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
         return send_from_directory(frontend_path, filename)
     
-    # TV View endpoint
-    @app.route('/tv')
-    def tv_view():
-        """Servir la vista optimizada para TV"""
-        import os
-        frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
-        return send_from_directory(frontend_path, 'tv.html')
+    # TV View — handled by tv_bp blueprint (renders templates/tv_display.html with live data)
     
     # Error handlers
     @app.errorhandler(404)

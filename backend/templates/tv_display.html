@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html class="h-full overflow-hidden" lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Jaxo — Kitchen TV</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            'surface': '#0c1324',
+            'surface-dim': '#0c1324',
+            'surface-bright': '#33394c',
+            'surface-container-low': '#151b2d',
+            'jaxo-cyan': '#22d3ee',
+            'jaxo-teal': '#2dd4bf',
+            'jaxo-pink': '#f472b6',
+            'jaxo-yellow': '#fbbf24',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-card {
+      background: rgba(21, 27, 45, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+    }
+    .glass-card-active {
+      background: rgba(51, 57, 76, 0.5);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+    }
+    .glass-card-pink {
+      background: rgba(49, 46, 129, 0.3);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+    }
+    body {
+      background-color: #0c1324;
+      color: #e2e8f0;
+      cursor: none;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+  </style>
+</head>
+
+{# ─── Helpers ────────────────────────────────────────────────────────── #}
+{%- macro avatar(member_name) -%}
+  {%- if member_name and member_name in member_colors -%}
+    {%- set m = member_colors[member_name] -%}
+    <div class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+         style="background-color: {{ m.color }};">{{ m.initial }}</div>
+  {%- else -%}
+    <div class="h-8 w-8 rounded-full bg-slate-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+      {{ (member_name[0] | upper) if member_name else '?' }}
+    </div>
+  {%- endif -%}
+{%- endmacro -%}
+
+{%- macro diff_badge(dificultad) -%}
+  {%- if dificultad -%}
+    {%- set dc = diff_class(dificultad) -%}
+    {%- if dc == 'easy' -%}
+      <span class="text-xs font-bold px-2 py-1 bg-green-500/20 text-green-400 rounded">{{ dificultad | upper }}</span>
+    {%- elif dc == 'medium' -%}
+      <span class="text-xs font-bold px-2 py-1 bg-jaxo-yellow/20 text-jaxo-yellow rounded">{{ dificultad | upper }}</span>
+    {%- else -%}
+      <span class="text-xs font-bold px-2 py-1 bg-red-500/20 text-red-400 rounded">{{ dificultad | upper }}</span>
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro -%}
+
+{%- macro meal_card(label, meal, featured=false, badge='', badge_color='cyan') -%}
+  {%- if featured and meal -%}
+    <div class="glass-card {% if badge_color == 'pink' %}glass-card-pink{% else %}glass-card-active{% endif %} p-6 flex flex-col gap-3 relative overflow-hidden">
+      {%- if badge -%}
+        <div class="absolute top-4 right-4">
+          {%- if badge_color == 'pink' -%}
+            <span class="text-[10px] font-bold px-2 py-1 bg-jaxo-pink/20 text-jaxo-pink border border-jaxo-pink/30 rounded uppercase tracking-tighter">{{ badge }}</span>
+          {%- else -%}
+            <span class="text-[10px] font-bold px-2 py-1 bg-jaxo-cyan/20 text-jaxo-cyan border border-jaxo-cyan/30 rounded uppercase tracking-tighter">{{ badge }}</span>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+      <span class="text-xs font-bold uppercase tracking-widest text-slate-400">{{ label }}</span>
+      <h3 class="text-3xl font-bold text-white leading-tight">{{ meal.nombre or '—' }}</h3>
+      <div class="flex gap-4 mt-2">
+        {%- if meal.tiempo -%}
+          <span class="flex items-center gap-1 text-sm text-slate-300">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/>
+            </svg>
+            {{ meal.tiempo }}
+          </span>
+        {%- endif -%}
+        {{ diff_badge(meal.dificultad) }}
+        {%- if meal.calorias -%}
+          <span class="text-xs font-bold px-2 py-1 bg-jaxo-teal/20 text-jaxo-teal rounded">{{ meal.calorias }} KCAL</span>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- else -%}
+    <div class="glass-card p-6 flex flex-col gap-2">
+      <span class="text-xs font-bold uppercase tracking-widest text-slate-400">{{ label }}</span>
+      {%- if meal -%}
+        <h3 class="text-2xl font-semibold text-white">{{ meal.nombre or '—' }}</h3>
+        <div class="flex gap-3 mt-2">
+          {%- if meal.tiempo -%}
+            <span class="flex items-center gap-1 text-sm text-slate-400">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/>
+              </svg>
+              {{ meal.tiempo }}
+            </span>
+          {%- endif -%}
+          {{ diff_badge(meal.dificultad) }}
+        </div>
+      {%- else -%}
+        <p class="text-lg text-slate-500 italic">Sin menú hoy</p>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+{%- endmacro -%}
+
+<body class="h-screen w-screen p-8 flex flex-col gap-8">
+
+{# ─── Header ─────────────────────────────────────────────────────────── #}
+<header class="flex items-center justify-between">
+  <div class="flex items-baseline gap-4">
+    <h1 class="text-5xl font-bold tracking-tighter text-white">
+      JAX<span class="text-jaxo-cyan text-6xl">o</span>
+    </h1>
+    <span class="text-xl font-medium text-slate-400 uppercase tracking-widest ml-4">{{ date_str }}</span>
+  </div>
+
+  <div class="absolute left-1/2 -translate-x-1/2">
+    <div class="text-8xl font-light tracking-tight text-white/90" id="clock">00:00</div>
+  </div>
+
+  <div class="flex items-center gap-6 text-2xl">
+    <div class="flex items-center gap-3">
+      <svg class="h-8 w-8 text-jaxo-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+      </svg>
+      <span class="font-semibold text-white">
+        {{ weather.temp }}°C
+        <span class="text-jaxo-cyan ml-2 text-xl font-normal opacity-80">· {{ weather.desc }}</span>
+      </span>
+    </div>
+    <div class="text-slate-400 text-sm font-bold tracking-widest uppercase">Barcelona</div>
+  </div>
+</header>
+
+{# ─── Main Grid ───────────────────────────────────────────────────────── #}
+<main class="flex-grow grid grid-cols-12 gap-8 h-full overflow-hidden">
+
+  {# ── Left zone: Meals ─────────────────────────────────────────────── #}
+  <section class="col-span-8 grid grid-cols-2 gap-8 h-full">
+
+    {# Adultos column #}
+    <div class="flex flex-col gap-6">
+      <div class="flex items-center gap-3 px-2">
+        <svg class="h-8 w-8 text-jaxo-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <h2 class="text-3xl font-bold uppercase tracking-wider text-white">Adultos</h2>
+      </div>
+
+      {{ meal_card('Desayuno', meals_adultos.desayuno) }}
+      {{ meal_card('Comida', meals_adultos.comida, featured=true, badge='Recomendado', badge_color='cyan') }}
+      {{ meal_card('Merienda', meals_adultos.merienda) }}
+      {{ meal_card('Cena', meals_adultos.cena) }}
+    </div>
+
+    {# Niñas column #}
+    <div class="flex flex-col gap-6">
+      <div class="flex items-center gap-3 px-2">
+        <svg class="h-8 w-8 text-jaxo-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <h2 class="text-3xl font-bold uppercase tracking-wider text-white">Niñas</h2>
+      </div>
+
+      {{ meal_card('Desayuno', meals_ninos.desayuno) }}
+      {{ meal_card('Comida', meals_ninos.comida, featured=true, badge='Favorito', badge_color='pink') }}
+      {{ meal_card('Merienda', meals_ninos.merienda) }}
+      {{ meal_card('Cena', meals_ninos.cena) }}
+    </div>
+  </section>
+
+  {# ── Right zone: Tasks + Events ────────────────────────────────────── #}
+  <aside class="col-span-4 flex flex-col gap-8 h-full overflow-y-auto">
+
+    {# Tasks #}
+    <section class="flex flex-col gap-4">
+      <div class="flex items-center justify-between px-2">
+        <div class="flex items-center gap-3">
+          <svg class="h-8 w-8 text-jaxo-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          </svg>
+          <h2 class="text-3xl font-bold uppercase tracking-wider text-white">Tareas de Hoy</h2>
+        </div>
+        <span class="text-slate-500 font-mono text-xl">{{ completed_count }} / {{ tasks | length }}</span>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        {%- if tasks -%}
+          {%- for task in tasks -%}
+            {%- if task.completada -%}
+              <div class="glass-card px-5 py-4 flex items-center justify-between opacity-60">
+                <div class="flex items-center gap-4">
+                  <div class="h-8 w-8 rounded-full border-2 border-jaxo-teal flex items-center justify-center flex-shrink-0">
+                    <svg class="h-5 w-5 text-jaxo-teal" fill="currentColor" viewBox="0 0 20 20">
+                      <path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"/>
+                    </svg>
+                  </div>
+                  <span class="text-xl text-white line-through decoration-slate-500">{{ task.nombre }}</span>
+                </div>
+                {{ avatar(task.member) }}
+              </div>
+            {%- else -%}
+              <div class="glass-card px-5 py-4 flex items-center justify-between bg-white/5">
+                <div class="flex items-center gap-4">
+                  <div class="h-8 w-8 rounded-full border-2 border-slate-600 flex-shrink-0"></div>
+                  <span class="text-xl text-white">{{ task.nombre }}</span>
+                </div>
+                {{ avatar(task.member) }}
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- else -%}
+          <div class="glass-card px-5 py-6 text-center text-slate-500 italic text-lg">
+            Sin tareas asignadas hoy
+          </div>
+        {%- endif -%}
+      </div>
+    </section>
+
+    {# Events #}
+    <section class="flex-grow flex flex-col gap-4">
+      <div class="flex items-center gap-3 px-2">
+        <svg class="h-8 w-8 text-jaxo-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <h2 class="text-3xl font-bold uppercase tracking-wider text-white">Próximos Eventos</h2>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        {%- if events -%}
+          {%- for ev in events -%}
+            <div class="glass-card p-5 flex gap-5 {% if loop.first %}border-l-4 border-l-jaxo-cyan bg-jaxo-cyan/5{% endif %}">
+              <div class="flex flex-col items-center min-w-[52px]">
+                <span class="text-2xl font-bold text-white">{{ ev.time }}</span>
+                <span class="text-xs font-bold uppercase text-slate-500">{{ ev.day_label }}</span>
+              </div>
+              <div class="flex-grow">
+                <h4 class="text-2xl font-semibold text-white mb-2">{{ ev.title | e }}</h4>
+                <div class="flex gap-2 items-center">
+                  <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-700 text-jaxo-cyan rounded uppercase">Google</span>
+                  {%- if ev.is_live -%}
+                    <div class="ml-auto flex items-center gap-1.5 px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full animate-pulse">
+                      <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                      <span class="text-[10px] font-black uppercase">En directo</span>
+                    </div>
+                  {%- endif -%}
+                </div>
+              </div>
+            </div>
+          {%- endfor -%}
+        {%- else -%}
+          <div class="glass-card p-5 text-center text-slate-500 italic text-lg">
+            Sin próximos eventos
+          </div>
+        {%- endif -%}
+      </div>
+    </section>
+
+    {# Bottom spacer / bounce indicator #}
+    <div class="flex justify-center pb-2">
+      <div class="h-12 w-12 rounded-full glass-card flex items-center justify-center animate-bounce">
+        <svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M19 14l-7 7m0 0l-7-7m7 7V3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+  </aside>
+</main>
+
+{# ─── Last refresh indicator ────────────────────────────────────────── #}
+<div class="fixed bottom-4 right-6 text-[11px] text-slate-600 font-mono select-none">
+  Actualizado: {{ last_refresh }}
+</div>
+
+{# ─── Scripts ─────────────────────────────────────────────────────────── #}
+<script>
+  // Clock — updates every second
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const el = document.getElementById('clock');
+    if (el) el.textContent = h + ':' + m;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Auto-refresh every 5 minutes so data stays fresh
+  setTimeout(() => location.reload(), 5 * 60 * 1000);
+</script>
+</body>
+</html>

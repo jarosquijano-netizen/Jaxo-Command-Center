@@ -1,0 +1,225 @@
+"""
+TV Kitchen Dashboard — server-side rendered with live data
+"""
+
+import logging
+from datetime import datetime, date, timedelta
+
+import requests
+from flask import Blueprint, render_template
+
+logger = logging.getLogger(__name__)
+
+tv_bp = Blueprint('tv', __name__)
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+_DAY_KEYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+_DAY_NAMES_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+_DAY_ABBR_ES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+_MONTH_NAMES_ES = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+]
+
+
+def _weather_desc(code):
+    if code == 0:
+        return 'Soleado'
+    if code <= 3:
+        return 'Parcialmente nublado'
+    if code <= 48:
+        return 'Niebla'
+    if code <= 67:
+        return 'Lluvia'
+    if code <= 77:
+        return 'Nieve'
+    if code <= 82:
+        return 'Chubascos'
+    if code <= 86:
+        return 'Nevada'
+    return 'Tormenta'
+
+
+def _normalise_meal(raw):
+    """Accept str or dict meal entry, return unified dict or None."""
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        return {'nombre': raw, 'tiempo': None, 'dificultad': None, 'calorias': None}
+    if isinstance(raw, dict):
+        return {
+            'nombre': raw.get('nombre') or raw.get('name', ''),
+            'tiempo': raw.get('tiempo') or raw.get('time'),
+            'dificultad': raw.get('dificultad') or raw.get('difficulty'),
+            'calorias': raw.get('calorias') or raw.get('kcal') or raw.get('calories'),
+        }
+    return None
+
+
+def _diff_class(dificultad):
+    if not dificultad:
+        return ''
+    d = dificultad.lower()
+    if 'fácil' in d or 'facil' in d or 'easy' in d:
+        return 'easy'
+    if 'media' in d or 'medio' in d or 'medium' in d:
+        return 'medium'
+    return 'hard'
+
+
+# ---------------------------------------------------------------------------
+# Route
+# ---------------------------------------------------------------------------
+
+@tv_bp.route('/tv')
+def tv_view():
+    now = datetime.now()
+    today_date = date.today()
+    tomorrow_date = today_date + timedelta(days=1)
+
+    date_str = f"{_DAY_NAMES_ES[now.weekday()]} {now.day} de {_MONTH_NAMES_ES[now.month - 1]}"
+    today_key = _DAY_KEYS[now.weekday()]
+
+    # ------------------------------------------------------------------
+    # Menu
+    # ------------------------------------------------------------------
+    COMIDAS = ('desayuno', 'comida', 'merienda', 'cena')
+    meals_adultos = {c: None for c in COMIDAS}
+    meals_ninos = {c: None for c in COMIDAS}
+    try:
+        from services.menu_service import menu_service
+        menu_dict = menu_service.get_weekly_menu()
+        if menu_dict:
+            md = menu_dict.get('menu_data') or {}
+            adultos_day = md.get('menu_adultos', {}).get(today_key, {})
+            ninos_day = md.get('menu_ninos', {}).get(today_key, {})
+            for c in COMIDAS:
+                meals_adultos[c] = _normalise_meal(adultos_day.get(c))
+                meals_ninos[c] = _normalise_meal(ninos_day.get(c))
+    except Exception as e:
+        logger.warning(f'[tv] menu: {e}')
+
+    # ------------------------------------------------------------------
+    # Today's cleaning tasks
+    # ------------------------------------------------------------------
+    tasks = []
+    try:
+        from models.cleaning import CleaningSchedule
+        rows = (
+            CleaningSchedule.query
+            .filter_by(fecha_programada=today_date)
+            .order_by(CleaningSchedule.completada, CleaningSchedule.task_nombre)
+            .all()
+        )
+        tasks = [
+            {'nombre': r.task_nombre, 'member': r.member_nombre, 'completada': r.completada}
+            for r in rows
+        ]
+    except Exception as e:
+        logger.warning(f'[tv] tasks: {e}')
+
+    completed_count = sum(1 for t in tasks if t['completada'])
+
+    # ------------------------------------------------------------------
+    # Next 3 calendar events
+    # ------------------------------------------------------------------
+    events = []
+    try:
+        from models.google_imported_event import GoogleImportedEvent
+        try:
+            import pytz
+            madrid = pytz.timezone('Europe/Madrid')
+            use_pytz = True
+        except ImportError:
+            use_pytz = False
+
+        now_utc = datetime.utcnow()
+        upcoming = (
+            GoogleImportedEvent.query
+            .filter(GoogleImportedEvent.start_datetime >= now_utc)
+            .order_by(GoogleImportedEvent.start_datetime)
+            .limit(3)
+            .all()
+        )
+        for ev in upcoming:
+            start_utc = ev.start_datetime
+            if use_pytz:
+                start_local = start_utc.replace(tzinfo=pytz.utc).astimezone(madrid)
+                ev_date = start_local.date()
+            else:
+                # +1h offset approximation when pytz unavailable
+                start_local = start_utc + timedelta(hours=1)
+                ev_date = start_local.date()
+
+            if ev_date == today_date:
+                day_label = 'Hoy'
+            elif ev_date == tomorrow_date:
+                day_label = 'Mañana'
+            else:
+                day_label = _DAY_ABBR_ES[ev_date.weekday()]
+
+            diff_min = (start_utc - now_utc).total_seconds() / 60
+            events.append({
+                'title': ev.summary or 'Evento',
+                'time': start_local.strftime('%H:%M'),
+                'day_label': day_label,
+                'is_live': 0 <= diff_min <= 60,
+            })
+    except Exception as e:
+        logger.warning(f'[tv] events: {e}')
+
+    # ------------------------------------------------------------------
+    # Family member avatar colours
+    # ------------------------------------------------------------------
+    member_colors = {}
+    try:
+        from models.family import FamilyMember
+        members = FamilyMember.query.filter_by(activo=True).all()
+        for m in members:
+            member_colors[m.nombre] = {
+                'initial': (m.nombre[0].upper() if m.nombre else '?'),
+                'color': m.avatar_color or '#4A90E2',
+            }
+    except Exception as e:
+        logger.warning(f'[tv] members: {e}')
+
+    # ------------------------------------------------------------------
+    # Weather — Open-Meteo free API (Barcelona)
+    # ------------------------------------------------------------------
+    weather = {'temp': '--', 'desc': 'Barcelona'}
+    try:
+        resp = requests.get(
+            'https://api.open-meteo.com/v1/forecast',
+            params={
+                'latitude': 41.3874,
+                'longitude': 2.1686,
+                'current_weather': True,
+                'timezone': 'Europe/Madrid',
+            },
+            timeout=3,
+        )
+        if resp.ok:
+            cw = resp.json().get('current_weather', {})
+            weather = {
+                'temp': round(cw.get('temperature', 0)),
+                'desc': _weather_desc(cw.get('weathercode', 0)),
+            }
+    except Exception as e:
+        logger.warning(f'[tv] weather: {e}')
+
+    return render_template(
+        'tv_display.html',
+        date_str=date_str,
+        meals_adultos=meals_adultos,
+        meals_ninos=meals_ninos,
+        tasks=tasks,
+        completed_count=completed_count,
+        events=events,
+        member_colors=member_colors,
+        weather=weather,
+        last_refresh=now.strftime('%H:%M'),
+        diff_class=_diff_class,
+    )
