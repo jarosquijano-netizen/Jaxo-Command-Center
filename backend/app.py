@@ -47,6 +47,7 @@ def create_app(config_name='default'):
     from routes.calendar_routes import calendar_bp
     from routes.todo_routes import todo_bp
     from routes.google_routes import google_bp
+    from routes.voice_routes import voice_bp
     # from routes.dashboard_routes import dashboard_bp
 
     app.register_blueprint(family_bp, url_prefix='/api/family')
@@ -57,6 +58,7 @@ def create_app(config_name='default'):
     app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     app.register_blueprint(todo_bp, url_prefix='/api/todos')
     app.register_blueprint(google_bp, url_prefix='/api/google')
+    app.register_blueprint(voice_bp, url_prefix='/api/voice')
     # app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     
     # Health check endpoint

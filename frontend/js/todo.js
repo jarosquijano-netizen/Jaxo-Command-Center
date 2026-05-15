@@ -486,110 +486,104 @@ class TodoManager {
     }
 
     // ============================================
-    // VOICE RECOGNITION FUNCTIONALITY
+    // VOICE RECOGNITION — MediaRecorder + Whisper
     // ============================================
 
-    startVoiceRecording() {
-        // Verificar si el navegador soporta reconocimiento de voz
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            this.showNotification('Tu navegador no soporta reconocimiento de voz', 'error');
+    async startVoiceRecording() {
+        if (this.isRecording) return;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            this.showNotification('Tu navegador no soporta grabación de audio', 'error');
             return;
         }
 
-        // Inicializar reconocimiento de voz
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        this.recognition = new SpeechRecognition();
-        
-        // Configurar reconocimiento
-        this.recognition.lang = 'es-ES'; // Español
-        this.recognition.continuous = true;
-        this.recognition.interimResults = true;
-        this.recognition.maxAlternatives = 1;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.audioStream = stream;
+            this.audioChunks = [];
 
-        // Eventos del reconocimiento
-        this.recognition.onstart = () => {
-            console.log('Iniciando reconocimiento de voz...');
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus'
+                : MediaRecorder.isTypeSupported('audio/webm')
+                    ? 'audio/webm'
+                    : 'audio/ogg';
+
+            this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+            this.mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) this.audioChunks.push(e.data);
+            };
+
+            this.mediaRecorder.onstop = () => this._sendAudioForTranscription();
+
+            this.mediaRecorder.start(100); // collect chunks every 100ms
             this.isRecording = true;
             this.voiceTranscript = '';
             this.finalTranscript = '';
+
             this.showVoiceInterface();
             this.updateVoiceInterface('recording', 'Escuchando...');
-        };
-
-        this.recognition.onresult = (event) => {
-            let interimTranscript = '';
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    this.finalTranscript += transcript + ' ';
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-
-            // finalTranscript accumulates across all onresult events; interim is current phrase only
-            this.voiceTranscript = this.finalTranscript + interimTranscript;
-            this.updateTranscript(this.voiceTranscript);
-
-            const createBtn = document.getElementById('createVoiceTodoBtn');
-            if (createBtn) {
-                createBtn.disabled = this.voiceTranscript.trim().length === 0;
-            }
-        };
-
-        this.recognition.onerror = (event) => {
-            console.error('Error en reconocimiento de voz:', event.error);
-            let errorMessage = 'Error en el reconocimiento de voz';
-            
-            switch (event.error) {
-                case 'no-speech':
-                    errorMessage = 'No se detectó habla. Intenta de nuevo.';
-                    break;
-                case 'audio-capture':
-                    errorMessage = 'No se pudo acceder al micrófono. Verifica los permisos.';
-                    break;
-                case 'not-allowed':
-                    errorMessage = 'Permiso de micrófono denegado. Permite el acceso.';
-                    break;
-                case 'network':
-                    errorMessage = 'Error de red. Revisa tu conexión.';
-                    break;
-            }
-            
-            this.showNotification(errorMessage, 'error');
-            this.stopVoiceRecording();
-        };
-
-        this.recognition.onend = () => {
-            console.log('Reconocimiento de voz finalizado');
-            this.isRecording = false;
-            const voiceInterface = document.getElementById('voiceInterface');
-            if (!voiceInterface || voiceInterface.style.display === 'none') return;
-
-            if (this.voiceTranscript.trim().length > 0) {
-                this.updateVoiceInterface('completed', 'Tarea lista para crear');
-                const createBtn = document.getElementById('createVoiceTodoBtn');
-                if (createBtn) createBtn.disabled = false;
+            this.updateTranscript('');
+        } catch (err) {
+            console.error('[voice] getUserMedia error:', err);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                this.showNotification('Permiso de micrófono denegado. Permite el acceso en el navegador.', 'error');
             } else {
-                this.showNotification('No se detectó ninguna tarea', 'info');
-                setTimeout(() => this.hideVoiceInterface(), 2000);
+                this.showNotification('No se pudo acceder al micrófono: ' + err.message, 'error');
             }
-        };
-
-        // Iniciar reconocimiento
-        try {
-            this.recognition.start();
-        } catch (error) {
-            console.error('Error iniciando reconocimiento:', error);
-            this.showNotification('Error al iniciar el reconocimiento de voz', 'error');
         }
     }
 
     stopVoiceRecording() {
-        if (this.recognition && this.isRecording) {
-            this.recognition.stop();
-            this.isRecording = false;
+        if (!this.isRecording) return;
+        this.isRecording = false;
+        this.updateVoiceInterface('processing', 'Procesando...');
+        this.updateTranscript('Transcribiendo audio...');
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+        if (this.audioStream) {
+            this.audioStream.getTracks().forEach(t => t.stop());
+            this.audioStream = null;
+        }
+    }
+
+    async _sendAudioForTranscription() {
+        try {
+            const mimeType = (this.audioChunks[0] && this.audioChunks[0].type) || 'audio/webm';
+            const blob = new Blob(this.audioChunks, { type: mimeType });
+
+            if (blob.size < 1000) {
+                this.showNotification('No se detectó audio. Intenta de nuevo.', 'info');
+                setTimeout(() => this.hideVoiceInterface(), 2000);
+                return;
+            }
+
+            const formData = new FormData();
+            const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+            formData.append('audio', blob, `recording.${ext}`);
+
+            const resp = await fetch('/api/voice/transcribe', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await resp.json();
+
+            if (result.success && result.transcript && result.transcript.trim()) {
+                this.voiceTranscript = result.transcript.trim();
+                this.updateTranscript(this.voiceTranscript);
+                this.updateVoiceInterface('completed', 'Tarea lista para crear');
+                const createBtn = document.getElementById('createVoiceTodoBtn');
+                if (createBtn) createBtn.disabled = false;
+            } else {
+                const msg = result.message || 'No se detectó ninguna tarea';
+                this.showNotification(msg, result.success ? 'info' : 'error');
+                setTimeout(() => this.hideVoiceInterface(), 3000);
+            }
+        } catch (err) {
+            console.error('[voice] transcription error:', err);
+            this.showNotification('Error al transcribir el audio', 'error');
+            setTimeout(() => this.hideVoiceInterface(), 3000);
         }
     }
 
