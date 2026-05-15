@@ -173,15 +173,19 @@ class ShoppingManager {
                     <span class="item-count">${categoryItems.length} items</span>
                 </div>
                 <div class="items-list">
-                    ${categoryItems.map((item, index) => `
+                    ${categoryItems.map((item, index) => {
+                        const name = typeof item === 'string' ? item : (item.name || item.nombre || item.item || item.producto || '');
+                        const qty  = item.quantity || item.cantidad || item.qty || '';
+                        const price = item.estimado_eur ? ` ~${item.estimado_eur}€` : '';
+                        return `
                         <div class="shopping-item">
                             <input type="checkbox" id="item-${category}-${index}" ${item.completed ? 'checked' : ''}>
                             <label for="item-${category}-${index}">
-                                <span class="item-name">${typeof item === 'string' ? item : item.name || item}</span>
-                                ${item.quantity ? `<span class="item-quantity">(${item.quantity})</span>` : ''}
+                                <span class="item-name">${name}</span>
+                                ${qty ? `<span class="item-quantity">(${qty}${price})</span>` : (price ? `<span class="item-quantity">(${price.trim()})</span>` : '')}
                             </label>
-                        </div>
-                    `).join('')}
+                        </div>`;
+                    }).join('')}
                 </div>
             `;
             
@@ -362,8 +366,8 @@ class ShoppingManager {
                         doc.setFont('helvetica', 'normal');
                     }
 
-                    const itemName = typeof item === 'string' ? item : item.name || item;
-                    const quantity = item.quantity ? ` (${item.quantity})` : '';
+                    const itemName = typeof item === 'string' ? item : (item.name || item.nombre || item.item || item.producto || '');
+                    const quantity = item.quantity || item.cantidad ? ` (${item.quantity || item.cantidad})` : '';
                     const checkbox = item.completed ? '[X]' : '[ ]';
                     
                     // Limpiar el nombre del item de caracteres especiales
