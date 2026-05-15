@@ -125,6 +125,7 @@ body {
     height: 100vh;
     transition: width 0.25s ease, padding 0.25s ease;
     overflow: hidden;
+    white-space: nowrap;
 }
 
 /* Collapsed sidebar — icon-only */
@@ -135,7 +136,7 @@ body {
 .sidebar.sidebar--collapsed .sidebar-logo-full { display: none !important; }
 .sidebar.sidebar--collapsed .sidebar-logo-icon { display: block !important; }
 .sidebar.sidebar--collapsed .nav-link { justify-content: center; padding: 10px; gap: 0; }
-.sidebar.sidebar--collapsed .nav-link span:not(.material-symbols-outlined) { display: none; }
+.sidebar.sidebar--collapsed .nav-label { display: none; }
 .sidebar.sidebar--collapsed .nav-link.active { border-left: none; border-left: 3px solid var(--color-secondary); padding-left: 7px; }
 .sidebar.sidebar--collapsed .sidebar-toggle .material-symbols-outlined { transform: rotate(180deg); }
 
