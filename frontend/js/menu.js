@@ -570,7 +570,7 @@ class MenuManager {
                         }
                     }
                     // Si el usuario cancela o falla el reintento, mostrar el menú existente
-                    this.loadCurrentMenu();
+                    this.loadCurrentWeekMenu();
                     this.closeModal('generateMenuModal');
                     return;
                 }
