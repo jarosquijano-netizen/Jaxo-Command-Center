@@ -421,63 +421,87 @@
             
             <!-- Calendar Section -->
             <section id="calendar" class="module-section">
+                <!-- Header -->
                 <div class="content-header">
                     <div>
                         <h2>Calendario</h2>
                         <p class="subtitle">Sincronización con Google Calendar</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn btn-primary" id="syncCalendarBtn">
-                            <span class="material-symbols-outlined">refresh</span> Sincronizar
+                        <button class="btn btn-secondary" id="syncCalendarBtn" style="border-color:rgba(76,215,246,0.3);color:#4cd7f6;">
+                            <span class="material-symbols-outlined">sync</span> Sincronizar
                         </button>
-                        <button class="btn btn-secondary" id="addEventBtn">
+                        <button class="btn btn-primary" id="addEventBtn">
                             <span class="material-symbols-outlined">add</span> Añadir Evento
                         </button>
                     </div>
                 </div>
-                
-                <!-- Week Navigation -->
-                <div class="week-navigation">
-                    <button class="nav-btn" id="prevWeek">
-                        <span class="material-symbols-outlined">chevron_left</span>
-                    </button>
-                    <div class="week-info">
-                        <div class="week-label">Semana del</div>
-                        <span id="weekDisplay">Cargando...</span>
+
+                <!-- Controls: week nav + filters -->
+                <div class="ca-controls">
+                    <div class="ca-week-nav">
+                        <button class="ca-nav-btn" id="prevWeek">
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <div class="ca-week-info">
+                            <div class="ca-week-label">Semana del</div>
+                            <div class="ca-week-range" id="weekDisplay">Cargando...</div>
+                        </div>
+                        <button class="ca-nav-btn" id="nextWeek">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </button>
                     </div>
-                    <button class="nav-btn" id="nextWeek">
-                        <span class="material-symbols-outlined">chevron_right</span>
-                    </button>
-                    <button class="nav-btn" id="todayWeek">
-                        <span class="material-symbols-outlined">today</span>
-                    </button>
+                    <div class="ca-filters">
+                        <span class="ca-filter-label">Filtrar por:</span>
+                        <button class="ca-filter-btn active" data-filter="all">Todos</button>
+                        <button class="ca-filter-btn" data-filter="google">Google</button>
+                        <button class="ca-filter-btn" data-filter="cleaning">Limpieza</button>
+                        <button class="ca-filter-btn" data-filter="menu">Menú</button>
+                        <button class="ca-nav-btn" id="todayWeek" style="margin-left:auto;">
+                            <span class="material-symbols-outlined">today</span>
+                        </button>
+                    </div>
                 </div>
-                
-                <!-- Filters -->
-                <div class="calendar-filters">
-                    <div class="filter-group">
-                        <label class="filter-label">Filtrar por:</label>
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="all">
-                                <span class="material-symbols-outlined">calendar_month</span> Todos
-                            </button>
-                            <button class="filter-btn" data-filter="google">
-                                <span class="material-symbols-outlined">today</span> Google
-                            </button>
-                            <button class="filter-btn" data-filter="cleaning">
-                                <span class="material-symbols-outlined">cleaning_services</span> Limpieza
-                            </button>
-                            <button class="filter-btn" data-filter="menu">
-                                <span class="material-symbols-outlined">restaurant_menu</span> Menú
-                            </button>
+
+                <!-- Status Bar -->
+                <div class="ca-status-bar" id="calendarStatusBar">
+                    <div class="ca-progress-wrap">
+                        <div class="ca-ring-wrap">
+                            <svg class="ca-ring-svg" width="64" height="64">
+                                <circle class="ca-ring-track" cx="32" cy="32" r="28" fill="transparent" stroke="currentColor" stroke-width="6"/>
+                                <circle class="ca-ring-fill" cx="32" cy="32" r="28" fill="transparent" stroke="currentColor" stroke-width="6"
+                                    stroke-dasharray="175.93" stroke-dashoffset="175.93" id="caRingFill"/>
+                            </svg>
+                            <span class="ca-ring-label" id="caRingPct">0%</span>
+                        </div>
+                        <div class="ca-progress-text">
+                            <div class="ca-progress-title-label">Estado de la semana</div>
+                            <div class="ca-progress-title" id="caProgressTitle">Cargando...</div>
+                        </div>
+                    </div>
+                    <div class="ca-stats">
+                        <div class="ca-stat-row">
+                            <span id="caStatTotal">Total: — tareas</span>
+                            <span class="ca-stat-ok">OK</span>
+                        </div>
+                        <div class="ca-stat-row">
+                            <span id="caStatToday">Hoy: — eventos</span>
+                            <span class="ca-stat-warn" id="caStatTodayFlag"></span>
+                        </div>
+                    </div>
+                    <div class="ca-next-event">
+                        <div class="ca-next-icon">
+                            <span class="material-symbols-outlined">event_upcoming</span>
+                        </div>
+                        <div>
+                            <div class="ca-next-label">Próximo evento</div>
+                            <div class="ca-next-title" id="caNextEvent">—</div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Calendar Grid -->
-                <div class="calendar-container" id="calendarGrid">
-                    <!-- Calendar content will be generated by JavaScript -->
-                </div>
+
+                <!-- Calendar Grid (rendered by JS) -->
+                <div id="calendarGrid"></div>
             </section>
             
             <!-- To-Do List Section -->

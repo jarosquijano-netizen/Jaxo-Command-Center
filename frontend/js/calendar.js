@@ -7,60 +7,27 @@ class CalendarManager {
     }
 
     async init() {
-        console.log('[cal] CalendarManager init');
-        // Verificar que la sección calendario existe
         const calendarSection = document.getElementById('calendar');
-        const calendarGrid = document.getElementById('calendarGrid');
-        console.log('[cal] calendarSection:', calendarSection);
-        console.log('[cal] calendarGrid:', calendarGrid);
-        if (!calendarSection) {
-            console.error('[err] Sección #calendar no encontrada en el DOM');
-            return;
-        }
-        if (!calendarGrid) {
-            console.error('[err] Contenedor #calendarGrid no encontrado en el DOM');
-            return;
-        }
-
-        // Verificar si la sección está activa (clase 'active')
-        console.log('[cal] calendarSection.classList:', calendarSection.classList);
-        console.log('[cal] calendarSection computed display:', getComputedStyle(calendarSection).display);
-        console.log('[cal] calendarSection offsetParent:', calendarSection.offsetParent);
-        console.log('[cal] calendarSection offsetWidth:', calendarSection.offsetWidth);
-        console.log('[cal] calendarSection offsetHeight:', calendarSection.offsetHeight);
-
-        // NO forzar visibilidad aquí, solo configurar listeners
+        if (!calendarSection) return;
         this.setupEventListeners();
         await this.loadCurrentWeek();
     }
 
     setupEventListeners() {
-        // Navigation buttons
         document.getElementById('prevWeek')?.addEventListener('click', () => this.navigateWeek(-1));
         document.getElementById('nextWeek')?.addEventListener('click', () => this.navigateWeek(1));
         document.getElementById('todayWeek')?.addEventListener('click', () => this.goToToday());
-
-        // Sync button
         document.getElementById('syncCalendarBtn')?.addEventListener('click', () => this.syncGoogleCalendar());
-
-        // Add event button
         document.getElementById('addEventBtn')?.addEventListener('click', () => this.addEvent());
 
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.setFilter(btn.dataset.filter);
-            });
+        document.querySelectorAll('.ca-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.setFilter(btn.dataset.filter));
         });
 
-        // Listener para cuando se activa la sección calendario
         const calendarLink = document.querySelector('a[href="#calendar"]');
         if (calendarLink) {
             calendarLink.addEventListener('click', () => {
-                setTimeout(() => {
-                    console.log('[cal] Sección calendario activada, recargando eventos');
-                    this.loadCurrentWeek();
-                }, 100);
+                setTimeout(() => this.loadCurrentWeek(), 100);
             });
         }
     }
@@ -69,220 +36,188 @@ class CalendarManager {
         try {
             const url = weekStart ? `/api/calendar/week?week=${weekStart}` : '/api/calendar/week';
             const response = await api.get(url);
-            console.log('[cal] Calendar response:', response);
             if (!response.success) {
-                console.error('[err] Error cargando calendario:', response.message);
-                this.showError(response.message || 'Error cargando calendario');
+                this.showMessage(response.message || 'Error cargando calendario', 'error');
                 return;
             }
             const data = response.data;
             this.currentWeek = new Date(data.week_start);
             this.events = data.events || [];
-            console.log('[cal] Events loaded:', this.events);
             this.renderWeek();
             this.updateWeekDisplay();
         } catch (e) {
-            console.error('[err] Error cargando calendario:', e);
-            this.showError('Error cargando calendario');
+            console.error('[cal] Error:', e);
+            this.showMessage('Error cargando calendario', 'error');
         }
-    }
-
-    showError(message) {
-        // Simple inline error display below week navigation
-        const container = document.querySelector('.module-content');
-        if (!container) return;
-        let errEl = container.querySelector('.calendar-error');
-        if (!errEl) {
-            errEl = document.createElement('div');
-            errEl.className = 'calendar-error';
-            errEl.style.cssText = `
-                color: var(--error, #ef4444);
-                background: var(--bg-secondary);
-                padding: var(--spacing-sm);
-                border-radius: var(--radius-sm);
-                margin-bottom: var(--spacing-md);
-                text-align: center;
-                font-size: 0.875rem;
-            `;
-            container.insertBefore(errEl, container.firstChild);
-        }
-        errEl.textContent = message;
     }
 
     navigateWeek(direction) {
         if (!this.currentWeek) return;
         const newWeek = new Date(this.currentWeek);
-        newWeek.setDate(newWeek.getDate() + (direction * 7));
+        newWeek.setDate(newWeek.getDate() + direction * 7);
         this.loadCurrentWeek(newWeek.toISOString().split('T')[0]);
     }
 
-    goToToday() {
-        this.loadCurrentWeek();
-    }
+    goToToday() { this.loadCurrentWeek(); }
 
     updateWeekDisplay() {
-        const weekDisplay = document.getElementById('weekDisplay');
-        if (weekDisplay && this.currentWeek) {
-            const start = new Date(this.currentWeek);
-            const end = new Date(start);
-            end.setDate(end.getDate() + 6);
-            const options = { day: '2-digit', month: 'short' };
-            const txt = `${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}`;
-            weekDisplay.textContent = txt;
-        }
+        const el = document.getElementById('weekDisplay');
+        if (!el || !this.currentWeek) return;
+        const start = new Date(this.currentWeek);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        const fmt = d => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        el.textContent = `${fmt(start)} — ${fmt(end)}`;
     }
 
     renderWeek() {
         const container = document.getElementById('calendarGrid');
-        if (!container) {
-            console.error('[err] #calendarGrid no encontrado');
-            return;
+        if (!container) return;
+
+        const filtered = this.filterEvents(this.events);
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+        // Build day map
+        const dayNames = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(this.currentWeek);
+            d.setDate(d.getDate() + i);
+            const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            days.push({ name: dayNames[i], num: d.getDate(), key, isToday: key === todayKey, events: [] });
         }
 
-        console.log('[cal] Renderizando calendario con eventos:', this.events);
-
-        // Remove any existing error message
-        const errEl = container.parentElement?.querySelector('.calendar-error');
-        if (errEl) errEl.remove();
-
-        // Filtrar eventos según el filtro actual
-        const filteredEvents = this.filterEvents(this.events);
-
-        // Renderizado mejorado con estructura de calendario
-        let html = '<div class="calendar-week-view">';
-        
-        // Header con días de la semana
-        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        html += '<div class="calendar-header">';
-        days.forEach(day => {
-            html += `<div class="calendar-day-header">${day}</div>`;
+        filtered.forEach(ev => {
+            const evDate = new Date(ev.start);
+            const evKey = `${evDate.getFullYear()}-${String(evDate.getMonth()+1).padStart(2,'0')}-${String(evDate.getDate()).padStart(2,'0')}`;
+            const day = days.find(d => d.key === evKey);
+            if (day) day.events.push(ev);
         });
-        html += '</div>';
 
-        // Agrupar eventos por día
-        const eventsByDay = {};
-        if (this.currentWeek) {
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(this.currentWeek);
-                date.setDate(date.getDate() + i);
-                const dateKey = date.toISOString().split('T')[0];
-                eventsByDay[dateKey] = [];
-            }
+        // Update status bar
+        this.updateStatusBar(days, todayKey);
+
+        // Render grid
+        const gridHTML = `<div class="ca-grid">${days.map(day => this.renderDayCol(day)).join('')}</div>`;
+        container.innerHTML = gridHTML;
+    }
+
+    updateStatusBar(days, todayKey) {
+        const allEvents = days.flatMap(d => d.events);
+        const todayEvents = days.find(d => d.key === todayKey)?.events || [];
+        const total = allEvents.length;
+
+        // Next upcoming event from now
+        const now = new Date();
+        const upcoming = allEvents
+            .filter(ev => new Date(ev.start) > now)
+            .sort((a, b) => new Date(a.start) - new Date(b.start))[0];
+
+        // Progress: use cleaning events completion as proxy (all are "pending" since no completion data)
+        const pct = total > 0 ? Math.min(100, Math.round((total / Math.max(total, 20)) * 100)) : 0;
+        const circ = 175.93;
+        const offset = circ * (1 - pct / 100);
+
+        const ringFill = document.getElementById('caRingFill');
+        if (ringFill) ringFill.setAttribute('stroke-dashoffset', offset.toFixed(2));
+
+        const ringPct = document.getElementById('caRingPct');
+        if (ringPct) ringPct.textContent = pct + '%';
+
+        const progressTitle = document.getElementById('caProgressTitle');
+        if (progressTitle) {
+            progressTitle.textContent = pct >= 80 ? 'Excelente semana' : pct >= 50 ? 'Buen progreso' : 'En marcha';
         }
 
-        filteredEvents.forEach(event => {
-            const eventDate = new Date(event.start).toISOString().split('T')[0];
-            if (eventsByDay[eventDate]) {
-                eventsByDay[eventDate].push(event);
-            }
-        });
+        const statTotal = document.getElementById('caStatTotal');
+        if (statTotal) statTotal.textContent = `Total: ${total} evento${total !== 1 ? 's' : ''}`;
 
-        // Renderizar eventos por día
-        html += '<div class="calendar-days">';
-        Object.keys(eventsByDay).forEach(dateKey => {
-            const dayEvents = eventsByDay[dateKey];
-            const date = new Date(dateKey);
-            const dayName = date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
-            
-            html += `<div class="calendar-day">`;
-            html += `<div class="calendar-date">${dayName}</div>`;
-            
-            if (dayEvents.length > 0) {
-                html += '<div class="calendar-events">';
-                dayEvents.forEach(event => {
-                    const time = new Date(event.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                    const title = event.title || '(sin título)';
-                    const source = event.source || 'unknown';
-                    const color = event.color || '#666';
-                    
-                    const subtitle = event.subtitle ? `<span class="event-subtitle">${event.subtitle}</span>` : '';
-                    html += `<div class="calendar-event-item" style="border-left: 3px solid ${color}; background: ${color}20;">
-                        <span class="event-time">${time}</span>
-                        <span class="event-title">${title}</span>
-                        ${subtitle}
-                        <span class="event-source" style="color: ${color}">${this.getSourceLabel(source)}</span>
-                    </div>`;
-                });
-                html += '</div>';
+        const statToday = document.getElementById('caStatToday');
+        if (statToday) statToday.textContent = `Hoy: ${todayEvents.length} evento${todayEvents.length !== 1 ? 's' : ''}`;
+
+        const statFlag = document.getElementById('caStatTodayFlag');
+        if (statFlag) statFlag.textContent = todayEvents.length > 0 ? '!' : '';
+
+        const nextEl = document.getElementById('caNextEvent');
+        if (nextEl) {
+            if (upcoming) {
+                const time = new Date(upcoming.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                nextEl.textContent = `${upcoming.title} (${time})`;
             } else {
-                html += '<div class="calendar-events empty">Sin eventos</div>';
+                nextEl.textContent = 'Sin próximos eventos';
             }
-            
-            html += '</div>';
-        });
-        html += '</div>';
-        html += '</div>';
-
-        container.innerHTML = html;
-        console.log('[cal] Calendario renderizado con estructura semanal');
+        }
     }
 
-    renderEvent(event) {
-        const minutes = new Date(event.start).getMinutes();
-        const top = (minutes / 60) * 60; // 60px per hour slot
-        const duration = (new Date(event.end) - new Date(event.start)) / (1000 * 60);
-        const height = Math.max(20, (duration / 60) * 60); // min 20px height
-        const title = event.title || '(sin título)';
-        const sourceClass = event.source || 'google';
-        const tooltip = this.buildTooltip(event);
-        return `<div class="calendar-event ${sourceClass}" style="top:${top}px;height:${height}px;" title="${tooltip}">${title}</div>`;
+    renderDayCol(day) {
+        const headClass = day.isToday ? 'ca-day-head today' : 'ca-day-head';
+        const eventsHTML = day.events.length > 0
+            ? day.events.map(ev => this.renderEventCard(ev)).join('')
+            : `<div class="ca-day-empty">Sin eventos</div>`;
+
+        return `
+        <div class="ca-day-col">
+            <div class="${headClass}">
+                <span class="ca-day-name">${day.name}</span>
+                <span class="ca-day-num">${day.num}</span>
+            </div>
+            <div class="ca-day-events">${eventsHTML}</div>
+        </div>`;
     }
 
-    buildTooltip(event) {
-        const start = new Date(event.start).toLocaleString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-        const end = new Date(event.end).toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit' });
-        const location = event.location ? `\nUbicación: ${event.location}` : '';
-        const assigned = event.assigned_to ? `\nAsignado: ${event.assigned_to}` : '';
-        const area = event.area ? `\nÁrea: ${event.area}` : '';
-        const description = event.description ? `\n${event.description}` : '';
-        return `${event.title}\n${start} - ${end}${location}${assigned}${area}${description}`;
+    renderEventCard(ev) {
+        const src = ev.source || 'google';
+        const time = new Date(ev.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        const title = ev.title || '(sin título)';
+        const badgeLabel = this.getSourceLabel(src);
+
+        return `
+        <div class="ca-event-card ca-src-${src}">
+            <span class="ca-event-time ca-time-${src}">${time}</span>
+            <p class="ca-event-title">${title}</p>
+            <span class="ca-event-badge ca-badge-${src}">${badgeLabel}</span>
+        </div>`;
     }
 
-    getEventsForSlot(date, hour) {
-        const slotStart = new Date(date);
-        slotStart.setHours(hour, 0, 0, 0);
-        const slotEnd = new Date(slotStart);
-        slotEnd.setHours(hour + 1, 0, 0, 0);
-        return this.events.filter(ev => {
-            const evStart = new Date(ev.start);
-            const evEnd = new Date(ev.end);
-            return evStart < slotEnd && evEnd > slotStart;
-        });
+    getSourceLabel(source) {
+        return { google: 'Google', cleaning: 'Limpieza', menu: 'Menú' }[source] || 'Evento';
     }
 
-    isSameDay(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth() &&
-               d1.getDate() === d2.getDate();
+    filterEvents(events) {
+        if (this.currentFilter === 'all') return events;
+        return events.filter(ev => ev.source === this.currentFilter);
+    }
+
+    setFilter(filter) {
+        this.currentFilter = filter;
+        document.querySelectorAll('.ca-filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.ca-filter-btn[data-filter="${filter}"]`)?.classList.add('active');
+        this.renderWeek();
     }
 
     async syncGoogleCalendar() {
         const syncBtn = document.getElementById('syncCalendarBtn');
         const originalHTML = syncBtn ? syncBtn.innerHTML : '';
         try {
-            console.log('[cal] Verificando estado de Google Calendar...');
-            if (syncBtn) { syncBtn.textContent = 'Verificando...'; syncBtn.disabled = true; }
+            if (syncBtn) { syncBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_empty</span> Verificando...'; syncBtn.disabled = true; }
 
-            // 1. Check auth status
             const statusResp = await api.get('/api/google/auth/status');
-            const connected = statusResp.success && statusResp.data && statusResp.data.connected;
+            const connected = statusResp.success && statusResp.data?.connected;
 
             if (!connected) {
-                // 2. Start OAuth flow
-                if (syncBtn) syncBtn.textContent = 'Abriendo autorización...';
+                if (syncBtn) syncBtn.innerHTML = '<span class="material-symbols-outlined">sync</span> Abriendo...';
                 const startResp = await api.get('/api/google/auth/start');
                 if (!startResp.success || !startResp.data?.auth_url) {
-                    this.showError(startResp.message || 'Error: configura Google Credentials en Configuración primero');
+                    this.showMessage(startResp.message || 'Error: configura Google Credentials en Configuración', 'error');
                     return;
                 }
-                // Open OAuth in a new tab
                 window.open(startResp.data.auth_url, '_blank');
-                this.showInfo('Autoriza en la ventana de Google y vuelve aquí. Luego pulsa Sincronizar de nuevo.');
+                this.showMessage('Autoriza en la ventana de Google y vuelve aquí. Luego pulsa Sincronizar de nuevo.', 'info');
                 return;
             }
 
-            // 3. Already connected — import events
-            if (syncBtn) { syncBtn.textContent = 'Sincronizando...'; }
+            if (syncBtn) syncBtn.innerHTML = '<span class="material-symbols-outlined">sync</span> Sincronizando...';
             const weekStart = this.currentWeek ? this.currentWeek.toISOString().split('T')[0] : null;
             const weekEnd = this.currentWeek
                 ? new Date(this.currentWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -291,101 +226,38 @@ class CalendarManager {
             const importResp = await api.post('/api/google/import', { from: weekStart, to: weekEnd });
             if (importResp.success) {
                 const d = importResp.data;
-                this.showSuccess(`Sincronización completada: ${d.created} nuevos, ${d.updated} actualizados`);
+                this.showMessage(`Sincronización completada: ${d.created} nuevos, ${d.updated} actualizados`, 'success');
                 await this.loadCurrentWeek();
             } else {
-                this.showError('Error sincronizando: ' + (importResp.message || 'desconocido'));
+                this.showMessage('Error sincronizando: ' + (importResp.message || 'desconocido'), 'error');
             }
         } catch (error) {
-            console.error('[err] Error sincronizando Google Calendar:', error);
-            this.showError('Error sincronizando Google Calendar');
+            console.error('[cal] Sync error:', error);
+            this.showMessage('Error sincronizando Google Calendar', 'error');
         } finally {
             if (syncBtn) { syncBtn.innerHTML = originalHTML || '<span class="material-symbols-outlined">sync</span> Sincronizar'; syncBtn.disabled = false; }
         }
     }
 
     addEvent() {
-        // TODO: Implementar formulario para añadir eventos
-        this.showInfo('Función para añadir eventos próximamente');
-    }
-
-    showSuccess(message) {
-        this.showMessage(message, 'success');
-    }
-
-    showError(message) {
-        this.showMessage(message, 'error');
-    }
-
-    showInfo(message) {
-        this.showMessage(message, 'info');
+        this.showMessage('Función para añadir eventos próximamente', 'info');
     }
 
     showMessage(message, type = 'info') {
-        const container = document.getElementById('calendarGrid');
-        if (!container) return;
-
-        const colors = {
-            success: '#34A853',
-            error: '#EA4335',
-            info: '#4285F4'
-        };
-
-        const messageEl = document.createElement('div');
-        messageEl.style.cssText = `
-            background: ${colors[type]};
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            text-align: center;
-            font-size: 0.875rem;
+        const colors = { success: '#34A853', error: '#EA4335', info: '#4285F4' };
+        const el = document.createElement('div');
+        el.style.cssText = `
+            position: fixed; top: 24px; right: 24px; z-index: 9999;
+            background: ${colors[type]}; color: white;
+            padding: 12px 20px; border-radius: 12px;
+            font-size: 0.875rem; font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            max-width: 360px;
         `;
-        messageEl.textContent = message;
-
-        container.insertBefore(messageEl, container.firstChild);
-
-        // Auto-remover después de 3 segundos
-        setTimeout(() => {
-            if (messageEl.parentNode) {
-                messageEl.remove();
-            }
-        }, 3000);
-    }
-
-    getSourceLabel(source) {
-        const labels = {
-            'google': 'Google',
-            'cleaning': 'Limpieza',
-            'menu': 'Menú',
-            'unknown': 'Evento'
-        };
-        return labels[source] || labels.unknown;
-    }
-
-    setFilter(filter) {
-        this.currentFilter = filter;
-        
-        // Actualizar botones activos
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
-        
-        // Re-renderizar con el filtro aplicado
-        this.renderWeek();
-        
-        console.log(`[cal] Filtro aplicado: ${filter}`);
-    }
-
-    filterEvents(events) {
-        if (this.currentFilter === 'all') {
-            return events;
-        }
-        
-        return events.filter(event => event.source === this.currentFilter);
+        el.textContent = message;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
     }
 }
 
-// Instancia global
 const calendarManager = new CalendarManager();
