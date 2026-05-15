@@ -92,6 +92,8 @@ def tv_view():
     try:
         from services.menu_service import menu_service
         menu_dict = menu_service.get_weekly_menu()
+        if not menu_dict:
+            menu_dict = menu_service.get_latest_menu()
         if menu_dict:
             md = menu_dict.get('menu_data') or {}
             adultos_day = md.get('menu_adultos', {}).get(today_key, {})
