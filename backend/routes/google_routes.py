@@ -41,7 +41,17 @@ def auth_start():
 
         redirect_uri = request.args.get('redirect_uri')
         if not redirect_uri:
-            redirect_uri = request.host_url.rstrip('/') + '/api/google/auth/callback'
+            # Use the redirect URI from the credentials JSON if available
+            try:
+                import json as _json
+                creds = _json.loads(settings.google_credentials)
+                cred_type = list(creds.keys())[0]
+                uris = creds[cred_type].get('redirect_uris', [])
+                redirect_uri = next((u for u in uris if 'localhost' not in u), None)
+            except Exception:
+                redirect_uri = None
+            if not redirect_uri:
+                redirect_uri = request.host_url.rstrip('/') + '/api/google/auth/callback'
 
         auth_url, state = google_calendar_service.get_authorization_url(
             google_credentials_json=settings.google_credentials,
@@ -73,10 +83,24 @@ def auth_callback():
         if not settings or not settings.google_credentials:
             return 'Missing Google Credentials', 400
 
+        # Determine the redirect URI from credentials (must match what was used in auth_start)
+        redirect_uri = None
+        try:
+            import json as _json
+            creds = _json.loads(settings.google_credentials)
+            cred_type = list(creds.keys())[0]
+            uris = creds[cred_type].get('redirect_uris', [])
+            redirect_uri = next((u for u in uris if 'localhost' not in u), None)
+        except Exception:
+            redirect_uri = None
+
+        # Ensure callback URL uses https (Railway proxies to http internally)
+        authorization_response = request.url.replace('http://', 'https://')
+
         google_calendar_service.exchange_code_for_token(
             google_credentials_json=settings.google_credentials,
-            redirect_uri=None,
-            authorization_response=request.url,
+            redirect_uri=redirect_uri,
+            authorization_response=authorization_response,
             state=None,
         )
 
