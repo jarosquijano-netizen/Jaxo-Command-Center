@@ -79,6 +79,8 @@ def _normalise_meal(raw):
             'tiempo': raw.get('tiempo') or raw.get('tiempo_prep') or raw.get('time'),
             'dificultad': raw.get('dificultad') or raw.get('difficulty'),
             'calorias': raw.get('calorias') or raw.get('kcal') or raw.get('calories'),
+            'ingredientes': raw.get('ingredientes') or [],
+            'preparacion': raw.get('preparacion') or [],
         }
     return None
 

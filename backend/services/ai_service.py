@@ -191,7 +191,7 @@ NIÑOS: {chr(10).join(preferencias_ninos) if preferencias_ninos else 'No niños'
 4. Responder SOLO con JSON válido, sin texto adicional
 
 IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
-- plato, descripcion, tiempo_prep, calorias, dificultad, alergenos (array)
+- plato, descripcion, tiempo_prep, calorias, dificultad, alergenos (array), ingredientes (array de strings, máx 8 items), preparacion (array de strings, máx 5 pasos breves)
 
 ## FORMATO JSON (respeta esta estructura exacta para TODOS los días):
 {{
@@ -203,7 +203,9 @@ IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
         "tiempo_prep": 30,
         "calorias": 350,
         "dificultad": "Media",
-        "alergenos": []
+        "alergenos": [],
+        "ingredientes": ["Ingrediente 1 con cantidad", "Ingrediente 2 con cantidad"],
+        "preparacion": ["Paso 1 breve", "Paso 2 breve", "Paso 3 breve"]
       }}
     }}
   }},
@@ -215,7 +217,9 @@ IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
         "tiempo_prep": 20,
         "calorias": 250,
         "dificultad": "Fácil",
-        "alergenos": []
+        "alergenos": [],
+        "ingredientes": ["Ingrediente 1 con cantidad", "Ingrediente 2 con cantidad"],
+        "preparacion": ["Paso 1 breve", "Paso 2 breve"]
       }}
     }}
   }},

@@ -99,7 +99,7 @@
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/>
             </svg>
-            {{ meal.tiempo }}
+            {{ meal.tiempo }} min
           </span>
         {%- endif -%}
         {{ diff_badge(meal.dificultad) }}
@@ -107,6 +107,22 @@
           <span class="text-xs font-bold px-2 py-1 bg-jaxo-teal/20 text-jaxo-teal rounded">{{ meal.calorias }} KCAL</span>
         {%- endif -%}
       </div>
+      {%- if meal.ingredientes -%}
+        <div class="mt-2 pt-2 border-t border-white/10">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Ingredientes</p>
+          <p class="text-xs text-slate-300 leading-relaxed">{{ meal.ingredientes | join(' · ') }}</p>
+        </div>
+      {%- endif -%}
+      {%- if meal.preparacion -%}
+        <div class="mt-1 pt-2 border-t border-white/10">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Preparación</p>
+          <ol class="text-xs text-slate-300 space-y-0.5">
+            {%- for step in meal.preparacion -%}
+              <li class="flex gap-1.5"><span class="text-jaxo-cyan font-bold flex-shrink-0">{{ loop.index }}.</span>{{ step }}</li>
+            {%- endfor -%}
+          </ol>
+        </div>
+      {%- endif -%}
     </div>
   {%- else -%}
     <div class="glass-card p-4 flex flex-col gap-1">
@@ -119,11 +135,27 @@
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/>
               </svg>
-              {{ meal.tiempo }}
+              {{ meal.tiempo }} min
             </span>
           {%- endif -%}
           {{ diff_badge(meal.dificultad) }}
         </div>
+        {%- if meal.ingredientes -%}
+          <div class="mt-2 pt-2 border-t border-white/10">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Ingredientes</p>
+            <p class="text-xs text-slate-400 leading-relaxed">{{ meal.ingredientes | join(' · ') }}</p>
+          </div>
+        {%- endif -%}
+        {%- if meal.preparacion -%}
+          <div class="mt-1 pt-2 border-t border-white/10">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Preparación</p>
+            <ol class="text-xs text-slate-400 space-y-0.5">
+              {%- for step in meal.preparacion -%}
+                <li class="flex gap-1.5"><span class="text-jaxo-cyan font-bold flex-shrink-0">{{ loop.index }}.</span>{{ step }}</li>
+              {%- endfor -%}
+            </ol>
+          </div>
+        {%- endif -%}
       {%- else -%}
         <p class="text-base text-slate-500 italic">Sin menú hoy</p>
       {%- endif -%}
