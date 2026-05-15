@@ -252,89 +252,70 @@
             
             <!-- Cleaning Section -->
             <section id="cleaning" class="module-section">
-                <div class="content-header">
-                    <div class="header-left">
-                        <div class="header-icon">
-                            <span class="material-symbols-outlined">cleaning_services</span>
-                        </div>
-                        <div>
-                            <h2>Plan de Limpieza</h2>
-                            <p class="subtitle">Asignación inteligente de tareas</p>
-                        </div>
+                <!-- Header -->
+                <header class="cl-header">
+                    <div class="cl-header-left">
+                        <h1 class="cl-title">Plan de Limpieza</h1>
+                        <span class="cl-week-badge" id="cleaningWeekBadge">Semana --</span>
                     </div>
-                    <div class="header-actions">
-                        <button class="btn btn-primary" onclick="cleaningManager.generateWeek()">
+                    <div class="cl-header-actions">
+                        <button class="cl-btn-primary" onclick="cleaningManager.generateWeek()">
                             <span class="material-symbols-outlined">refresh</span>
                             Generar Semana
                         </button>
-                        <button class="btn btn-secondary" onclick="cleaningManager.showStats()">
+                        <button class="cl-btn-secondary" onclick="cleaningManager.showStats()">
                             <span class="material-symbols-outlined">bar_chart</span>
                             Estadísticas
                         </button>
                     </div>
+                </header>
+
+                <!-- Controls: status card + filters -->
+                <div class="cl-controls">
+                    <div class="cl-status glass-card" id="cleaningStatus">
+                        <div class="cl-status-empty">Cargando estado...</div>
+                    </div>
+                    <div class="cl-filters">
+                        <div class="cl-select-wrap">
+                            <select class="cl-select" id="memberFilter" onchange="cleaningManager.onMemberFilter(this.value)">
+                                <option value="">Todos los miembros</option>
+                            </select>
+                            <span class="material-symbols-outlined cl-select-icon">expand_more</span>
+                        </div>
+                        <div class="cl-select-wrap">
+                            <select class="cl-select" id="areaFilter" onchange="cleaningManager.onAreaFilter(this.value)">
+                                <option value="">Todas las áreas</option>
+                                <option value="cocina">Cocina</option>
+                                <option value="bano">Baños</option>
+                                <option value="salon">Salón</option>
+                                <option value="dormitorio">Dormitorios</option>
+                                <option value="general">General</option>
+                                <option value="exterior">Exterior</option>
+                                <option value="mascotas">Mascotas</option>
+                            </select>
+                            <span class="material-symbols-outlined cl-select-icon">expand_more</span>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Week Navigation -->
-                <div class="week-navigation">
-                    <button class="nav-btn" onclick="cleaningManager.previousWeek()">
+
+                <!-- Week navigation -->
+                <div class="cl-week-nav glass-card">
+                    <button class="cl-nav-btn" onclick="cleaningManager.previousWeek()">
                         <span class="material-symbols-outlined">chevron_left</span>
                     </button>
-                    <div class="week-info">
-                        <div class="week-label">Semana</div>
-                        <span id="week-range">20 - 26 Enero 2026</span>
+                    <div class="cl-week-center">
+                        <span class="cl-week-label-small">Semana</span>
+                        <span class="cl-week-range" id="week-range">Cargando...</span>
                     </div>
-                    <button class="nav-btn" onclick="cleaningManager.nextWeek()">
+                    <button class="cl-nav-btn" onclick="cleaningManager.nextWeek()">
                         <span class="material-symbols-outlined">chevron_right</span>
                     </button>
                 </div>
 
-                <!-- Filters -->
-                <div class="cleaning-filters">
-                    <div class="custom-dropdown">
-                        <div class="dropdown-trigger" onclick="cleaningManager.toggleDropdown('member-dropdown')">
-                            <span id="member-selected">Todos los miembros</span>
-                            <span class="material-symbols-outlined">expand_more</span>
-                        </div>
-                        <div id="member-dropdown" class="dropdown-content">
-                            <div class="dropdown-item" onclick="cleaningManager.selectMember('')">Todos los miembros</div>
-                        </div>
-                    </div>
-                    <div class="custom-dropdown">
-                        <div class="dropdown-trigger" onclick="cleaningManager.toggleDropdown('area-dropdown')">
-                            <span id="area-selected">Todas las áreas</span>
-                            <span class="material-symbols-outlined">expand_more</span>
-                        </div>
-                        <div id="area-dropdown" class="dropdown-content">
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('')">Todas las áreas</div>
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('cocina')">Cocina</div>
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('bano')">Baños</div>
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('salon')">Salón</div>
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('dormitorio')">Dormitorios</div>
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('general')">General</div>
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('exterior')">Exterior</div>
-                            <div class="dropdown-item" onclick="cleaningManager.selectArea('mascotas')">Mascotas</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Weekly Calendar Grid -->
-                <div class="week-grid" id="week-grid">
-                    <!-- Days will be generated by JavaScript -->
-                </div>
-                
-                <!-- Weekly Summary -->
-                <div class="weekly-summary">
-                    <div class="summary-header">
-                        <div class="summary-icon">
-                            <span class="material-symbols-outlined">bar_chart</span>
-                        </div>
-                        <div>
-                            <h3>Resumen Semana</h3>
-                            <p class="summary-subtitle">Estadísticas por miembro</p>
-                        </div>
-                    </div>
-                    <div class="summary-grid" id="summary-grid">
-                        <!-- Member summaries will be generated by JavaScript -->
+                <!-- 7-column schedule grid -->
+                <div class="cl-grid-wrapper">
+                    <div class="cl-grid" id="week-grid">
+                        <!-- rendered by JS -->
                     </div>
                 </div>
             </section>
@@ -1326,7 +1307,7 @@
     <script src="js/navigation.js?v=20260516"></script>
     <script src="js/family.js?v=20260516"></script>
     <script src="js/menu.js?v=20260521"></script>
-    <script src="js/cleaning.js?v=20260522"></script>
+    <script src="js/cleaning.js?v=20260523"></script>
     <script src="js/calendar.js?v=20260516"></script>
     <script src="js/shopping.js?v=20260520"></script>
     <script src="js/todo.js?v=20260516"></script>

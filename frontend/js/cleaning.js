@@ -7,46 +7,30 @@ class CleaningManager {
         this.currentWeek = null;
         this.schedule = [];
         this.members = [];
-        this.filters = {
-            member: '',
-            area: ''
-        };
+        this.filters = { member: '', area: '' };
         this.init();
     }
 
     async init() {
         console.log('[cleaning] Inicializando módulo de limpieza...');
-        
-        // Obtener semana actual
         this.getCurrentWeek();
-        
-        // Cargar datos iniciales
         await this.loadMembers();
         await this.loadSchedule();
         await this.initializeCleaning();
-        
-        // Renderizar UI
         this.renderWeekGrid();
-        this.renderSummary();
+        this.renderStatusCard();
         this.populateFilters();
-        
-        // Inicializar Lucide icons
-        this.initializeLucideIcons();
-        
-        // Setup click outside to close dropdowns
-        this.setupDropdownListeners();
     }
 
     getCurrentWeek() {
         const today = new Date();
         const monday = new Date(today);
-        monday.setDate(today.getDate() - today.getDay() + 1);
-        
+        monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+        monday.setHours(0, 0, 0, 0);
         this.currentWeek = {
             start: monday,
             end: new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000)
         };
-        
         this.updateWeekDisplay();
     }
 
@@ -55,17 +39,31 @@ class CleaningManager {
         await this.loadMembers();
         await this.loadSchedule();
         this.renderWeekGrid();
-        this.renderSummary();
+        this.renderStatusCard();
         this.populateFilters();
-        this.initializeLucideIcons();
     }
 
     updateWeekDisplay() {
-        const options = { day: 'numeric', month: 'long', year: 'numeric' };
-        const startStr = this.currentWeek.start.toLocaleDateString('es-ES', options);
-        const endStr = this.currentWeek.end.toLocaleDateString('es-ES', options);
-        
-        document.getElementById('week-range').textContent = `${startStr} - ${endStr}`;
+        const opts = { day: 'numeric', month: 'long', year: 'numeric' };
+        const startStr = this.currentWeek.start.toLocaleDateString('es-ES', opts);
+        const endStr = this.currentWeek.end.toLocaleDateString('es-ES', opts);
+        const el = document.getElementById('week-range');
+        if (el) el.textContent = `${startStr} - ${endStr}`;
+
+        // Update week badge (ISO week number)
+        const badge = document.getElementById('cleaningWeekBadge');
+        if (badge) {
+            const weekNum = this.getISOWeekNumber(this.currentWeek.start);
+            badge.textContent = `Semana ${weekNum}`;
+        }
+    }
+
+    getISOWeekNumber(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+        const week1 = new Date(d.getFullYear(), 0, 4);
+        return 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
     }
 
     async loadMembers() {
@@ -85,13 +83,20 @@ class CleaningManager {
 
     async loadSchedule() {
         try {
-            const weekStart = this.currentWeek.start.toISOString().split('T')[0];
+            const weekStart = this.formatDate(this.currentWeek.start);
             const response = await api.get(`/api/cleaning/schedule?week_start=${weekStart}`);
             this.schedule = response.data || [];
             console.log('[ok] Schedule cargado:', this.schedule);
         } catch (error) {
             console.error('[err] Error cargando schedule:', error);
         }
+    }
+
+    formatDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 
     async initializeCleaning() {
@@ -105,39 +110,21 @@ class CleaningManager {
         }
     }
 
-    initializeLucideIcons() {
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    }
-
-    setupDropdownListeners() {
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.custom-dropdown')) {
-                document.querySelectorAll('.dropdown-content').forEach(dd => {
-                    dd.classList.remove('show');
-                    dd.previousElementSibling.classList.remove('active');
-                });
-            }
-        });
-    }
-
     async generateWeek() {
         try {
-            const weekStart = this.currentWeek.start.toISOString().split('T')[0];
+            const weekStart = this.formatDate(this.currentWeek.start);
             const response = await api.post('/api/cleaning/generate', {
                 week_start: weekStart,
                 regenerate: true
             });
-            
             if (response.success) {
                 console.log('[ok] Semana generada:', response.message);
                 await this.loadSchedule();
                 this.renderWeekGrid();
-                this.renderSummary();
-                this.initializeLucideIcons();
+                this.renderStatusCard();
                 this.showNotification('Plan semanal generado exitosamente', 'success');
+            } else {
+                this.showNotification('Error generando plan semanal', 'error');
             }
         } catch (error) {
             console.error('[err] Error generando semana:', error);
@@ -145,164 +132,44 @@ class CleaningManager {
         }
     }
 
-    renderWeekGrid() {
-        const grid = document.getElementById('week-grid');
-        const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-        const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        
-        grid.innerHTML = '';
-        
-        // Header
-        const header = document.createElement('div');
-        header.className = 'week-header';
-        dayNames.forEach((day, index) => {
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            
-            // Calculate day stats
-            const dayTasks = this.getFilteredTasks().filter(task => {
-                const taskDate = new Date(task.fecha_programada);
-                return taskDate.getDay() === (index + 1) % 7;
-            });
-            
-            const totalTasks = dayTasks.length;
-            const totalMinutes = dayTasks.reduce((sum, task) => sum + (task.duracion_minutos || 0), 0);
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            const timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-            
-            dayHeader.innerHTML = `
-                <div class="day-name">${day}</div>
-                <div class="day-date">${this.formatDate(this.currentWeek.start, index)}</div>
-                <div class="day-stats">
-                    <div class="day-tasks-count">
-                        <i data-lucide="check-square" style="width: 12px; height: 12px;"></i>
-                        <span>${totalTasks} tareas</span>
-                    </div>
-                    <div class="day-time-count">
-                        <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
-                        <span>${timeStr}</span>
-                    </div>
-                </div>
-            `;
-            header.appendChild(dayHeader);
-        });
-        grid.appendChild(header);
-        
-        // Tasks grid
-        const tasksGrid = document.createElement('div');
-        tasksGrid.className = 'tasks-grid';
-        
-        days.forEach((day, dayIndex) => {
-            const dayColumn = document.createElement('div');
-            dayColumn.className = 'day-column';
-            dayColumn.dataset.day = day;
-            
-            // Filter tasks for this day
-            const dayTasks = this.getFilteredTasks().filter(task => {
-                const taskDate = new Date(task.fecha_programada);
-                return taskDate.getDay() === (dayIndex + 1) % 7;
-            });
-            
-            dayTasks.forEach(task => {
-                const taskCard = this.createTaskCard(task);
-                dayColumn.appendChild(taskCard);
-            });
-            
-            // Add "more tasks" indicator
-            const remainingTasks = dayTasks.length - 3; // Show max 3 tasks
-            if (remainingTasks > 0) {
-                const moreIndicator = document.createElement('div');
-                moreIndicator.className = 'more-tasks';
-                moreIndicator.textContent = `+${remainingTasks} más`;
-                dayColumn.appendChild(moreIndicator);
-            }
-            
-            tasksGrid.appendChild(dayColumn);
-        });
-        
-        grid.appendChild(tasksGrid);
-        
-        // Initialize Lucide icons for new elements
-        this.initializeLucideIcons();
+    getFilteredTasks() {
+        let filtered = [...this.schedule];
+        if (this.filters.member) {
+            filtered = filtered.filter(t => String(t.member_id) === String(this.filters.member));
+        }
+        if (this.filters.area) {
+            filtered = filtered.filter(t => t.area === this.filters.area);
+        }
+        return filtered;
     }
 
-    createTaskCard(task) {
-        const card = document.createElement('div');
-        card.className = `task-card ${task.completada ? 'completed' : ''} ${this.isOverdue(task) ? 'overdue' : ''}`;
-        card.dataset.taskId = task.id;
-        card.dataset.area = task.area;
-        card.dataset.memberId = task.member_id;
-        
-        const member = this.members.find(m => m.id === task.member_id);
-        const memberColor = member ? member.avatar_color : '#666';
-        const memberName = member ? member.nombre : task.member_nombre;
-        
-        card.innerHTML = `
-            <div class="task-header">
-                <div class="task-icon" style="flex-shrink: 0; color: var(--gaudi-gold);">
-                    ${this.getTaskIcon(task.area)}
-                </div>
-                <div class="task-title">${task.task_nombre}</div>
-            </div>
-            <div class="task-assignee">
-                <div class="assignee-avatar" style="background-color: ${memberColor}">
-                    ${memberName.charAt(0).toUpperCase()}
-                </div>
-                <div class="assignee-name">${memberName}</div>
-            </div>
-            <div class="task-footer">
-                <span class="task-duration">
-                    <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
-                    ${task.duracion_minutos} min
-                </span>
-                <span class="task-area">
-                    <i data-lucide="home" style="width: 14px; height: 14px;"></i>
-                    ${this.getAreaLabel(task.area)}
-                </span>
-            </div>
-            <div class="task-actions">
-                <button class="task-checkbox ${task.completada ? 'checked' : ''}" 
-                        onclick="cleaningManager.toggleComplete(${task.id})">
-                    ${task.completada ? '<i data-lucide="check" style="width: 16px; height: 16px;"></i>' : ''}
-                </button>
-            </div>
-        `;
-        
-        // Add click event for task details
-        card.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('task-checkbox')) {
-                this.showTaskDetails(task);
-            }
-        });
-        
-        return card;
-    }
-
-    getTaskIcon(area) {
+    getAreaIcon(area) {
         const icons = {
-            cocina: 'utensils',
-            bano: 'bath',
-            salon: 'sofa',
+            cocina: 'restaurant',
+            bano: 'bathtub',
+            salon: 'living',
             dormitorio: 'bed',
             general: 'home',
-            exterior: 'trees',
-            mascotas: 'heart'
+            exterior: 'yard',
+            mascotas: 'pets'
         };
-        return `<i data-lucide="${icons[area] || 'sparkles'}"></i>`;
+        return icons[area] || 'cleaning_services';
     }
 
     getAreaLabel(area) {
         const labels = {
-            cocina: 'Cocina',
-            bano: 'Baño',
-            salon: 'Salón',
-            dormitorio: 'Dormitorio',
-            general: 'General',
-            exterior: 'Exterior',
-            mascotas: 'Mascotas'
+            cocina: 'Cocina', bano: 'Baño', salon: 'Salón',
+            dormitorio: 'Dorm.', general: 'General',
+            exterior: 'Exterior', mascotas: 'Mascotas'
         };
         return labels[area] || area;
+    }
+
+    isToday(date) {
+        const today = new Date();
+        return date.getFullYear() === today.getFullYear() &&
+               date.getMonth() === today.getMonth() &&
+               date.getDate() === today.getDate();
     }
 
     isOverdue(task) {
@@ -313,283 +180,273 @@ class CleaningManager {
         return taskDate < today;
     }
 
-    formatDate(startDate, dayIndex) {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + dayIndex);
-        return date.getDate();
-    }
+    renderWeekGrid() {
+        const grid = document.getElementById('week-grid');
+        if (!grid) return;
 
-    getFilteredTasks() {
-        let filtered = [...this.schedule];
-        
-        if (this.filters.member) {
-            filtered = filtered.filter(task => task.member_id == this.filters.member);
-        }
-        
-        if (this.filters.area) {
-            filtered = filtered.filter(task => task.area === this.filters.area);
-        }
-        
-        return filtered;
-    }
+        const days = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+        const dayNames = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+        const filtered = this.getFilteredTasks();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-    renderSummary() {
-        const summaryGrid = document.getElementById('summary-grid');
-        if (!summaryGrid) return;
-        
-        summaryGrid.innerHTML = '';
+        grid.innerHTML = '';
 
-        if (!this.members || this.members.length === 0) {
-            summaryGrid.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No hay miembros registrados</p>';
-            return;
-        }
-        
-        // Calculate stats per member
-        const memberStats = {};
-        this.getFilteredTasks().forEach(task => {
-            const memberId = task.member_id;
-            if (!memberStats[memberId]) {
-                const member = this.members.find(m => m.id === memberId);
-                memberStats[memberId] = {
-                    member: member,
-                    total: 0,
-                    completed: 0,
-                    minutes: 0
-                };
-            }
-            
-            memberStats[memberId].total++;
-            memberStats[memberId].minutes += task.duracion_minutos || 0;
-            if (task.completada) {
-                memberStats[memberId].completed++;
-            }
-        });
-        
-        // Render member summaries
-        Object.values(memberStats).forEach(stat => {
-            // Skip if member is not found
-            if (!stat.member) {
-                console.warn('[warn] Miembro no encontrado para estadísticas:', stat);
-                return;
-            }
-            
-            const completionRate = stat.total > 0 ? (stat.completed / stat.total * 100) : 0;
-            const hours = Math.floor(stat.minutes / 60);
-            const minutes = stat.minutes % 60;
-            
-            const avatarColor = stat.member.avatar_color || '#4A90E2'; // Color por defecto
-            
-            const summaryCard = document.createElement('div');
-            summaryCard.className = 'summary-card';
-            summaryCard.innerHTML = `
-                <div class="summary-header" style="border-left: 3px solid ${avatarColor}">
-                    <div class="summary-avatar" style="background-color: ${avatarColor}">
-                        ${stat.member.nombre.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="summary-info">
-                        <div class="summary-name">${stat.member.nombre}</div>
-                        <div class="summary-stats">
-                            ${stat.completed}/${stat.total} tareas (${completionRate.toFixed(0)}%)
-                        </div>
-                    </div>
-                </div>
-                <div class="summary-time">
-                    <i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i>
-                    ${hours}h ${minutes}min
-                </div>
-                <div class="summary-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${completionRate}%"></div>
+        days.forEach((day, idx) => {
+            const colDate = new Date(this.currentWeek.start);
+            colDate.setDate(colDate.getDate() + idx);
+            const colDateStr = this.formatDate(colDate);
+            const isTodayCol = this.isToday(colDate);
+
+            const dayTasks = filtered.filter(t => {
+                if (!t.fecha_programada) return false;
+                return t.fecha_programada.split('T')[0] === colDateStr;
+            });
+
+            const totalMin = dayTasks.reduce((s, t) => s + (t.duracion_minutos || 0), 0);
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+
+            const col = document.createElement('div');
+            col.className = 'cl-col';
+
+            // Day header
+            col.innerHTML = `
+                <div class="cl-day-head${isTodayCol ? ' cl-day-head--today' : ''}">
+                    <span class="cl-day-name">${dayNames[idx]}</span>
+                    <span class="cl-day-num">${colDate.getDate()}</span>
+                    <div class="cl-day-stats">
+                        <span class="cl-day-stat"><span class="material-symbols-outlined">task_alt</span>${dayTasks.length} tareas</span>
+                        <span class="cl-day-stat"><span class="material-symbols-outlined">schedule</span>${timeStr}</span>
                     </div>
                 </div>
             `;
-            
-            summaryGrid.appendChild(summaryCard);
+
+            // Tasks
+            const tasksWrap = document.createElement('div');
+            tasksWrap.className = 'cl-tasks';
+
+            if (dayTasks.length === 0) {
+                tasksWrap.innerHTML = `<div class="cl-col-empty">Sin tareas</div>`;
+            } else {
+                dayTasks.forEach(task => {
+                    const member = this.members.find(m => m.id === task.member_id);
+                    const memberColor = member ? (member.avatar_color || '#adc6ff') : '#adc6ff';
+                    const memberName = member ? member.nombre : (task.member_nombre || '?');
+                    const memberInitial = memberName.charAt(0).toUpperCase();
+                    const areaIcon = this.getAreaIcon(task.area);
+                    const areaLabel = this.getAreaLabel(task.area);
+                    const isDone = task.completada;
+                    const isOver = this.isOverdue(task);
+
+                    const card = document.createElement('div');
+                    card.className = `cl-task-card${isDone ? ' cl-task-done' : ''}${isOver ? ' cl-task-overdue' : ''}`;
+                    card.style.borderLeft = `4px solid ${memberColor}`;
+                    card.dataset.taskId = task.id;
+
+                    card.innerHTML = `
+                        <div class="cl-task-top">
+                            <div class="cl-task-name-row">
+                                <span class="material-symbols-outlined cl-task-icon" style="color:${memberColor}">${areaIcon}</span>
+                                <span class="cl-task-name">${task.task_nombre}</span>
+                            </div>
+                            <button class="cl-task-check${isDone ? ' cl-checked' : ''}"
+                                    onclick="cleaningManager.toggleComplete(${task.id}); event.stopPropagation()">
+                                ${isDone ? '<span class="material-symbols-outlined">check</span>' : ''}
+                            </button>
+                        </div>
+                        <div class="cl-task-assignee">
+                            <div class="cl-avatar" style="background:${memberColor};border-color:${memberColor}">${memberInitial}</div>
+                            <span class="cl-assignee-name">${memberName}</span>
+                        </div>
+                        <div class="cl-task-footer">
+                            <span class="cl-task-meta"><span class="material-symbols-outlined">schedule</span>${task.duracion_minutos} min</span>
+                            <span class="cl-task-meta"><span class="material-symbols-outlined">${areaIcon}</span>${areaLabel}</span>
+                        </div>
+                    `;
+
+                    tasksWrap.appendChild(card);
+                });
+            }
+
+            col.appendChild(tasksWrap);
+            grid.appendChild(col);
         });
-        
-        // Initialize Lucide icons for new elements
-        this.initializeLucideIcons();
+    }
+
+    renderStatusCard() {
+        const el = document.getElementById('cleaningStatus');
+        if (!el) return;
+
+        const total = this.schedule.length;
+        const completed = this.schedule.filter(t => t.completada).length;
+        const pct = total > 0 ? Math.round(completed / total * 100) : 0;
+
+        // Status label
+        let statusLabel = 'Sin datos';
+        if (total > 0) {
+            if (pct >= 80) statusLabel = 'Excelente';
+            else if (pct >= 50) statusLabel = 'Bien';
+            else if (pct >= 20) statusLabel = 'Regular';
+            else statusLabel = 'Por empezar';
+        }
+
+        // Today's pending
+        const todayStr = this.formatDate(new Date());
+        const pendingToday = this.schedule.filter(t =>
+            !t.completada && t.fecha_programada && t.fecha_programada.split('T')[0] === todayStr
+        ).length;
+
+        // Next task
+        const upcoming = this.schedule
+            .filter(t => !t.completada && t.fecha_programada)
+            .sort((a, b) => new Date(a.fecha_programada) - new Date(b.fecha_programada));
+        const nextTask = upcoming[0];
+        let nextTaskName = '—';
+        let nextAssigneeName = '';
+        if (nextTask) {
+            nextTaskName = `${nextTask.task_nombre} (${nextTask.duracion_minutos} min)`;
+            nextAssigneeName = nextTask.member_nombre || '';
+        }
+
+        // SVG ring: circumference = 2π×28 ≈ 175.93
+        const circ = 175.93;
+        const dashOffset = circ * (1 - pct / 100);
+
+        if (total === 0) {
+            el.innerHTML = `<div class="cl-status-empty">Genera el plan semanal para ver el estado del hogar.</div>`;
+            return;
+        }
+
+        el.innerHTML = `
+            <div class="cl-status-inner">
+                <div class="cl-ring-wrap">
+                    <svg class="cl-ring-svg" viewBox="0 0 64 64">
+                        <circle class="cl-ring-bg" cx="32" cy="32" r="28"/>
+                        <circle class="cl-ring-fill" cx="32" cy="32" r="28"
+                            stroke-dasharray="${circ}" stroke-dashoffset="${dashOffset.toFixed(1)}"/>
+                    </svg>
+                    <span class="cl-ring-pct">${pct}%</span>
+                </div>
+                <div class="cl-status-info">
+                    <span class="cl-status-kpi">Estado del Hogar</span>
+                    <h2 class="cl-status-title">${statusLabel}</h2>
+                    <p class="cl-status-pending">
+                        <span class="material-symbols-outlined">notification_important</span>
+                        ${pendingToday} tarea${pendingToday !== 1 ? 's' : ''} pendiente${pendingToday !== 1 ? 's' : ''} hoy
+                    </p>
+                </div>
+                <div class="cl-status-divider"></div>
+                <div class="cl-status-next">
+                    <span class="cl-next-label">Próxima Tarea</span>
+                    <span class="cl-next-task">${nextTaskName}</span>
+                    <span class="cl-next-assignee">${nextAssigneeName ? 'Asignado a ' + nextAssigneeName : ''}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // Keep renderSummary as alias
+    renderSummary() {
+        this.renderStatusCard();
     }
 
     populateFilters() {
-        // Populate member dropdown
-        const memberDropdown = document.getElementById('member-dropdown');
-        memberDropdown.innerHTML = '<div class="dropdown-item" onclick="cleaningManager.selectMember(\'\')">Todos los miembros</div>';
-        
-        this.members.forEach(member => {
-            const item = document.createElement('div');
-            item.className = 'dropdown-item';
-            item.textContent = member.nombre;
-            item.onclick = () => this.selectMember(member.id);
-            memberDropdown.appendChild(item);
-        });
+        const memberSel = document.getElementById('memberFilter');
+        if (memberSel) {
+            memberSel.innerHTML = '<option value="">Todos los miembros</option>';
+            this.members.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.nombre;
+                if (String(m.id) === String(this.filters.member)) opt.selected = true;
+                memberSel.appendChild(opt);
+            });
+        }
     }
 
-    toggleDropdown(dropdownId) {
-        const dropdown = document.getElementById(dropdownId);
-        const trigger = dropdown.previousElementSibling;
-        
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-content').forEach(dd => {
-            if (dd.id !== dropdownId) {
-                dd.classList.remove('show');
-                dd.previousElementSibling.classList.remove('active');
-            }
-        });
-        
-        // Toggle current dropdown
-        dropdown.classList.toggle('show');
-        trigger.classList.toggle('active');
-    }
-
-    selectMember(memberId) {
-        this.filters.member = memberId;
-        
-        // Update display
-        const selectedText = memberId ? 
-            this.members.find(m => m.id == memberId)?.nombre || 'Todos los miembros' : 
-            'Todos los miembros';
-        document.getElementById('member-selected').textContent = selectedText;
-        
-        // Close dropdown
-        document.getElementById('member-dropdown').classList.remove('show');
-        document.getElementById('member-dropdown').previousElementSibling.classList.remove('active');
-        
-        // Update display
+    onMemberFilter(value) {
+        this.filters.member = value;
         this.renderWeekGrid();
-        this.renderSummary();
+        this.renderStatusCard();
     }
 
-    selectArea(area) {
-        this.filters.area = area;
-        
-        // Update display
-        const areaLabels = {
-            '': 'Todas las áreas',
-            'cocina': 'Cocina',
-            'bano': 'Baños',
-            'salon': 'Salón',
-            'dormitorio': 'Dormitorios',
-            'general': 'General',
-            'exterior': 'Exterior',
-            'mascotas': 'Mascotas'
-        };
-        document.getElementById('area-selected').textContent = areaLabels[area] || 'Todas las áreas';
-        
-        // Close dropdown
-        document.getElementById('area-dropdown').classList.remove('show');
-        document.getElementById('area-dropdown').previousElementSibling.classList.remove('active');
-        
-        // Update display
+    onAreaFilter(value) {
+        this.filters.area = value;
         this.renderWeekGrid();
-        this.renderSummary();
-    }
-
-    filterByMember(memberId) {
-        this.selectMember(memberId);
-    }
-
-    filterByArea(area) {
-        this.selectArea(area);
+        this.renderStatusCard();
     }
 
     async toggleComplete(taskId) {
         try {
             const task = this.schedule.find(t => t.id === taskId);
             if (!task) return;
-            
             const newStatus = !task.completada;
             const response = await api.put(`/api/cleaning/schedule/${taskId}/complete`, {
                 completed: newStatus,
                 completed_by: newStatus ? this.getCurrentUserId() : null
             });
-            
             if (response.success) {
                 task.completada = newStatus;
-                task.completada_at = newStatus ? new Date().toISOString() : null;
                 this.renderWeekGrid();
-                this.renderSummary();
+                this.renderStatusCard();
                 this.showNotification(
-                    newStatus ? 'Tarea marcada como completada' : 'Tarea marcada como pendiente',
-                    'success'
+                    newStatus ? 'Tarea completada ✓' : 'Tarea marcada como pendiente', 'success'
                 );
             }
         } catch (error) {
-            console.error('[err] Error cambiando estado de tarea:', error);
+            console.error('[err] Error cambiando estado:', error);
             this.showNotification('Error cambiando estado de tarea', 'error');
         }
     }
 
     getCurrentUserId() {
-        // TODO: Implementar sistema de autenticación
-        // Por ahora, devolver el primer miembro adulto
-        const adultMember = this.members.find(m => m.tipo === 'adulto');
-        return adultMember ? adultMember.id : 1;
+        const adult = this.members.find(m => m.tipo === 'adulto');
+        return adult ? adult.id : 1;
     }
 
     showTaskDetails(task) {
-        // TODO: Implementar modal de detalles de tarea
-        console.log('Mostrar detalles de tarea:', task);
+        console.log('Tarea:', task);
     }
 
     showStats() {
-        // TODO: Implementar vista de estadísticas
-        console.log('Mostrar estadísticas');
+        console.log('Estadísticas de limpieza');
     }
 
     previousWeek() {
         this.currentWeek.start.setDate(this.currentWeek.start.getDate() - 7);
         this.currentWeek.end.setDate(this.currentWeek.end.getDate() - 7);
         this.updateWeekDisplay();
-        this.loadSchedule();
-        this.renderWeekGrid();
-        this.renderSummary();
+        this.loadSchedule().then(() => {
+            this.renderWeekGrid();
+            this.renderStatusCard();
+        });
     }
 
     nextWeek() {
         this.currentWeek.start.setDate(this.currentWeek.start.getDate() + 7);
         this.currentWeek.end.setDate(this.currentWeek.end.getDate() + 7);
         this.updateWeekDisplay();
-        this.loadSchedule();
-        this.renderWeekGrid();
-        this.renderSummary();
+        this.loadSchedule().then(() => {
+            this.renderWeekGrid();
+            this.renderStatusCard();
+        });
     }
 
     showNotification(message, type = 'info') {
-        // Simple notification system
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            z-index: 1000;
-            transition: all 0.3s ease;
+        const n = document.createElement('div');
+        n.className = `notification notification-${type}`;
+        n.textContent = message;
+        n.style.cssText = `
+            position:fixed;top:20px;right:20px;padding:12px 20px;
+            border-radius:8px;color:white;font-weight:500;z-index:1000;
+            transition:opacity 0.3s ease;font-size:14px;
+            background:${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
         `;
-        
-        if (type === 'success') {
-            notification.style.backgroundColor = '#10b981';
-        } else if (type === 'error') {
-            notification.style.backgroundColor = '#ef4444';
-        } else {
-            notification.style.backgroundColor = '#3b82f6';
-        }
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
+        document.body.appendChild(n);
+        setTimeout(() => { n.style.opacity = '0'; setTimeout(() => n.remove(), 300); }, 3000);
     }
 }
 
-// Instancia global
 const cleaningManager = new CleaningManager();
