@@ -20,7 +20,7 @@ class AIService:
             api_key = Config.ANTHROPIC_API_KEY
             if api_key and api_key != 'your-api-key-here':
                 self.client = anthropic.Anthropic(api_key=api_key)
-                self.model = "claude-sonnet-4-20250514"
+                self.model = "claude-sonnet-4-6"
             else:
                 self.client = None
                 self.model = None

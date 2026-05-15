@@ -98,7 +98,7 @@ class NavigationManager {
                 break;
             case 'dashboard':
                 if (typeof dashboardManager !== 'undefined') {
-                    setTimeout(() => dashboardManager.loadRealData(), 100);
+                    setTimeout(() => dashboardManager.loadAll(), 100);
                 }
                 break;
         }

@@ -1457,7 +1457,7 @@
                 // Esperar un momento para que los managers carguen datos
                 setTimeout(() => {
                     console.log('[refresh] Forzando carga de datos del dashboard...');
-                    window.dashboardManager.loadRealData();
+                    window.dashboardManager.loadAll();
                 }, 2000);
             } else {
                 console.error('DashboardManager no encontrado');
