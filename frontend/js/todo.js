@@ -548,6 +548,26 @@ class TodoManager {
         }
     }
 
+    async _loadWhisper() {
+        if (this._whisperPipeline) return this._whisperPipeline;
+        const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
+        this._whisperPipeline = await pipeline(
+            'automatic-speech-recognition',
+            'Xenova/whisper-tiny',
+            {
+                progress_callback: (p) => {
+                    if (p.status === 'progress') {
+                        const pct = Math.round(p.progress || 0);
+                        this.updateTranscript(`Descargando modelo... ${pct}%`);
+                    }
+                }
+            }
+        );
+        return this._whisperPipeline;
+    }
+
     async _sendAudioForTranscription() {
         try {
             const mimeType = (this.audioChunks[0] && this.audioChunks[0].type) || 'audio/webm';
@@ -559,30 +579,47 @@ class TodoManager {
                 return;
             }
 
-            const formData = new FormData();
-            const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
-            formData.append('audio', blob, `recording.${ext}`);
+            // Decode audio to 16 kHz mono Float32Array (required by Whisper)
+            this.updateTranscript('Preparando audio...');
+            const arrayBuffer = await blob.arrayBuffer();
+            const rawCtx = new AudioContext();
+            const audioBuffer = await rawCtx.decodeAudioData(arrayBuffer);
+            rawCtx.close();
 
-            const resp = await fetch('/api/voice/transcribe', {
-                method: 'POST',
-                body: formData
+            const targetRate = 16000;
+            const offlineCtx = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * targetRate), targetRate);
+            const src = offlineCtx.createBufferSource();
+            src.buffer = audioBuffer;
+            src.connect(offlineCtx.destination);
+            src.start();
+            const resampled = await offlineCtx.startRendering();
+            const float32Audio = resampled.getChannelData(0);
+
+            this.updateTranscript('Cargando modelo de voz...');
+            const whisper = await this._loadWhisper();
+
+            this.updateTranscript('Transcribiendo...');
+            const result = await whisper(float32Audio, {
+                language: 'spanish',
+                task: 'transcribe',
+                return_timestamps: false
             });
-            const result = await resp.json();
 
-            if (result.success && result.transcript && result.transcript.trim()) {
-                this.voiceTranscript = result.transcript.trim();
-                this.updateTranscript(this.voiceTranscript);
+            const transcript = (result.text || '').trim();
+
+            if (transcript) {
+                this.voiceTranscript = transcript;
+                this.updateTranscript(transcript);
                 this.updateVoiceInterface('completed', 'Tarea lista para crear');
                 const createBtn = document.getElementById('createVoiceTodoBtn');
                 if (createBtn) createBtn.disabled = false;
             } else {
-                const msg = result.message || 'No se detectó ninguna tarea';
-                this.showNotification(msg, result.success ? 'info' : 'error');
-                setTimeout(() => this.hideVoiceInterface(), 3000);
+                this.showNotification('No se detectó ninguna tarea', 'info');
+                setTimeout(() => this.hideVoiceInterface(), 2000);
             }
         } catch (err) {
             console.error('[voice] transcription error:', err);
-            this.showNotification('Error al transcribir el audio', 'error');
+            this.showNotification('Error al transcribir: ' + err.message, 'error');
             setTimeout(() => this.hideVoiceInterface(), 3000);
         }
     }
