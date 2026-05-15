@@ -1,7 +1,6 @@
-<svg width="400" height="100" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Definition for Glassmorphic Glows and Gradients -->
+<svg width="600" height="150" viewBox="0 0 600 150" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="logo_grad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="emblem_grad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#3b82f6" />
       <stop offset="100%" stop-color="#2dd4bf" />
     </linearGradient>
@@ -11,23 +10,27 @@
     </filter>
   </defs>
 
-  <!-- Geometric 'X' Emblem -->
-  <g transform="translate(10, 10)">
-    <!-- Main Hub Node -->
-    <rect x="25" y="25" width="30" height="30" rx="6" fill="url(#logo_grad)" opacity="0.9" filter="url(#glow)"/>
-    <!-- Interconnecting Arms -->
-    <path d="M10 10 L30 30 M70 10 L50 30 M10 70 L30 50 M70 70 L50 50" stroke="url(#logo_grad)" stroke-width="8" stroke-linecap="round" opacity="0.8" />
-    <!-- Center Dot -->
-    <circle cx="40" cy="40" r="4" fill="white" />
+  <!-- Emblem: Stylized X Hub -->
+  <g transform="translate(20, 25)">
+    <!-- Glassy Connector Lines -->
+    <path d="M15 15 L45 45 M85 15 L55 45 M15 85 L45 55 M85 85 L55 55" stroke="url(#emblem_grad)" stroke-width="10" stroke-linecap="round" opacity="0.6" />
+    <!-- Center Node -->
+    <rect x="35" y="35" width="30" height="30" rx="8" fill="url(#emblem_grad)" filter="url(#glow)"/>
+    <circle cx="50" cy="50" r="4" fill="white" />
+    <!-- Outer Nodes -->
+    <circle cx="15" cy="15" r="5" fill="#2dd4bf" filter="url(#glow)"/>
+    <circle cx="85" cy="15" r="5" fill="#3b82f6" filter="url(#glow)"/>
+    <circle cx="15" cy="85" r="5" fill="#3b82f6" filter="url(#glow)"/>
+    <circle cx="85" cy="85" r="5" fill="#2dd4bf" filter="url(#glow)"/>
   </g>
 
-  <!-- Typography: JAXo -->
-  <text x="100" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="48" fill="white" letter-spacing="-1.5">
-    JAX<tspan fill="#3b82f6">o</tspan>
-  </text>
-  
-  <!-- Sub-brand: COMMAND CENTER -->
-  <text x="102" y="82" font-family="Inter, sans-serif" font-weight="600" font-size="14" fill="#94a3b8" letter-spacing="4">
-    COMMAND CENTER
-  </text>
+  <!-- Typography -->
+  <g transform="translate(140, 85)">
+    <text font-family="Inter, sans-serif" font-weight="900" font-size="72" fill="white" letter-spacing="-2">
+      JAX<tspan fill="#3b82f6">o</tspan>
+    </text>
+    <text y="40" font-family="Inter, sans-serif" font-weight="600" font-size="18" fill="#94a3b8" letter-spacing="6">
+      COMMAND CENTER
+    </text>
+  </g>
 </svg>
