@@ -6,11 +6,35 @@ import logging
 from datetime import datetime, date, timedelta
 
 import requests
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, jsonify
 
 logger = logging.getLogger(__name__)
 
 tv_bp = Blueprint('tv', __name__)
+
+
+@tv_bp.route('/tv/debug')
+def tv_debug():
+    """Diagnostic endpoint — shows raw menu data for TV troubleshooting."""
+    from services.menu_service import menu_service
+    weekly = menu_service.get_weekly_menu()
+    latest = menu_service.get_latest_menu()
+    today_key = _DAY_KEYS[datetime.now().weekday()]
+    result = {
+        'today_key': today_key,
+        'weekly_menu_found': weekly is not None,
+        'latest_menu_found': latest is not None,
+    }
+    if latest:
+        md = latest.get('menu_data') or {}
+        result['menu_data_keys'] = list(md.keys())
+        adultos = md.get('menu_adultos', {})
+        result['adultos_days'] = list(adultos.keys())
+        result['adultos_today'] = adultos.get(today_key)
+        ninos = md.get('menu_ninos', {})
+        result['ninos_today'] = ninos.get(today_key)
+    return jsonify(result)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -93,14 +117,18 @@ def tv_view():
         from services.menu_service import menu_service
         menu_dict = menu_service.get_weekly_menu()
         if not menu_dict:
+            logger.info('[tv] no menu for current week, falling back to latest')
             menu_dict = menu_service.get_latest_menu()
         if menu_dict:
             md = menu_dict.get('menu_data') or {}
             adultos_day = md.get('menu_adultos', {}).get(today_key, {})
             ninos_day = md.get('menu_ninos', {}).get(today_key, {})
+            logger.info('[tv] menu loaded — adultos today keys: %s', list(adultos_day.keys()))
             for c in COMIDAS:
                 meals_adultos[c] = _normalise_meal(adultos_day.get(c))
                 meals_ninos[c] = _normalise_meal(ninos_day.get(c))
+        else:
+            logger.warning('[tv] no menu data found in DB at all')
     except Exception as e:
         logger.warning(f'[tv] menu: {e}')
 
