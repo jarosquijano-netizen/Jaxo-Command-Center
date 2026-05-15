@@ -2,8 +2,7 @@
 Voice transcription endpoint — uses OpenAI Whisper
 """
 
-from flask import Blueprint, request, jsonify
-from models.settings import Settings
+from flask import Blueprint, request, jsonify, current_app
 import tempfile
 import os
 
@@ -14,11 +13,11 @@ voice_bp = Blueprint('voice', __name__)
 def transcribe_audio():
     """Transcribe audio blob using OpenAI Whisper"""
     try:
-        settings = Settings.query.first()
-        if not settings or not settings.openai_api_key:
+        api_key = current_app.config.get('OPENAI_API_KEY')
+        if not api_key:
             return jsonify({
                 'success': False,
-                'message': 'OpenAI API key no configurada. Añádela en Configuración → API Keys.'
+                'message': 'OPENAI_API_KEY no configurada. Añádela como variable de entorno en Railway.'
             }), 400
 
         if 'audio' not in request.files:
@@ -28,7 +27,6 @@ def transcribe_audio():
         if audio_file.filename == '':
             return jsonify({'success': False, 'message': 'Archivo de audio vacío'}), 400
 
-        # Write to temp file preserving extension for Whisper MIME detection
         suffix = '.webm'
         content_type = audio_file.content_type or ''
         if 'ogg' in content_type:
@@ -44,7 +42,7 @@ def transcribe_audio():
 
         try:
             from openai import OpenAI
-            client = OpenAI(api_key=settings.openai_api_key)
+            client = OpenAI(api_key=api_key)
 
             with open(tmp_path, 'rb') as f:
                 response = client.audio.transcriptions.create(
@@ -66,7 +64,7 @@ def transcribe_audio():
     except Exception as e:
         error_msg = str(e)
         if 'api_key' in error_msg.lower() or 'authentication' in error_msg.lower():
-            error_msg = 'OpenAI API key inválida. Verifica la clave en Configuración.'
+            error_msg = 'OPENAI_API_KEY inválida. Verifica la variable de entorno en Railway.'
         elif 'quota' in error_msg.lower():
             error_msg = 'Cuota de OpenAI agotada. Revisa tu cuenta.'
         return jsonify({'success': False, 'message': error_msg}), 500

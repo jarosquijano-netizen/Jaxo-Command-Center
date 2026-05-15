@@ -83,7 +83,6 @@ class SettingsManager {
         
         // API tab
         document.getElementById('anthropic_api_key').value = this.settings.anthropic_api_key || '';
-        document.getElementById('openai_api_key').value = this.settings.openai_api_key || '';
         document.getElementById('google_credentials').value = this.settings.google_credentials || '';
     }
 
@@ -298,7 +297,6 @@ class SettingsManager {
                 incluir_ninos_tareas: document.getElementById('incluir_ninos_tareas').checked,
                 house_config: houseConfig,
                 anthropic_api_key: document.getElementById('anthropic_api_key').value,
-                openai_api_key: document.getElementById('openai_api_key').value,
                 google_credentials: document.getElementById('google_credentials').value
             };
 

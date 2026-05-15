@@ -74,8 +74,6 @@ def update_settings():
             settings.edad_minima_tareas_medias = data['edad_minima_tareas_medias']
         if 'anthropic_api_key' in data:
             settings.anthropic_api_key = data['anthropic_api_key']
-        if 'openai_api_key' in data:
-            settings.openai_api_key = data['openai_api_key']
         if 'google_credentials' in data:
             settings.google_credentials = data['google_credentials']
         if 'house_config' in data:

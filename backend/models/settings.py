@@ -35,7 +35,6 @@ class Settings(db.Model):
     
     # API Keys
     anthropic_api_key = db.Column(db.String(500))
-    openai_api_key = db.Column(db.String(500))
     google_credentials = db.Column(db.Text)
     
     # Configuración de la Casa
@@ -65,7 +64,6 @@ class Settings(db.Model):
             'edad_minima_tareas_simples': self.edad_minima_tareas_simples,
             'edad_minima_tareas_medias': self.edad_minima_tareas_medias,
             'anthropic_api_key': self.anthropic_api_key,
-            'openai_api_key': self.openai_api_key,
             'google_credentials': self.google_credentials,
             'house_config': json.loads(self.house_config) if self.house_config else {},
             'created_at': self.created_at.isoformat() if self.created_at else None,
