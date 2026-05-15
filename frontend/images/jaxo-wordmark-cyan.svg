@@ -1,0 +1,10 @@
+<svg viewBox="0 0 260 56" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="f1">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Transparent bg — use on any dark surface -->
+  <text x="0" y="46" font-family="Inter,system-ui,sans-serif" font-size="50" font-weight="700" letter-spacing="-2" fill="#38bdf8" filter="url(#f1)">JAXO</text>
+</svg>
