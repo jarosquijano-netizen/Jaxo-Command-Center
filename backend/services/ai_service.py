@@ -52,7 +52,7 @@ class AIService:
             
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=6000,  # Aumentado para menú expandido
+                max_tokens=8000,
                 temperature=0.7,
                 messages=[
                     {
@@ -188,62 +188,40 @@ NIÑOS: {chr(10).join(preferencias_ninos) if preferencias_ninos else 'No niños'
 1. SOLO generar comidas: {', '.join(comidas)}
 2. SOLO para días: {', '.join(dias_menu)}
 3. Dos menús: adultos y niños adaptados
-4. Información nutricional completa
-5. Responder SOLO con JSON
+4. Responder SOLO con JSON válido, sin texto adicional
 
-IMPORTANTE: Cada comida (desayuno, comida, merienda, cena) debe incluir SIEMPRE estos campos:
-- plato, descripcion, tiempo_prep, calorias, dificultad
-- ingredientes (array), preparacion (array)
-- nutrientes (objeto con proteinas_g, carbohidratos_g, grasas_g, fibra_g)
-- vitaminas_minerales (array), alergenos (array), cocinado_por
+IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
+- plato, descripcion, tiempo_prep, calorias, dificultad, alergenos (array)
 
-## FORMATO JSON:
+## FORMATO JSON (respeta esta estructura exacta para TODOS los días):
 {{
   "menu_adultos": {{
     "{dias_menu[0] if dias_menu else 'lunes'}": {{
       "{comidas[0] if comidas else 'cena'}": {{
         "plato": "Nombre del plato",
-        "descripcion": "Descripción breve",
+        "descripcion": "Descripción breve en 1-2 frases",
         "tiempo_prep": 30,
         "calorias": 350,
         "dificultad": "Media",
-        "ingredientes": ["ingrediente 1", "ingrediente 2"],
-        "preparacion": ["Paso 1", "Paso 2"],
-        "nutrientes": {{"proteinas_g": 25, "carbohidratos_g": 30, "grasas_g": 15, "fibra_g": 5}},
-        "vitaminas_minerales": ["Vitamina C", "Hierro"],
-        "alergenos": [],
-        "cocinado_por": "Familia"
+        "alergenos": []
       }}
     }}
-    // Resto días con misma estructura
   }},
-  
   "menu_ninos": {{
     "{dias_menu[0] if dias_menu else 'lunes'}": {{
       "{comidas[0] if comidas else 'cena'}": {{
         "plato": "Versión niños",
         "descripcion": "Descripción adaptada",
-        "tiempo_prep": 25,
-        "calorias": 200,
+        "tiempo_prep": 20,
+        "calorias": 250,
         "dificultad": "Fácil",
-        "ingredientes": ["ingrediente 1", "ingrediente 2"],
-        "preparacion": ["Paso 1", "Paso 2"],
-        "nutrientes": {{"proteinas_g": 15, "carbohidratos_g": 20, "grasas_g": 8, "fibra_g": 3}},
-        "vitaminas_minerales": ["Calcio", "Vitamina A"],
-        "alergenos": [],
-        "cocinado_por": "Familia"
+        "alergenos": []
       }}
     }}
-    // Resto días con misma estructura
   }},
-  
-  "lista_compra": {{"categorias": "detalles"}},
-  "consejos_semana": ["Consejo 1", "Consejo 2"],
-  "consideraciones_aplicadas": [
-    "Solo comidas: {', '.join(comidas)}",
-    "Presupuesto: {presupuesto}€",
-    "Días: {', '.join(dias_menu)}"
-  ]
+  "lista_compra": {{}},
+  "consejos_semana": [],
+  "consideraciones_aplicadas": []
 }}
 """
         
