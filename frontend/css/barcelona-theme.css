@@ -35,21 +35,10 @@
     background: rgba(25, 31, 49, 0.6);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Glass edge — light catch on top-left */
-.glass-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 40%);
-    pointer-events: none;
-    border-radius: inherit;
 }
 
 .glass-header {
@@ -143,7 +132,7 @@
     height: 100%;
     border-radius: 999px;
     background: linear-gradient(90deg, #4d8eff, #4cd7f6);
-    box-shadow: 0 0 8px rgba(77, 142, 255, 0.6);
+    box-shadow: 0 0 10px #4cd7f6;
     transition: width 0.5s ease;
 }
 
@@ -528,4 +517,85 @@
 
 @media (min-width: 1280px) {
     .calendar-section { grid-column: span 3; }
+}
+
+/* ─── Typography Scale ─── */
+.ds-display-lg   { font-size:48px;  font-weight:700; line-height:56px;  letter-spacing:-0.02em; }
+.ds-headline-md  { font-size:24px;  font-weight:600; line-height:32px;  letter-spacing:-0.01em; }
+.ds-body-lg      { font-size:18px;  font-weight:400; line-height:28px; }
+.ds-body-md      { font-size:16px;  font-weight:400; line-height:24px; }
+.ds-label-caps   { font-size:12px;  font-weight:600; line-height:16px;  letter-spacing:0.1em; text-transform:uppercase; }
+.ds-stats-numeric{ font-size:32px;  font-weight:300; line-height:32px;  letter-spacing:-0.05em; }
+
+/* ─── Glow Utilities ─── */
+.glow-primary:hover   { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+.glow-secondary:hover { box-shadow: 0 0 20px rgba(76, 215, 246, 0.3); }
+
+/* ─── Button Variants ─── */
+.btn-primary {
+    background: #4d8eff;
+    color: #00285d;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-primary:hover {
+    background: #3b82f6;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: rgba(76, 215, 246, 0.1);
+    color: #4cd7f6;
+    border: 1px solid rgba(76, 215, 246, 0.4);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-secondary:hover {
+    background: rgba(76, 215, 246, 0.15);
+    box-shadow: 0 0 12px rgba(76, 215, 246, 0.2);
+}
+
+/* ─── AI Chip ─── */
+.ai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(76, 215, 246, 0.5);
+    background: rgba(76, 215, 246, 0.05);
+    color: #4cd7f6;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+.ai-chip--primary {
+    border-color: rgba(173, 198, 255, 0.5);
+    background: rgba(173, 198, 255, 0.05);
+    color: #adc6ff;
+}
+
+/* ─── Material Symbols Nav ─── */
+.nav-link .material-symbols-outlined {
+    font-size: 20px;
+    width: 20px;
+    flex-shrink: 0;
 }
