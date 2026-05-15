@@ -11,6 +11,7 @@ class CleaningManager {
             member: '',
             area: ''
         };
+        this.init();
     }
 
     async init() {
@@ -49,10 +50,14 @@ class CleaningManager {
         this.updateWeekDisplay();
     }
 
-    loadCurrentWeek() {
-        // Alias para compatibilidad con la navegación
+    async loadCurrentWeek() {
         this.getCurrentWeek();
-        this.loadSchedule();
+        await this.loadMembers();
+        await this.loadSchedule();
+        this.renderWeekGrid();
+        this.renderSummary();
+        this.populateFilters();
+        this.initializeLucideIcons();
     }
 
     updateWeekDisplay() {

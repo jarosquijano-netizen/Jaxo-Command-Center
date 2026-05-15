@@ -712,8 +712,23 @@ def generate_schedule():
         
         # Guardar en base de datos
         for item in schedule_data:
+            # Find or create the CleaningTask to satisfy the FK constraint
+            task = CleaningTask.query.filter_by(
+                nombre=item['task_nombre'], area=item['area']
+            ).first()
+            if not task:
+                task = CleaningTask(
+                    nombre=item['task_nombre'],
+                    area=item['area'],
+                    duracion_minutos=item['duracion_minutos'],
+                    frecuencia='diaria',
+                    activa=True
+                )
+                db.session.add(task)
+                db.session.flush()
+
             schedule = CleaningSchedule(
-                task_id=item['task_id'],
+                task_id=task.id,
                 task_nombre=item['task_nombre'],
                 member_id=item['member_id'],
                 member_nombre=item['member_nombre'],
