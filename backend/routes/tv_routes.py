@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 tv_bp = Blueprint('tv', __name__)
 
 
-@tv_bp.route('/tv/debug')
+@tv_bp.route('/api/tv-debug')
 def tv_debug():
     """Diagnostic endpoint — shows raw menu data for TV troubleshooting."""
     from services.menu_service import menu_service
