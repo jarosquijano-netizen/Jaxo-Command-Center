@@ -195,9 +195,11 @@ class CalendarManager {
                     const source = event.source || 'unknown';
                     const color = event.color || '#666';
                     
+                    const subtitle = event.subtitle ? `<span class="event-subtitle">${event.subtitle}</span>` : '';
                     html += `<div class="calendar-event-item" style="border-left: 3px solid ${color}; background: ${color}20;">
                         <span class="event-time">${time}</span>
                         <span class="event-title">${title}</span>
+                        ${subtitle}
                         <span class="event-source" style="color: ${color}">${this.getSourceLabel(source)}</span>
                     </div>`;
                 });
@@ -255,40 +257,50 @@ class CalendarManager {
     }
 
     async syncGoogleCalendar() {
+        const syncBtn = document.getElementById('syncCalendarBtn');
+        const originalHTML = syncBtn ? syncBtn.innerHTML : '';
         try {
-            console.log('[cal] Iniciando sincronización con Google Calendar...');
-            
-            // Mostrar estado de carga
-            const syncBtn = document.getElementById('syncCalendarBtn');
-            const originalText = syncBtn.innerHTML;
-            syncBtn.innerHTML = '<i data-lucide="loader-2"></i> Sincronizando...';
-            syncBtn.disabled = true;
+            console.log('[cal] Verificando estado de Google Calendar...');
+            if (syncBtn) { syncBtn.textContent = 'Verificando...'; syncBtn.disabled = true; }
 
-            // Importar eventos de Google Calendar
-            const response = await api.post('/api/google/import', {
-                from: this.currentWeek ? this.currentWeek.toISOString().split('T')[0] : null,
-                to: this.currentWeek ? new Date(this.currentWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null
-            });
+            // 1. Check auth status
+            const statusResp = await api.get('/api/google/auth/status');
+            const connected = statusResp.success && statusResp.data && statusResp.data.connected;
 
-            if (response.success) {
-                console.log('[cal] Sincronización exitosa:', response.data);
-                this.showSuccess(`Sincronización completada: ${response.data.created} nuevos eventos, ${response.data.updated} actualizados`);
-                
-                // Recargar eventos del calendario
+            if (!connected) {
+                // 2. Start OAuth flow
+                if (syncBtn) syncBtn.textContent = 'Abriendo autorización...';
+                const startResp = await api.get('/api/google/auth/start');
+                if (!startResp.success || !startResp.data?.auth_url) {
+                    this.showError(startResp.message || 'Error: configura Google Credentials en Configuración primero');
+                    return;
+                }
+                // Open OAuth in a new tab
+                window.open(startResp.data.auth_url, '_blank');
+                this.showInfo('Autoriza en la ventana de Google y vuelve aquí. Luego pulsa Sincronizar de nuevo.');
+                return;
+            }
+
+            // 3. Already connected — import events
+            if (syncBtn) { syncBtn.textContent = 'Sincronizando...'; }
+            const weekStart = this.currentWeek ? this.currentWeek.toISOString().split('T')[0] : null;
+            const weekEnd = this.currentWeek
+                ? new Date(this.currentWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                : null;
+
+            const importResp = await api.post('/api/google/import', { from: weekStart, to: weekEnd });
+            if (importResp.success) {
+                const d = importResp.data;
+                this.showSuccess(`Sincronización completada: ${d.created} nuevos, ${d.updated} actualizados`);
                 await this.loadCurrentWeek();
             } else {
-                console.error('[err] Error en sincronización:', response.message);
-                this.showError('Error en sincronización: ' + response.message);
+                this.showError('Error sincronizando: ' + (importResp.message || 'desconocido'));
             }
         } catch (error) {
             console.error('[err] Error sincronizando Google Calendar:', error);
             this.showError('Error sincronizando Google Calendar');
         } finally {
-            // Restaurar botón
-            const syncBtn = document.getElementById('syncCalendarBtn');
-            syncBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Sincronizar';
-            syncBtn.disabled = false;
-            lucide.createIcons();
+            if (syncBtn) { syncBtn.innerHTML = originalHTML || '<span class="material-symbols-outlined">sync</span> Sincronizar'; syncBtn.disabled = false; }
         }
     }
 

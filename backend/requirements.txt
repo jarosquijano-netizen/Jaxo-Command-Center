@@ -24,6 +24,11 @@ reportlab==4.0.7
 requests==2.31.0
 pytz==2023.3
 
+# Google Calendar Integration
+google-auth==2.27.0
+google-auth-oauthlib==1.2.0
+google-api-python-client==2.118.0
+
 # Development/Testing
 pytest==7.4.3
 pytest-cov==4.1.0

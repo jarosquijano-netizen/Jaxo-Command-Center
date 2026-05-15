@@ -71,60 +71,57 @@ def get_week_calendar():
         # 3. Weekly menu events (solo para visualización; no ocupan tiempo real)
         menu_week = WeeklyMenu.query.filter_by(semana_inicio=week_start).first()
         menu_events = []
+        import json as _json
+        dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+        meal_slots = [
+            ('desayuno', 8,  0.5),
+            ('comida',   14, 1.0),
+            ('merienda', 17, 0.5),
+            ('cena',     20, 1.0),
+        ]
         if menu_week and menu_week.menu_data:
             try:
-                import json
-                menu_data = json.loads(menu_week.menu_data) if isinstance(menu_week.menu_data, str) else menu_week.menu_data
-                dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-                comidas = ['desayuno', 'comida', 'merienda', 'cena']
+                menu_data = _json.loads(menu_week.menu_data) if isinstance(menu_week.menu_data, str) else menu_week.menu_data
+                adultos = menu_data.get('menu_adultos', {})
                 for i, dia in enumerate(dias):
                     day_date = week_start + timedelta(days=i)
-                    for comida in comidas:
-                        # Ejemplo: marcar comida y cena como bloques de 1h
-                        if comida in ['comida', 'cena']:
-                            hour = 14 if comida == 'comida' else 20
-                            start_dt = datetime.combine(day_date, datetime.min.time()).replace(hour=hour)
-                            end_dt = start_dt + timedelta(hours=1)
-                            menu_events.append({
-                                'id': f'menu-{week_start.isoformat()}-{dia}-{comida}',
-                                'source': 'menu',
-                                'title': comida.title(),
-                                'start': start_dt.isoformat(),
-                                'end': end_dt.isoformat(),
-                                'all_day': False,
-                                'color': '#EA4335',  # Red
-                            })
+                    day_data = adultos.get(dia, {})
+                    for comida, hour, dur in meal_slots:
+                        meal = day_data.get(comida) or {}
+                        # Try different field names the AI may use
+                        plato = (meal.get('plato') or meal.get('primero') or
+                                 meal.get('nombre') or meal.get('dish') or '').strip()
+                        title = plato if plato else comida.capitalize()
+                        start_dt = datetime.combine(day_date, datetime.min.time()).replace(hour=hour)
+                        end_dt = start_dt + timedelta(hours=dur)
+                        menu_events.append({
+                            'id': f'menu-{week_start.isoformat()}-{dia}-{comida}',
+                            'source': 'menu',
+                            'title': title,
+                            'subtitle': comida.capitalize(),
+                            'start': start_dt.isoformat(),
+                            'end': end_dt.isoformat(),
+                            'all_day': False,
+                            'color': '#EA4335',
+                        })
             except Exception:
-                pass  # Ignorar errores parseando menú
-        else:
-            # Si no hay menú guardado para esta semana, mostrar placeholders
-            dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+                pass  # fall through to placeholders
+        if not menu_events:
+            # No menu saved — minimal placeholders (comida + cena only)
             for i, dia in enumerate(dias):
                 day_date = week_start + timedelta(days=i)
-                # Comida
-                start_dt = datetime.combine(day_date, datetime.min.time()).replace(hour=14)
-                end_dt = start_dt + timedelta(hours=1)
-                menu_events.append({
-                    'id': f'menu-placeholder-{week_start.isoformat()}-{dia}-comida',
-                    'source': 'menu',
-                    'title': 'Comida',
-                    'start': start_dt.isoformat(),
-                    'end': end_dt.isoformat(),
-                    'all_day': False,
-                    'color': '#EA4335',
-                })
-                # Cena
-                start_dt = datetime.combine(day_date, datetime.min.time()).replace(hour=20)
-                end_dt = start_dt + timedelta(hours=1)
-                menu_events.append({
-                    'id': f'menu-placeholder-{week_start.isoformat()}-{dia}-cena',
-                    'source': 'menu',
-                    'title': 'Cena',
-                    'start': start_dt.isoformat(),
-                    'end': end_dt.isoformat(),
-                    'all_day': False,
-                    'color': '#EA4335',
-                })
+                for comida, hour, dur in [('comida', 14, 1.0), ('cena', 20, 1.0)]:
+                    start_dt = datetime.combine(day_date, datetime.min.time()).replace(hour=hour)
+                    end_dt = start_dt + timedelta(hours=dur)
+                    menu_events.append({
+                        'id': f'menu-placeholder-{week_start.isoformat()}-{dia}-{comida}',
+                        'source': 'menu',
+                        'title': comida.capitalize(),
+                        'start': start_dt.isoformat(),
+                        'end': end_dt.isoformat(),
+                        'all_day': False,
+                        'color': '#EA4335',
+                    })
 
         all_events = google_events + cleaning_events + menu_events
         all_events.sort(key=lambda x: x['start'])
