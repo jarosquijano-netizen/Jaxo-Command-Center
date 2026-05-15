@@ -181,8 +181,10 @@ class DashboardManager {
         const heroData = dayMenu[heroKey] || {};
 
         const desc = heroData.preparacion
-            ? heroData.preparacion.split('.').slice(0, 2).join('.') + '.'
-            : '';
+            ? (Array.isArray(heroData.preparacion)
+                ? heroData.preparacion.slice(0, 2).join('. ')
+                : heroData.preparacion.split('.').slice(0, 2).join('.') + '.')
+            : (heroData.descripcion || '');
         const heroHtml = `
             <div class="db-menu-hero">
                 <p class="db-menu-hero-meal">${mealLabels[heroKey] || heroKey}</p>
