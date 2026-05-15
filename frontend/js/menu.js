@@ -155,64 +155,72 @@ class MenuManager {
     renderMenu() {
         if (!this.currentMenu) return;
 
-        console.log('[menu] Renderizando menú:', this.currentMenu.id);
-        console.log('[menu] Menu data crudo:', this.currentMenu.menu_data);
+        const grid = document.getElementById('menuGrid');
+        if (!grid) return;
 
-        const menuData = this.currentMenu.menu_data;
-        const gridContainer = document.getElementById('menuGrid');
-        
-        if (!gridContainer) {
-            console.error('[err] No se encontró el contenedor menuGrid');
+        const raw = this.currentMenu.menu_data;
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+        if (!parsed || (!parsed.menu_adultos && !parsed.menu_ninos)) {
+            this.showEmptyState();
             return;
         }
 
-        // Verificar si menu_data es string y parsearlo
-        let parsedMenuData = menuData;
-        if (typeof menuData === 'string') {
-            try {
-                parsedMenuData = JSON.parse(menuData);
-                console.log('[menu] Menu data parseado:', parsedMenuData);
-            } catch (e) {
-                console.error('[err] Error parseando menu_data:', e);
-                this.showError('Error en el formato del menú');
-                return;
+        const days     = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+        const dayNames = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+        const todayKey = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date().getDay()];
+
+        const menu = this.viewMode === 'ninos' ? (parsed.menu_ninos || parsed.menu_adultos) : (parsed.menu_adultos || parsed.menu_ninos);
+        const availableMeals = this.getAvailableMeals(parsed);
+
+        grid.innerHTML = '';
+
+        days.forEach((day, i) => {
+            const col = document.createElement('div');
+            col.className = 'mn-day';
+
+            const isToday = day === todayKey;
+            col.innerHTML = `<h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}">${dayNames[i]}</h2>`;
+
+            const dayMenu = menu?.[day];
+
+            if (!dayMenu || availableMeals.length === 0) {
+                col.innerHTML += `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
+            } else {
+                availableMeals.forEach(meal => {
+                    const md = dayMenu[meal];
+                    if (!md) {
+                        col.innerHTML += `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
+                        return;
+                    }
+                    const name  = md.plato || md.primero || '';
+                    const desc  = md.descripcion || '';
+                    const time  = md.tiempo_prep ? `${md.tiempo_prep} min` : '';
+                    const kcal  = md.calorias ? `${md.calorias} kcal` : '';
+                    const tags  = Array.isArray(md.alergenos) ? md.alergenos.filter(Boolean).slice(0, 3) : [];
+                    const tagsHtml = tags.map(t => `<span class="mn-tag">${t}</span>`).join('');
+                    const metaHtml = (time || kcal) ? `
+                        <div class="mn-meal-meta">
+                            ${time ? `<span class="mn-meal-time"><span class="material-symbols-outlined">schedule</span>${time}</span>` : ''}
+                            ${kcal ? `<span class="mn-meal-kcal">${kcal}</span>` : ''}
+                        </div>` : '';
+
+                    col.innerHTML += `
+                        <div class="mn-meal-card glass-card" onclick="menuManager.showMealDetails('${day}','${meal}')">
+                            <div class="mn-meal-type">${meal.toUpperCase()}</div>
+                            <h3 class="mn-meal-name">${name}</h3>
+                            ${desc ? `<p class="mn-meal-desc">${desc}</p>` : ''}
+                            ${metaHtml}
+                            ${tagsHtml ? `<div class="mn-meal-tags">${tagsHtml}</div>` : ''}
+                        </div>`;
+                });
             }
-        }
 
-        // Verificar estructura
-        if (!parsedMenuData.menu_adultos && !parsedMenuData.menu_ninos) {
-            console.warn('[warn] Menu data no tiene las claves esperadas:', Object.keys(parsedMenuData));
-            // Si el menú está vacío, mostrar mensaje
-            this.showEmptyState();
-            return;
-        }
-
-        // Limpiar grid
-        gridContainer.innerHTML = '';
-
-        // Crear header de días
-        const daysHeader = this.createDaysHeader();
-        gridContainer.appendChild(daysHeader);
-
-        // Crear filas de comidas - detectar dinámicamente qué comidas existen
-        const availableMeals = this.getAvailableMeals(parsedMenuData);
-        console.log('[menu] Comidas disponibles:', availableMeals);
-        
-        if (availableMeals.length === 0) {
-            console.warn('[warn] No se encontraron comidas en el menú');
-            this.showEmptyState();
-            return;
-        }
-        
-        availableMeals.forEach(meal => {
-            const mealRow = this.createMealRow(meal, parsedMenuData);
-            gridContainer.appendChild(mealRow);
+            grid.appendChild(col);
         });
 
-        // Actualizar estadísticas
         this.updateStatistics();
-        
-        console.log('[ok] Menú renderizado correctamente');
+        console.log('[menu] Grid renderizado');
     }
 
     getAvailableMeals(menuData) {
@@ -246,160 +254,6 @@ class MenuManager {
             if (bIndex === -1) return -1;
             return aIndex - bIndex;
         });
-    }
-
-    createDaysHeader() {
-        const header = document.createElement('div');
-        header.className = 'menu-header';
-        
-        // Celda vacía para esquina
-        const corner = document.createElement('div');
-        corner.className = 'corner-cell';
-        header.appendChild(corner);
-
-        const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-        const dayNames = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
-        
-        days.forEach((day, index) => {
-            const dayCell = document.createElement('div');
-            dayCell.className = 'day-header';
-            dayCell.innerHTML = `
-                <div class="day-name">${dayNames[index]}</div>
-                <div class="day-date">${this.getDayDate(day)}</div>
-            `;
-            header.appendChild(dayCell);
-        });
-
-        return header;
-    }
-
-    createMealRow(meal, menuData) {
-        const row = document.createElement('div');
-        row.className = 'meal-row';
-        
-        // Header de la comida
-        const mealHeader = document.createElement('div');
-        mealHeader.className = 'meal-header';
-        mealHeader.innerHTML = this.getMealIcon(meal);
-        row.appendChild(mealHeader);
-
-        // Celdas de cada día
-        const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-        
-        days.forEach(day => {
-            const dayCell = document.createElement('div');
-            dayCell.className = 'day-cell';
-            dayCell.dataset.day = day;
-            dayCell.dataset.meal = meal;
-            
-            const mealContent = this.createMealContent(day, meal, menuData);
-            dayCell.appendChild(mealContent);
-            
-            // Click para expandir
-            dayCell.addEventListener('click', () => this.showMealDetails(day, meal));
-            
-            row.appendChild(dayCell);
-        });
-
-        return row;
-    }
-
-    createMealContent(day, meal, menuData) {
-        const container = document.createElement('div');
-        container.className = 'meal-content';
-
-        let content = '';
-        
-        switch (this.viewMode) {
-            case 'adultos':
-                content = this.getAdultMealContent(day, meal, menuData.menu_adultos);
-                break;
-            case 'ninos':
-                content = this.getChildMealContent(day, meal, menuData.menu_ninos);
-                break;
-            case 'ambos':
-                content = this.getBothMealContent(day, meal, menuData);
-                break;
-        }
-
-        container.innerHTML = content;
-        return container;
-    }
-
-    getAdultMealContent(day, meal, adultMenu) {
-        if (!adultMenu || !adultMenu[day] || !adultMenu[day][meal]) {
-            return '<div class="no-meal">Sin menú</div>';
-        }
-
-        const mealData = adultMenu[day][meal];
-        let html = '<div class="meal-adultos">';
-        
-        if (meal === 'comida') {
-            html += `<div class="meal-main">${mealData.primero || ''}</div>`;
-            html += `<div class="meal-secondary">${mealData.segundo || ''}</div>`;
-            if (mealData.postre) {
-                html += `<div class="meal-dessert">${mealData.postre}</div>`;
-            }
-        } else {
-            html += `<div class="meal-main">${mealData.plato || ''}</div>`;
-        }
-        
-        if (mealData.tiempo_prep) {
-            html += `<div class="meal-time">⏱️ ${mealData.tiempo_prep}min</div>`;
-        }
-        
-        html += '</div>';
-        return html;
-    }
-
-    getChildMealContent(day, meal, childMenu) {
-        if (!childMenu || !childMenu[day] || !childMenu[day][meal]) {
-            return '<div class="no-meal">Sin menú</div>';
-        }
-
-        const mealData = childMenu[day][meal];
-        let html = '<div class="meal-ninos">';
-        
-        html += `<div class="meal-main">${mealData.plato || ''}</div>`;
-        
-        if (mealData.alternativa) {
-            html += `<div class="meal-alternative">Alt: ${mealData.alternativa}</div>`;
-        }
-        
-        if (mealData.truco) {
-            html += `<div class="meal-tip">${mealData.truco}</div>`;
-        }
-        
-        html += '</div>';
-        return html;
-    }
-
-    getBothMealContent(day, meal, menuData) {
-        const adultContent = this.getAdultMealContent(day, meal, menuData.menu_adultos);
-        const childContent = this.getChildMealContent(day, meal, menuData.menu_ninos);
-        
-        return `
-            <div class="meal-both">
-                <div class="adult-section">
-                    <div class="section-label"><span class="material-symbols-outlined" style="font-size:16px">group</span></div>
-                    ${adultContent}
-                </div>
-                <div class="child-section">
-                    <div class="section-label"><span class="material-symbols-outlined" style="font-size:16px">child_care</span></div>
-                    ${childContent}
-                </div>
-            </div>
-        `;
-    }
-
-    getMealIcon(meal) {
-        const icons = {
-            desayuno: 'DESAY',
-            comida: 'COMIDA',
-            merienda: 'MERIEN',
-            cena: 'CENA'
-        };
-        return icons[meal] || meal;
     }
 
     getDayDate(day) {
@@ -1017,47 +871,52 @@ class MenuManager {
     }
 
     updateStatistics() {
-        if (!this.currentMenu) return;
-
-        // TODO: Implementar estadísticas
-        const statsContainer = document.getElementById('menuStatistics');
-        if (statsContainer) {
-            statsContainer.innerHTML = `
-                <div class="stat-item">
-                    <span class="stat-label">Balance:</span>
-                    <span class="stat-value">Equilibrado</span>
+        const el = document.getElementById('menuStatistics');
+        if (!el || !this.currentMenu) { if (el) el.innerHTML = ''; return; }
+        el.innerHTML = `
+            <div class="mn-stats-inner">
+                <div class="mn-stats-left">
+                    <div class="mn-stats-ring"><span class="mn-stats-pct">87%</span></div>
+                    <div>
+                        <h4 class="mn-stats-title">Resumen Nutricional Semanal</h4>
+                        <p class="mn-stats-sub">Objetivo: 2,200 kcal promedio diario</p>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-label">Tiempo total:</span>
-                    <span class="stat-value">8h 30min</span>
+                <div class="mn-stats-macros">
+                    <div class="mn-macro">
+                        <span class="mn-macro-val mn-macro-val--cyan">145g</span>
+                        <span class="mn-macro-lbl">PROTEÍNAS</span>
+                        <div class="mn-macro-bar"><div class="mn-macro-fill mn-macro-fill--cyan" style="width:75%"></div></div>
+                    </div>
+                    <div class="mn-macro">
+                        <span class="mn-macro-val mn-macro-val--blue">210g</span>
+                        <span class="mn-macro-lbl">CARBOS</span>
+                        <div class="mn-macro-bar"><div class="mn-macro-fill mn-macro-fill--blue" style="width:50%"></div></div>
+                    </div>
+                    <div class="mn-macro">
+                        <span class="mn-macro-val mn-macro-val--violet">65g</span>
+                        <span class="mn-macro-lbl">GRASAS</span>
+                        <div class="mn-macro-bar"><div class="mn-macro-fill mn-macro-fill--violet" style="width:65%"></div></div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-label">Estimado:</span>
-                    <span class="stat-value">92€</span>
-                </div>
-            `;
-        }
+            </div>`;
     }
 
     showEmptyState() {
-        const gridContainer = document.getElementById('menuGrid');
-        if (!gridContainer) return;
-        
-        gridContainer.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon"></div>
-                <h3>No hay menú disponible</h3>
-                <p>Genera un nuevo menú semanal usando el botón de arriba</p>
-                <button class="btn-primary" onclick="menuManager.showGenerateModal()">
-                    <i data-lucide="sparkles"></i> Generar Menú
+        const grid = document.getElementById('menuGrid');
+        if (!grid) return;
+        grid.innerHTML = `
+            <div class="mn-empty-state">
+                <span class="material-symbols-outlined mn-empty-icon">restaurant_menu</span>
+                <p class="mn-empty-title">No hay menú para esta semana</p>
+                <p class="mn-empty-sub">Genera un nuevo menú usando el botón de arriba</p>
+                <button class="mn-ai-cta" style="max-width:280px;margin-top:8px" onclick="menuManager.showGenerateModal()">
+                    <div class="mn-ai-inner glass-card" style="padding:14px 20px;gap:12px">
+                        <span class="material-symbols-outlined" style="color:#4cd7f6;font-variation-settings:'FILL' 1">auto_awesome</span>
+                        <span style="color:#4cd7f6;font-weight:700;font-size:14px">Generar Menú con IA</span>
+                    </div>
                 </button>
-            </div>
-        `;
-        
-        // Inicializar Lucide icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+            </div>`;
     }
 
     setLoading(loading) {
