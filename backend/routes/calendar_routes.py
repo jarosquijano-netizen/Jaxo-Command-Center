@@ -25,7 +25,7 @@ def get_week_calendar():
             # SIEMPRE usar la semana actual, independientemente de si hay menú guardado
             today = date.today()
             week_start = today - timedelta(days=today.weekday())
-            print(f"📅 DEBUG: today={today}, week_start={week_start}")
+            print(f"[debug] today={today}, week_start={week_start}")
         week_end = week_start + timedelta(days=6)
 
         # 1. Google imported events
@@ -59,7 +59,7 @@ def get_week_calendar():
             cleaning_events.append({
                 'id': f'cleaning-{item.id}',
                 'source': 'cleaning',
-                'title': f'🧹 {item.task_nombre}',
+                'title': f'{item.task_nombre}',
                 'start': start_dt.isoformat(),
                 'end': end_dt.isoformat(),
                 'all_day': False,
@@ -88,7 +88,7 @@ def get_week_calendar():
                             menu_events.append({
                                 'id': f'menu-{week_start.isoformat()}-{dia}-{comida}',
                                 'source': 'menu',
-                                'title': f'🍽️ {comida.title()}',
+                                'title': comida.title(),
                                 'start': start_dt.isoformat(),
                                 'end': end_dt.isoformat(),
                                 'all_day': False,
@@ -107,7 +107,7 @@ def get_week_calendar():
                 menu_events.append({
                     'id': f'menu-placeholder-{week_start.isoformat()}-{dia}-comida',
                     'source': 'menu',
-                    'title': '🍽️ Comida',
+                    'title': 'Comida',
                     'start': start_dt.isoformat(),
                     'end': end_dt.isoformat(),
                     'all_day': False,
@@ -119,7 +119,7 @@ def get_week_calendar():
                 menu_events.append({
                     'id': f'menu-placeholder-{week_start.isoformat()}-{dia}-cena',
                     'source': 'menu',
-                    'title': '🍽️ Cena',
+                    'title': 'Cena',
                     'start': start_dt.isoformat(),
                     'end': end_dt.isoformat(),
                     'all_day': False,

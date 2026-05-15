@@ -29,11 +29,11 @@ class NavigationManager {
     }
 
     navigateToSection(sectionId) {
-        console.log('🔗 Click en navegación hacia:', sectionId);
+        console.log('[nav] Click en navegación hacia:', sectionId);
         
         // Hide all sections
         this.sections.forEach(section => {
-            console.log('🔗 Quitando clase active de:', section.id);
+            console.log('[nav] Quitando clase active de:', section.id);
             section.classList.remove('active');
         });
 
@@ -45,13 +45,13 @@ class NavigationManager {
         // Show target section
         const targetSection = document.getElementById(sectionId);
         if (targetSection) {
-            console.log('🔗 Activando sección:', sectionId);
-            console.log('🔗 Clases de la sección:', targetSection.className);
+            console.log('[nav] Activando sección:', sectionId);
+            console.log('[nav] Clases de la sección:', targetSection.className);
             targetSection.classList.add('active');
             
             // Log computed display
             const computedStyle = window.getComputedStyle(targetSection);
-            console.log('🔗 Estilo computed display:', computedStyle.display);
+            console.log('[nav] Estilo computed display:', computedStyle.display);
         }
 
         // Add active class to clicked nav link
@@ -91,7 +91,7 @@ class NavigationManager {
             case 'calendar':
                 if (typeof calendarManager !== 'undefined') {
                     setTimeout(() => {
-                        console.log('🔗 Llamando a calendarManager.loadCurrentWeek()');
+                        console.log('[nav] Llamando a calendarManager.loadCurrentWeek()');
                         calendarManager.loadCurrentWeek();
                     }, 100);
                 }

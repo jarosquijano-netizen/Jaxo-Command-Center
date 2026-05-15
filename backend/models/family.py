@@ -27,7 +27,7 @@ class FamilyMember(db.Model):
     tipo = db.Column(db.String(20), nullable=False)  # "adulto" o "niño"
     rol_hogar = db.Column(db.String(20), default='familia')  # "familia" o "empleado_hogar"
     avatar_color = db.Column(db.String(7), default='#4A90E2')  # hex color
-    emoji = db.Column(db.String(10), default='👤')
+    emoji = db.Column(db.String(10), default='')
     activo = db.Column(db.Boolean, default=True)
     
     # CAMPOS PARA ASIGNACIÓN DE TAREAS

@@ -14,7 +14,7 @@ class CleaningManager {
     }
 
     async init() {
-        console.log('🧹 Inicializando módulo de limpieza...');
+        console.log('[cleaning] Inicializando módulo de limpieza...');
         
         // Obtener semana actual
         this.getCurrentWeek();
@@ -71,9 +71,9 @@ class CleaningManager {
             } else {
                 this.members = [];
             }
-            console.log('✅ Miembros cargados:', this.members);
+            console.log('[ok] Miembros cargados:', this.members);
         } catch (error) {
-            console.error('❌ Error cargando miembros:', error);
+            console.error('[err] Error cargando miembros:', error);
             this.members = [];
         }
     }
@@ -83,9 +83,9 @@ class CleaningManager {
             const weekStart = this.currentWeek.start.toISOString().split('T')[0];
             const response = await api.get(`/api/cleaning/schedule?week_start=${weekStart}`);
             this.schedule = response.data || [];
-            console.log('✅ Schedule cargado:', this.schedule);
+            console.log('[ok] Schedule cargado:', this.schedule);
         } catch (error) {
-            console.error('❌ Error cargando schedule:', error);
+            console.error('[err] Error cargando schedule:', error);
         }
     }
 
@@ -93,10 +93,10 @@ class CleaningManager {
         try {
             const response = await api.post('/api/cleaning/initialize');
             if (response.success) {
-                console.log('✅ Catálogo de limpieza inicializado:', response.message);
+                console.log('[ok] Catálogo de limpieza inicializado:', response.message);
             }
         } catch (error) {
-            console.error('❌ Error inicializando limpieza:', error);
+            console.error('[err] Error inicializando limpieza:', error);
         }
     }
 
@@ -127,7 +127,7 @@ class CleaningManager {
             });
             
             if (response.success) {
-                console.log('✅ Semana generada:', response.message);
+                console.log('[ok] Semana generada:', response.message);
                 await this.loadSchedule();
                 this.renderWeekGrid();
                 this.renderSummary();
@@ -135,7 +135,7 @@ class CleaningManager {
                 this.showNotification('Plan semanal generado exitosamente', 'success');
             }
         } catch (error) {
-            console.error('❌ Error generando semana:', error);
+            console.error('[err] Error generando semana:', error);
             this.showNotification('Error generando plan semanal', 'error');
         }
     }
@@ -364,7 +364,7 @@ class CleaningManager {
         Object.values(memberStats).forEach(stat => {
             // Skip if member is not found
             if (!stat.member) {
-                console.warn('⚠️ Miembro no encontrado para estadísticas:', stat);
+                console.warn('[warn] Miembro no encontrado para estadísticas:', stat);
                 return;
             }
             
@@ -510,7 +510,7 @@ class CleaningManager {
                 );
             }
         } catch (error) {
-            console.error('❌ Error cambiando estado de tarea:', error);
+            console.error('[err] Error cambiando estado de tarea:', error);
             this.showNotification('Error cambiando estado de tarea', 'error');
         }
     }

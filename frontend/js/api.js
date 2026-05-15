@@ -73,10 +73,10 @@ const api = new APIClient();
 async function checkBackendConnection() {
     try {
         const response = await api.get('/health');
-        console.log('✅ Backend conectado:', response.message);
+        console.log('Backend conectado:', response.message);
         return true;
     } catch (error) {
-        console.error('❌ Backend no disponible:', error.message);
+        console.error('Backend no disponible:', error.message);
         console.log('Asegúrate de que el servidor Flask está corriendo en', API_BASE_URL);
         return false;
     }

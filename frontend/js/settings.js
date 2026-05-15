@@ -15,9 +15,9 @@ class SettingsManager {
         try {
             const response = await api.get('/api/settings');
             this.settings = response.data || {};
-            console.log('✅ Configuración cargada:', this.settings);
+            console.log('Configuración cargada:', this.settings);
         } catch (error) {
-            console.error('❌ Error cargando configuración:', error);
+            console.error('Error cargando configuración:', error);
         }
     }
 
@@ -305,7 +305,7 @@ class SettingsManager {
             this.showNotification('Configuración guardada exitosamente', 'success');
             this.refreshGoogleCalendarStatus();
         } catch (error) {
-            console.error('❌ Error guardando configuración:', error);
+            console.error('Error guardando configuración:', error);
             this.showNotification('Error al guardar configuración', 'error');
         }
     }

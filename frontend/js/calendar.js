@@ -7,27 +7,27 @@ class CalendarManager {
     }
 
     async init() {
-        console.log('📅 CalendarManager init');
+        console.log('[cal] CalendarManager init');
         // Verificar que la sección calendario existe
         const calendarSection = document.getElementById('calendar');
         const calendarGrid = document.getElementById('calendarGrid');
-        console.log('📅 calendarSection:', calendarSection);
-        console.log('📅 calendarGrid:', calendarGrid);
+        console.log('[cal] calendarSection:', calendarSection);
+        console.log('[cal] calendarGrid:', calendarGrid);
         if (!calendarSection) {
-            console.error('❌ Sección #calendar no encontrada en el DOM');
+            console.error('[err] Sección #calendar no encontrada en el DOM');
             return;
         }
         if (!calendarGrid) {
-            console.error('❌ Contenedor #calendarGrid no encontrado en el DOM');
+            console.error('[err] Contenedor #calendarGrid no encontrado en el DOM');
             return;
         }
 
         // Verificar si la sección está activa (clase 'active')
-        console.log('📅 calendarSection.classList:', calendarSection.classList);
-        console.log('📅 calendarSection computed display:', getComputedStyle(calendarSection).display);
-        console.log('📅 calendarSection offsetParent:', calendarSection.offsetParent);
-        console.log('📅 calendarSection offsetWidth:', calendarSection.offsetWidth);
-        console.log('📅 calendarSection offsetHeight:', calendarSection.offsetHeight);
+        console.log('[cal] calendarSection.classList:', calendarSection.classList);
+        console.log('[cal] calendarSection computed display:', getComputedStyle(calendarSection).display);
+        console.log('[cal] calendarSection offsetParent:', calendarSection.offsetParent);
+        console.log('[cal] calendarSection offsetWidth:', calendarSection.offsetWidth);
+        console.log('[cal] calendarSection offsetHeight:', calendarSection.offsetHeight);
 
         // NO forzar visibilidad aquí, solo configurar listeners
         this.setupEventListeners();
@@ -58,7 +58,7 @@ class CalendarManager {
         if (calendarLink) {
             calendarLink.addEventListener('click', () => {
                 setTimeout(() => {
-                    console.log('📅 Sección calendario activada, recargando eventos');
+                    console.log('[cal] Sección calendario activada, recargando eventos');
                     this.loadCurrentWeek();
                 }, 100);
             });
@@ -69,20 +69,20 @@ class CalendarManager {
         try {
             const url = weekStart ? `/api/calendar/week?week=${weekStart}` : '/api/calendar/week';
             const response = await api.get(url);
-            console.log('📅 Calendar response:', response);
+            console.log('[cal] Calendar response:', response);
             if (!response.success) {
-                console.error('❌ Error cargando calendario:', response.message);
+                console.error('[err] Error cargando calendario:', response.message);
                 this.showError(response.message || 'Error cargando calendario');
                 return;
             }
             const data = response.data;
             this.currentWeek = new Date(data.week_start);
             this.events = data.events || [];
-            console.log('📅 Events loaded:', this.events);
+            console.log('[cal] Events loaded:', this.events);
             this.renderWeek();
             this.updateWeekDisplay();
         } catch (e) {
-            console.error('❌ Error cargando calendario:', e);
+            console.error('[err] Error cargando calendario:', e);
             this.showError('Error cargando calendario');
         }
     }
@@ -135,11 +135,11 @@ class CalendarManager {
     renderWeek() {
         const container = document.getElementById('calendarGrid');
         if (!container) {
-            console.error('❌ #calendarGrid no encontrado');
+            console.error('[err] #calendarGrid no encontrado');
             return;
         }
 
-        console.log('📅 Renderizando calendario con eventos:', this.events);
+        console.log('[cal] Renderizando calendario con eventos:', this.events);
 
         // Remove any existing error message
         const errEl = container.parentElement?.querySelector('.calendar-error');
@@ -212,7 +212,7 @@ class CalendarManager {
         html += '</div>';
 
         container.innerHTML = html;
-        console.log('📅 Calendario renderizado con estructura semanal');
+        console.log('[cal] Calendario renderizado con estructura semanal');
     }
 
     renderEvent(event) {
@@ -229,11 +229,11 @@ class CalendarManager {
     buildTooltip(event) {
         const start = new Date(event.start).toLocaleString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         const end = new Date(event.end).toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit' });
-        const location = event.location ? `\n📍 ${event.location}` : '';
-        const assigned = event.assigned_to ? `\n👤 ${event.assigned_to}` : '';
-        const area = event.area ? `\n🧹 ${event.area}` : '';
-        const description = event.description ? `\n📝 ${event.description}` : '';
-        return `${event.title}\n🕒 ${start} - ${end}${location}${assigned}${area}${description}`;
+        const location = event.location ? `\nUbicación: ${event.location}` : '';
+        const assigned = event.assigned_to ? `\nAsignado: ${event.assigned_to}` : '';
+        const area = event.area ? `\nÁrea: ${event.area}` : '';
+        const description = event.description ? `\n${event.description}` : '';
+        return `${event.title}\n${start} - ${end}${location}${assigned}${area}${description}`;
     }
 
     getEventsForSlot(date, hour) {
@@ -256,7 +256,7 @@ class CalendarManager {
 
     async syncGoogleCalendar() {
         try {
-            console.log('📅 Iniciando sincronización con Google Calendar...');
+            console.log('[cal] Iniciando sincronización con Google Calendar...');
             
             // Mostrar estado de carga
             const syncBtn = document.getElementById('syncCalendarBtn');
@@ -271,17 +271,17 @@ class CalendarManager {
             });
 
             if (response.success) {
-                console.log('📅 Sincronización exitosa:', response.data);
+                console.log('[cal] Sincronización exitosa:', response.data);
                 this.showSuccess(`Sincronización completada: ${response.data.created} nuevos eventos, ${response.data.updated} actualizados`);
                 
                 // Recargar eventos del calendario
                 await this.loadCurrentWeek();
             } else {
-                console.error('❌ Error en sincronización:', response.message);
+                console.error('[err] Error en sincronización:', response.message);
                 this.showError('Error en sincronización: ' + response.message);
             }
         } catch (error) {
-            console.error('❌ Error sincronizando Google Calendar:', error);
+            console.error('[err] Error sincronizando Google Calendar:', error);
             this.showError('Error sincronizando Google Calendar');
         } finally {
             // Restaurar botón
@@ -343,10 +343,10 @@ class CalendarManager {
 
     getSourceLabel(source) {
         const labels = {
-            'google': '📅 Google',
-            'cleaning': '🧹 Limpieza',
-            'menu': '🍽️ Menú',
-            'unknown': '📌 Evento'
+            'google': 'Google',
+            'cleaning': 'Limpieza',
+            'menu': 'Menú',
+            'unknown': 'Evento'
         };
         return labels[source] || labels.unknown;
     }
@@ -363,7 +363,7 @@ class CalendarManager {
         // Re-renderizar con el filtro aplicado
         this.renderWeek();
         
-        console.log(`📅 Filtro aplicado: ${filter}`);
+        console.log(`[cal] Filtro aplicado: ${filter}`);
     }
 
     filterEvents(events) {

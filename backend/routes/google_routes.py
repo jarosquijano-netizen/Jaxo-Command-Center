@@ -314,7 +314,7 @@ def sync_cleaning():
             source = 'cleaning_schedule'
             source_id = item.id
 
-            summary = f"🧹 {item.task_nombre} — {item.member_nombre}"
+            summary = f"{item.task_nombre} — {item.member_nombre}"
             desc_parts = []
             if item.area:
                 desc_parts.append(f"Área: {item.area}")

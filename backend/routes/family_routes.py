@@ -50,7 +50,7 @@ def create_member():
             tipo=data['tipo'],
             rol_hogar=data.get('rol_hogar', 'familia'),
             avatar_color=data.get('avatar_color', '#4A90E2'),
-            emoji=data.get('emoji', '👤'),
+            emoji=data.get('emoji', ''),
             
             # Tareas
             puede_cocinar=data.get('puede_cocinar', False),

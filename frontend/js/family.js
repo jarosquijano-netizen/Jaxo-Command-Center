@@ -48,7 +48,7 @@ class FamilyManager {
         if (this.members.length === 0) {
             membersGrid.innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-icon">👨‍👩‍👧‍👧</div>
+                    <div class="empty-icon"><span class="material-symbols-outlined" style="font-size:48px">family_restroom</span></div>
                     <h3>No hay perfiles aún</h3>
                     <p>Añade los miembros de tu familia para que la IA pueda generar menús personalizados.</p>
                     <button class="btn-primary" onclick="familyManager.showAddMemberForm()">
@@ -78,9 +78,9 @@ class FamilyManager {
             : '';
 
         const taskBadges = [
-            member.puede_cocinar ? '🍳' : '',
-            member.puede_limpiar ? '🧹' : '',
-            member.puede_compras ? '🛒' : '',
+            member.puede_cocinar ? 'cocina' : '',
+            member.puede_limpiar ? 'limpieza' : '',
+            member.puede_compras ? 'compras' : '',
         ].filter(Boolean).join(' ');
 
         return `
@@ -88,7 +88,7 @@ class FamilyManager {
             <div class="member-card-header">
                 <div class="member-avatar-wrap">
                     <div class="member-avatar" style="background: ${member.avatar_color}">
-                        <span>${member.emoji || (isNino ? '👧' : '👤')}</span>
+                        <span class="material-symbols-outlined" style="font-size:20px">${isNino ? 'child_care' : 'person'}</span>
                     </div>
                     <div class="completeness-ring" title="${completenessLabel}: ${completeness}%"
                          style="--pct:${completeness}; --color:${completenessColor}">
@@ -121,7 +121,7 @@ class FamilyManager {
 
             ${allergiesHtml ? `
             <div class="member-card-tags">
-                <span class="tags-label">⚠️ Alergias:</span>
+                <span class="tags-label">Alergias:</span>
                 ${allergiesHtml}
             </div>` : ''}
 
@@ -244,7 +244,7 @@ class FamilyManager {
                             <div class="form-group form-group-sm">
                                 <label>Emoji</label>
                                 <input type="text" name="emoji" maxlength="2"
-                                    value="${member?.emoji || ''}" placeholder="👤" class="emoji-input">
+                                    value="" class="emoji-input" style="display:none">
                             </div>
                             <div class="form-group form-group-sm">
                                 <label>Color avatar</label>
@@ -268,15 +268,15 @@ class FamilyManager {
                         <div class="checkbox-row">
                             <label class="checkbox-label">
                                 <input type="checkbox" name="puede_cocinar" ${member?.puede_cocinar ? 'checked' : ''}>
-                                <span>🍳 Puede cocinar</span>
+                                <span>Puede cocinar</span>
                             </label>
                             <label class="checkbox-label">
                                 <input type="checkbox" name="puede_limpiar" ${member?.puede_limpiar ? 'checked' : ''}>
-                                <span>🧹 Puede limpiar</span>
+                                <span>Puede limpiar</span>
                             </label>
                             <label class="checkbox-label">
                                 <input type="checkbox" name="puede_compras" ${member?.puede_compras ? 'checked' : ''}>
-                                <span>🛒 Puede hacer compras</span>
+                                <span>Puede hacer compras</span>
                             </label>
                         </div>
                         <div class="slider-group">
@@ -800,7 +800,7 @@ class FamilyManager {
         const toast = document.createElement('div');
         toast.id = 'family-toast';
         toast.className = `toast toast-${type}`;
-        const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+        const icons = { success: 'check_circle', error: 'error', info: 'info', warning: 'warning' };
         toast.textContent = `${icons[type] || ''} ${message}`;
         document.body.appendChild(toast);
 

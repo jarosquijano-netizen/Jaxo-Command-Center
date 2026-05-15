@@ -35,7 +35,7 @@ class MenuManager {
             }
             return false;
         } catch (e) {
-            console.warn('⚠️ Error validando datos del menú:', e);
+            console.warn('[warn] Error validando datos del menú:', e);
             return false;
         }
     }
@@ -72,7 +72,7 @@ class MenuManager {
             this.setLoading(true);
             
             // Primero intentar cargar el menú más reciente que tenga datos
-            console.log('🔍 Buscando menú con datos...');
+            console.log('[menu] Buscando menú con datos...');
             
             let response = await api.get('/api/menu/current');
             
@@ -87,7 +87,7 @@ class MenuManager {
                     menuData.menu_adultos.lunes;
                 
                 if (hasData) {
-                    console.log('✅ Usando menú actual con datos:', response.data.id);
+                    console.log('[ok] Usando menú actual con datos:', response.data.id);
                     this.currentMenu = response.data;
                     this.currentWeek = new Date(response.data.semana_inicio);
                     this.renderMenu();
@@ -97,7 +97,7 @@ class MenuManager {
             }
             
             // Si el menú actual no tiene datos, buscar el último que sí tenga
-            console.log('📝 Menú actual vacío, buscando último con datos...');
+            console.log('[menu] Menú actual vacío, buscando último con datos...');
             const latestResponse = await api.get('/api/menu/latest');
             
             if (latestResponse.success && latestResponse.data) {
@@ -110,7 +110,7 @@ class MenuManager {
                     menuData.menu_adultos.lunes;
                 
                 if (hasData) {
-                    console.log('✅ Usando último menú con datos:', latestResponse.data.id);
+                    console.log('[ok] Usando último menú con datos:', latestResponse.data.id);
                     this.currentMenu = latestResponse.data;
                     this.currentWeek = new Date(latestResponse.data.semana_inicio);
                     this.renderMenu();
@@ -120,7 +120,7 @@ class MenuManager {
             }
             
             // Si no hay menús con datos, mostrar estado vacío
-            console.log('📝 No hay menús con datos, mostrando estado vacío');
+            console.log('[menu] No hay menús con datos, mostrando estado vacío');
             this.showEmptyState();
             
         } catch (error) {
@@ -155,14 +155,14 @@ class MenuManager {
     renderMenu() {
         if (!this.currentMenu) return;
 
-        console.log('🔍 Renderizando menú:', this.currentMenu.id);
-        console.log('🔍 Menu data crudo:', this.currentMenu.menu_data);
+        console.log('[menu] Renderizando menú:', this.currentMenu.id);
+        console.log('[menu] Menu data crudo:', this.currentMenu.menu_data);
 
         const menuData = this.currentMenu.menu_data;
         const gridContainer = document.getElementById('menuGrid');
         
         if (!gridContainer) {
-            console.error('❌ No se encontró el contenedor menuGrid');
+            console.error('[err] No se encontró el contenedor menuGrid');
             return;
         }
 
@@ -171,9 +171,9 @@ class MenuManager {
         if (typeof menuData === 'string') {
             try {
                 parsedMenuData = JSON.parse(menuData);
-                console.log('🔍 Menu data parseado:', parsedMenuData);
+                console.log('[menu] Menu data parseado:', parsedMenuData);
             } catch (e) {
-                console.error('❌ Error parseando menu_data:', e);
+                console.error('[err] Error parseando menu_data:', e);
                 this.showError('Error en el formato del menú');
                 return;
             }
@@ -181,7 +181,7 @@ class MenuManager {
 
         // Verificar estructura
         if (!parsedMenuData.menu_adultos && !parsedMenuData.menu_ninos) {
-            console.warn('⚠️ Menu data no tiene las claves esperadas:', Object.keys(parsedMenuData));
+            console.warn('[warn] Menu data no tiene las claves esperadas:', Object.keys(parsedMenuData));
             // Si el menú está vacío, mostrar mensaje
             this.showEmptyState();
             return;
@@ -196,10 +196,10 @@ class MenuManager {
 
         // Crear filas de comidas - detectar dinámicamente qué comidas existen
         const availableMeals = this.getAvailableMeals(parsedMenuData);
-        console.log('🍽️ Comidas disponibles:', availableMeals);
+        console.log('[menu] Comidas disponibles:', availableMeals);
         
         if (availableMeals.length === 0) {
-            console.warn('⚠️ No se encontraron comidas en el menú');
+            console.warn('[warn] No se encontraron comidas en el menú');
             this.showEmptyState();
             return;
         }
@@ -212,7 +212,7 @@ class MenuManager {
         // Actualizar estadísticas
         this.updateStatistics();
         
-        console.log('✅ Menú renderizado correctamente');
+        console.log('[ok] Menú renderizado correctamente');
     }
 
     getAvailableMeals(menuData) {
@@ -367,7 +367,7 @@ class MenuManager {
         }
         
         if (mealData.truco) {
-            html += `<div class="meal-tip">💡 ${mealData.truco}</div>`;
+            html += `<div class="meal-tip">${mealData.truco}</div>`;
         }
         
         html += '</div>';
@@ -381,11 +381,11 @@ class MenuManager {
         return `
             <div class="meal-both">
                 <div class="adult-section">
-                    <div class="section-label">👨‍👩‍👧‍👦</div>
+                    <div class="section-label"><span class="material-symbols-outlined" style="font-size:16px">group</span></div>
                     ${adultContent}
                 </div>
                 <div class="child-section">
-                    <div class="section-label">👶</div>
+                    <div class="section-label"><span class="material-symbols-outlined" style="font-size:16px">child_care</span></div>
                     ${childContent}
                 </div>
             </div>
@@ -394,10 +394,10 @@ class MenuManager {
 
     getMealIcon(meal) {
         const icons = {
-            desayuno: '☀️ DESAY',
-            comida: '🍽️ COMIDA',
-            merienda: '🍪 MERIEN',
-            cena: '🌙 CENA'
+            desayuno: 'DESAY',
+            comida: 'COMIDA',
+            merienda: 'MERIEN',
+            cena: 'CENA'
         };
         return icons[meal] || meal;
     }
@@ -554,9 +554,9 @@ class MenuManager {
                     this.updateWeekDisplay();
                     this.closeModal('generateMenuModal');
                     this.showSuccess('¡Menú generado exitosamente!');
-                    console.log('✅ Menú con datos válidos cargado');
+                    console.log('[ok] Menú con datos válidos cargado');
                 } else {
-                    console.warn('⚠️ Menú generado sin datos válidos, mostrando estado vacío');
+                    console.warn('[warn] Menú generado sin datos válidos, mostrando estado vacío');
                     this.showEmptyState();
                     this.closeModal('generateMenuModal');
                     this.showError('El menú se generó pero no contiene datos. Por favor, inténtalo de nuevo.');
@@ -566,7 +566,7 @@ class MenuManager {
                 if (response.message.includes('Ya existe un menú')) {
                     if (confirm('Ya existe un menú para esta semana. ¿Deseas regenerarlo y sobreescribir el existente?')) {
                         // Reintentar con regenerate: true
-                        console.log('🔄 Reintentando con regeneración forzada...');
+                        console.log('[retry] Reintentando con regeneración forzada...');
                         data.regenerate = true;
                         try {
                             const retryResponse = await api.post('/api/menu/generate', data);
@@ -647,8 +647,8 @@ class MenuManager {
         let html = `
             <div class="meal-details">
                 <div class="meal-header">
-                    <h3>🍽️ ${mealNames[meal]} - ${dayNames[day]}</h3>
-                    <button class="close-btn" onclick="menuManager.closeModal('mealDetailsModal')">✕</button>
+                    <h3>${mealNames[meal]} - ${dayNames[day]}</h3>
+                    <button class="close-btn" onclick="menuManager.closeModal('mealDetailsModal')"><span class="material-symbols-outlined">close</span></button>
                 </div>
                 
                 <div class="meal-content-comparison">
@@ -667,10 +667,10 @@ class MenuManager {
                 
                 <div class="meal-actions">
                     <button class="btn-secondary" onclick="menuManager.regenerateMeal()">
-                        🔄 Regenerar
+                        <span class="material-symbols-outlined">refresh</span> Regenerar
                     </button>
                     <button class="btn-secondary" onclick="menuManager.addToFavorites()">
-                        ➕ Añadir a favoritos
+                        <span class="material-symbols-outlined">favorite</span> Añadir a favoritos
                     </button>
                 </div>
                 
@@ -691,7 +691,7 @@ class MenuManager {
     }
 
     createAdultMealDetailsHTML(meal) {
-        let html = '<div class="meal-adultos-details"><h4>👨‍👩‍👧‍👦 MENÚ ADULTOS</h4>';
+        let html = '<div class="meal-adultos-details"><h4>MENÚ ADULTOS</h4>';
         
         if (meal.primero) {
             html += `<div><strong>Primero:</strong> ${meal.primero.plato || meal.primero}</div>`;
@@ -702,10 +702,10 @@ class MenuManager {
                 html += `<div>⏱️ Tiempo: ${meal.primero.tiempo_prep} minutos</div>`;
             }
             if (meal.primero.calorias) {
-                html += `<div>🔥 Calorías: ${meal.primero.calorias}</div>`;
+                html += `<div>Calorías: ${meal.primero.calorias}</div>`;
             }
             if (meal.primero.dificultad) {
-                html += `<div>📊 Dificultad: ${meal.primero.dificultad}</div>`;
+                html += `<div>Dificultad: ${meal.primero.dificultad}</div>`;
             }
         }
         
@@ -718,10 +718,10 @@ class MenuManager {
                 html += `<div>⏱️ Tiempo: ${meal.segundo.tiempo_prep} minutos</div>`;
             }
             if (meal.segundo.calorias) {
-                html += `<div>🔥 Calorías: ${meal.segundo.calorias}</div>`;
+                html += `<div>Calorías: ${meal.segundo.calorias}</div>`;
             }
             if (meal.segundo.dificultad) {
-                html += `<div>📊 Dificultad: ${meal.segundo.dificultad}</div>`;
+                html += `<div>Dificultad: ${meal.segundo.dificultad}</div>`;
             }
         }
         
@@ -734,7 +734,7 @@ class MenuManager {
                 html += `<div>⏱️ Tiempo: ${meal.postre.tiempo_prep} minutos</div>`;
             }
             if (meal.postre.calorias) {
-                html += `<div>🔥 Calorías: ${meal.postre.calorias}</div>`;
+                html += `<div>Calorías: ${meal.postre.calorias}</div>`;
             }
         }
         
@@ -751,40 +751,40 @@ class MenuManager {
         }
         
         if (meal.calorias) {
-            html += `<div>🔥 Calorías: ${meal.calorias}</div>`;
+            html += `<div>Calorías: ${meal.calorias}</div>`;
         }
         
         if (meal.dificultad) {
-            html += `<div>📊 Dificultad: ${meal.dificultad}</div>`;
+            html += `<div>Dificultad: ${meal.dificultad}</div>`;
         }
         
         // Información nutricional detallada
         if (meal.nutrientes) {
             html += `<div class="nutritional-info">
-                <strong>📊 Información Nutricional:</strong><br>
-                🥩 Proteínas: ${meal.nutrientes.proteinas_g || meal.nutrientes.proteinas || 'N/A'}g<br>
-                🍞 Carbohidratos: ${meal.nutrientes.carbohidratos_g || meal.nutrientes.carbohidratos || 'N/A'}g<br>
-                🥑 Grasas: ${meal.nutrientes.grasas_g || meal.nutrientes.grasas || 'N/A'}g<br>
-                🌾 Fibra: ${meal.nutrientes.fibra_g || meal.nutrientes.fibra || 'N/A'}g`;
+                <strong>Información Nutricional:</strong><br>
+                Proteínas: ${meal.nutrientes.proteinas_g || meal.nutrientes.proteinas || 'N/A'}g<br>
+                Carbohidratos: ${meal.nutrientes.carbohidratos_g || meal.nutrientes.carbohidratos || 'N/A'}g<br>
+                Grasas: ${meal.nutrientes.grasas_g || meal.nutrientes.grasas || 'N/A'}g<br>
+                Fibra: ${meal.nutrientes.fibra_g || meal.nutrientes.fibra || 'N/A'}g`;
                 
             if (meal.nutrientes.azucar_g) {
-                html += `<br>🍬 Azúcar: ${meal.nutrientes.azucar_g}g`;
+                html += `<br>Azúcar: ${meal.nutrientes.azucar_g}g`;
             }
             if (meal.nutrientes.sodio_mg) {
-                html += `<br>🧂 Sodio: ${meal.nutrientes.sodio_mg}mg`;
+                html += `<br>Sodio: ${meal.nutrientes.sodio_mg}mg`;
             }
             html += `</div>`;
         }
         
         // Vitaminas y minerales
         if (meal.vitaminas_minerales && meal.vitaminas_minerales.length > 0) {
-            html += `<div><strong>💊 Vitaminas y Minerales:</strong> ${meal.vitaminas_minerales.join(', ')}</div>`;
+            html += `<div><strong>Vitaminas y Minerales:</strong> ${meal.vitaminas_minerales.join(', ')}</div>`;
         }
         
         // Ingredientes
         if (meal.ingredientes && meal.ingredientes.length > 0) {
             html += `<div class="ingredients-list">
-                <strong>🥘 Ingredientes:</strong><br>
+                <strong>Ingredientes:</strong><br>
                 ${meal.ingredientes.map(ing => `• ${ing}`).join('<br>')}
             </div>`;
         }
@@ -792,23 +792,23 @@ class MenuManager {
         // Preparación
         if (meal.preparacion && meal.preparacion.length > 0) {
             html += `<div class="preparation-steps">
-                <strong>👨‍🍳 Preparación:</strong><br>
+                <strong>‍Preparación:</strong><br>
                 ${meal.preparacion.map((step, index) => `${index + 1}. ${step}`).join('<br>')}
             </div>`;
         }
         
         // Alérgenos
         if (meal.alergenos && meal.alergenos.length > 0) {
-            html += `<div><strong>⚠️ Alérgenos:</strong> ${meal.alergenos.join(', ')}</div>`;
+            html += `<div><strong>Alérgenos:</strong> ${meal.alergenos.join(', ')}</div>`;
         }
         
         // Notas adicionales
         if (meal.notas) {
-            html += `<div><strong>📝 Notas:</strong> ${meal.notas}</div>`;
+            html += `<div><strong>Notas:</strong> ${meal.notas}</div>`;
         }
         
         if (meal.cocinado_por) {
-            html += `<div><strong>👥 Cocinado por:</strong> ${meal.cocinado_por}</div>`;
+            html += `<div><strong>Cocinado por:</strong> ${meal.cocinado_por}</div>`;
         }
         
         html += '</div>';
@@ -816,7 +816,7 @@ class MenuManager {
     }
 
     createChildMealDetailsHTML(meal) {
-        let html = '<div class="meal-ninos-details"><h4>👶 MENÚ NIÑOS</h4>';
+        let html = '<div class="meal-ninos-details"><h4>MENÚ NIÑOS</h4>';
         
         if (meal.primero) {
             html += `<div><strong>Primero:</strong> ${meal.primero.plato || meal.primero}</div>`;
@@ -827,7 +827,7 @@ class MenuManager {
                 html += `<div>⏱️ Tiempo: ${meal.primero.tiempo_prep} minutos</div>`;
             }
             if (meal.primero.calorias) {
-                html += `<div>🔥 Calorías: ${meal.primero.calorias}</div>`;
+                html += `<div>Calorías: ${meal.primero.calorias}</div>`;
             }
         }
         
@@ -840,7 +840,7 @@ class MenuManager {
                 html += `<div>⏱️ Tiempo: ${meal.segundo.tiempo_prep} minutos</div>`;
             }
             if (meal.segundo.calorias) {
-                html += `<div>🔥 Calorías: ${meal.segundo.calorias}</div>`;
+                html += `<div>Calorías: ${meal.segundo.calorias}</div>`;
             }
         }
         
@@ -853,7 +853,7 @@ class MenuManager {
                 html += `<div>⏱️ Tiempo: ${meal.postre.tiempo_prep} minutos</div>`;
             }
             if (meal.postre.calorias) {
-                html += `<div>🔥 Calorías: ${meal.postre.calorias}</div>`;
+                html += `<div>Calorías: ${meal.postre.calorias}</div>`;
             }
         }
         
@@ -870,24 +870,24 @@ class MenuManager {
         }
         
         if (meal.calorias) {
-            html += `<div>🔥 Calorías: ${meal.calorias}</div>`;
+            html += `<div>Calorías: ${meal.calorias}</div>`;
         }
         
         // Información nutricional para niños
         if (meal.nutrientes) {
             html += `<div class="nutritional-info">
-                <strong>📊 Información Nutricional:</strong><br>
-                🥩 Proteínas: ${meal.nutrientes.proteinas_g || meal.nutrientes.proteinas || 'N/A'}g<br>
-                🍞 Carbohidratos: ${meal.nutrientes.carbohidratos_g || meal.nutrientes.carbohidratos || 'N/A'}g<br>
-                🥑 Grasas: ${meal.nutrientes.grasas_g || meal.nutrientes.grasas || 'N/A'}g<br>
-                🌾 Fibra: ${meal.nutrientes.fibra_g || meal.nutrientes.fibra || 'N/A'}g`;
+                <strong>Información Nutricional:</strong><br>
+                Proteínas: ${meal.nutrientes.proteinas_g || meal.nutrientes.proteinas || 'N/A'}g<br>
+                Carbohidratos: ${meal.nutrientes.carbohidratos_g || meal.nutrientes.carbohidratos || 'N/A'}g<br>
+                Grasas: ${meal.nutrientes.grasas_g || meal.nutrientes.grasas || 'N/A'}g<br>
+                Fibra: ${meal.nutrientes.fibra_g || meal.nutrientes.fibra || 'N/A'}g`;
             html += `</div>`;
         }
         
         // Ingredientes
         if (meal.ingredientes && meal.ingredientes.length > 0) {
             html += `<div class="ingredients-list">
-                <strong>🥘 Ingredientes:</strong><br>
+                <strong>Ingredientes:</strong><br>
                 ${meal.ingredientes.map(ing => `• ${ing}`).join('<br>')}
             </div>`;
         }
@@ -895,20 +895,20 @@ class MenuManager {
         // Preparación
         if (meal.preparacion && meal.preparacion.length > 0) {
             html += `<div class="preparation-steps">
-                <strong>👨‍🍳 Preparación:</strong><br>
+                <strong>‍Preparación:</strong><br>
                 ${meal.preparacion.map((step, index) => `${index + 1}. ${step}`).join('<br>')}
             </div>`;
         }
         
         // Alérgenos
         if (meal.alergenos && meal.alergenos.length > 0) {
-            html += `<div><strong>⚠️ Alérgenos:</strong> ${meal.alergenos.join(', ')}</div>`;
+            html += `<div><strong>Alérgenos:</strong> ${meal.alergenos.join(', ')}</div>`;
         }
         
         // Adaptaciones especiales para niños
         if (meal.adaptacion_oliva_4) {
             html += `<div class="adaptation-info">
-                <strong>👧 Adaptación Oliva (4 años):</strong><br>
+                <strong>Adaptación Oliva (4 años):</strong><br>
                 ${meal.adaptacion_oliva_4.cambios ? `• Cambios: ${meal.adaptacion_oliva_4.cambios}<br>` : ''}
                 ${meal.adaptacion_oliva_4.presentacion ? `• Presentación: ${meal.adaptacion_oliva_4.presentacion}<br>` : ''}
                 ${meal.adaptacion_oliva_4.porcion ? `• Porción: ${meal.adaptacion_oliva_4.porcion}<br>` : ''}
@@ -918,22 +918,22 @@ class MenuManager {
         
         if (meal.adaptacion_abril_14) {
             html += `<div class="adaptation-info">
-                <strong>👦 Adaptación Abril (14 años):</strong><br>
+                <strong>Adaptación Abril (14 años):</strong><br>
                 ${meal.adaptacion_abril_14.cambios ? `• Cambios: ${meal.adaptacion_abril_14.cambios}<br>` : ''}
                 ${meal.adaptacion_abril_14.porcion ? `• Porción: ${meal.adaptacion_abril_14.porcion}` : ''}
             </div>`;
         }
         
         if (meal.alternativa_si_rechaza) {
-            html += `<div><strong>🔄 Alternativa si rechaza:</strong> ${meal.alternativa_si_rechaza}</div>`;
+            html += `<div><strong>Alternativa si rechaza:</strong> ${meal.alternativa_si_rechaza}</div>`;
         }
         
         if (meal.truco_padres) {
-            html += `<div><strong>💡 Truco para padres:</strong> ${meal.truco_padres}</div>`;
+            html += `<div><strong>Truco para padres:</strong> ${meal.truco_padres}</div>`;
         }
         
         if (meal.porque_esta_receta) {
-            html += `<div><strong>🤔 Por qué esta receta:</strong> ${meal.porque_esta_receta}</div>`;
+            html += `<div><strong>Por qué esta receta:</strong> ${meal.porque_esta_receta}</div>`;
         }
         
         if (meal.alternativa) {
@@ -945,7 +945,7 @@ class MenuManager {
         }
         
         if (meal.truco) {
-            html += `<div><strong>💡 Truco:</strong> ${meal.truco}</div>`;
+            html += `<div><strong>Truco:</strong> ${meal.truco}</div>`;
         }
         
         html += '</div>';
@@ -1092,15 +1092,15 @@ class MenuManager {
         if (statsContainer) {
             statsContainer.innerHTML = `
                 <div class="stat-item">
-                    <span class="stat-label">🥗 Balance:</span>
+                    <span class="stat-label">Balance:</span>
                     <span class="stat-value">Equilibrado</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">🕐 Tiempo total:</span>
+                    <span class="stat-label">Tiempo total:</span>
                     <span class="stat-value">8h 30min</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">💰 Estimado:</span>
+                    <span class="stat-label">Estimado:</span>
                     <span class="stat-value">92€</span>
                 </div>
             `;
@@ -1113,7 +1113,7 @@ class MenuManager {
         
         gridContainer.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">🍽️</div>
+                <div class="empty-icon"></div>
                 <h3>No hay menú disponible</h3>
                 <p>Genera un nuevo menú semanal usando el botón de arriba</p>
                 <button class="btn-primary" onclick="menuManager.showGenerateModal()">

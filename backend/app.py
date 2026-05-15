@@ -120,15 +120,15 @@ def create_app(config_name='default'):
     with app.app_context():
         try:
             if os.getenv('RESET_DB', 'false').lower() == 'true':
-                print("⚠️  RESET_DB=true — dropping and recreating all tables...")
+                print("WARNING:  RESET_DB=true — dropping and recreating all tables...")
                 db.drop_all()
                 db.create_all()
-                print("✅ Base de datos reseteada con esquema actualizado")
+                print("Base de datos reseteada con esquema actualizado")
             else:
                 db.create_all()
-                print("✅ Tablas de base de datos creadas/verificadas")
+                print("Tablas de base de datos creadas/verificadas")
         except Exception as e:
-            print(f"⚠️  Error creando tablas: {e}")
+            print(f"WARNING:  Error creando tablas: {e}")
     
     return app
 
@@ -144,15 +144,15 @@ if __name__ == '__main__':
     try:
         from config import Config
         # Config.validate()  # Descomentar cuando tengas las API keys
-        print("✅ Configuración validada")
+        print("Configuración validada")
     except ValueError as e:
-        print(f"⚠️  Advertencia: {e}")
+        print(f"WARNING:  Advertencia: {e}")
         print("Configura el archivo .env con las credenciales necesarias")
     
     # Ejecutar servidor
     print(f"""
     ╔════════════════════════════════════════════╗
-    ║   🏠 Family Command Center                ║
+    ║   Family Command Center                ║
     ║   Servidor corriendo en:                  ║
     ║   http://localhost:{app.config['PORT']}                      ║
     ╚════════════════════════════════════════════╝

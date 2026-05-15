@@ -9,7 +9,7 @@
 </head>
 <body>
     <div style="padding: 20px;">
-        <h1>🍳 Family Command Center - Test</h1>
+        <h1>Family Command Center - Test</h1>
         <p>Backend Status: <span id="backend-status">Checking...</span></p>
         <button onclick="testBackend()">Test Backend Connection</button>
         <button onclick="testMenuAPI()">Test Menu API</button>
@@ -21,10 +21,10 @@
             try {
                 const response = await fetch('http://localhost:9000/health');
                 const data = await response.json();
-                document.getElementById('backend-status').innerHTML = '✅ Connected';
+                document.getElementById('backend-status').innerHTML = 'Connected';
                 document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
             } catch (error) {
-                document.getElementById('backend-status').innerHTML = '❌ Error: ' + error.message;
+                document.getElementById('backend-status').innerHTML = 'Error: ' + error.message;
             }
         }
 

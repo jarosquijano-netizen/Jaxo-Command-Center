@@ -854,17 +854,17 @@ IMPORTANTE: Completa TODOS los días para AMBOS menús con información nutricio
   ],
   
   "consideraciones_aplicadas": [
-    "✅ Sin mariscos (alergia Xilef)",
-    "✅ Sin lactosa (intolerancia Xilef) - bebida avena como alternativa",
-    "✅ Ajo y pimiento incluidos (favoritos Joe)",
-    "✅ Jengibre y cilantro en algunos platos (favoritos Xilef)",
-    "✅ Sin berenjena ni espinaca (rechazadas por Abril)",
-    "✅ Sin verduras verdes visibles para Oliva (escondidas en purés)",
-    "✅ Texturas adaptadas para Oliva (4 años) - sin fibrosas",
-    "✅ Abril come porciones adulto (14 años)",
-    "✅ Cenas L-V elaboradas (Marycel 18-21h)",
-    "✅ Fines de semana platos simples",
-    "✅ Presupuesto 100€: conseguido 92.50€"
+    "Sin mariscos (alergia Xilef)",
+    "Sin lactosa (intolerancia Xilef) - bebida avena como alternativa",
+    "Ajo y pimiento incluidos (favoritos Joe)",
+    "Jengibre y cilantro en algunos platos (favoritos Xilef)",
+    "Sin berenjena ni espinaca (rechazadas por Abril)",
+    "Sin verduras verdes visibles para Oliva (escondidas en purés)",
+    "Texturas adaptadas para Oliva (4 años) - sin fibrosas",
+    "Abril come porciones adulto (14 años)",
+    "Cenas L-V elaboradas (Marycel 18-21h)",
+    "Fines de semana platos simples",
+    "Presupuesto 100€: conseguido 92.50€"
   ],
   
   "info_nutricional_semanal": {{

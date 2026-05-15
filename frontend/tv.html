@@ -5,11 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Command Center - TV View</title>
     
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
     <!-- CSS -->
-    <link rel="stylesheet" href="http://localhost:8080/css/main.css?v=20260306">
-    <link rel="stylesheet" href="http://localhost:8080/css/barcelona-theme.css">
-    
-    <!-- Lucide Icons -->
+    <link rel="stylesheet" href="css/main.css?v=20260515">
+    <link rel="stylesheet" href="css/barcelona-theme.css?v=20260515">
+
+    <!-- Lucide Icons (retained for existing icon references) -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <style>
@@ -647,7 +652,7 @@
                 <!-- Weekly Menu -->
                 <div class="dashboard-card glass-card fade-in stagger-1">
                     <div class="card-header">
-                        <h3>📅 Menú de Hoy</h3>
+                        <h3><span class="material-symbols-outlined">restaurant_menu</span> Menú de Hoy</h3>
                         <span class="current-day" id="menuCurrentDay"></span>
                     </div>
                     
@@ -659,7 +664,7 @@
                 <!-- To-Do List -->
                 <div class="dashboard-card glass-card fade-in stagger-2">
                     <div class="card-header">
-                        <h3>� To-Do List</h3>
+                        <h3><span class="material-symbols-outlined">assignment</span> To-Do List</h3>
                         <div class="tv-todo-stats">
                             <span class="stat-item">
                                 <span class="stat-number" id="tvTodoTotalCount">0</span>
@@ -691,7 +696,7 @@
                     <!-- Voice Interface -->
                     <div class="tv-voice-interface" id="tvVoiceInterface" style="display: none;">
                         <div class="tv-voice-header">
-                            <h3>🎤 Comando de Voz</h3>
+                            <h3><span class="material-symbols-outlined">mic</span> Comando de Voz</h3>
                             <button class="tv-stop-voice-btn" id="tvStopVoiceBtn">
                                 <i data-lucide="square"></i> Detener
                             </button>
@@ -720,7 +725,7 @@
                 <!-- Cleaning Tasks -->
                 <div class="dashboard-card glass-card fade-in stagger-3">
                     <div class="card-header">
-                        <h3>🧹 Tareas de Hoy</h3>
+                        <h3><span class="material-symbols-outlined">cleaning_services</span> Tareas de Hoy</h3>
                         <span class="current-day" id="cleaningCurrentDay"></span>
                     </div>
                     
@@ -733,7 +738,7 @@
                 <div class="dashboard-card dashboard-card-large glass-card fade-in stagger-4">
                     <div class="card-header">
                         <div class="header-top">
-                            <h3>📅 Calendario Semanal</h3>
+                            <h3><span class="material-symbols-outlined">calendar_month</span> Calendario Semanal</h3>
                         </div>
                         
                         <!-- Calendar Filters -->
@@ -892,13 +897,13 @@
             
             async fetchCleaningSchedule() {
                 try {
-                    console.log('🧹 TV: Obteniendo schedule de limpieza...');
+                    console.log('[tv] Obteniendo schedule de limpieza...');
                     const response = await fetch(`${this.apiBase}/cleaning/schedule`);
                     const result = await response.json();
-                    console.log('🧹 TV: Respuesta de limpieza:', result);
+                    console.log('[tv] Respuesta de limpieza:', result);
                     return result.success ? result.data : [];
                 } catch (error) {
-                    console.error('🧹 TV: Error fetching cleaning schedule:', error);
+                    console.error('[tv] Error fetching cleaning schedule:', error);
                     return [];
                 }
             }
@@ -920,7 +925,7 @@
                     const result = await response.json();
                     return result.success ? result.data : [];
                 } catch (error) {
-                    console.error('📋 TV: Error fetching todos:', error);
+                    console.error('[tv] Error fetching todos:', error);
                     return [];
                 }
             }
@@ -1055,7 +1060,7 @@
                 const content = document.getElementById('tvTodoContent');
                 if (!content) return;
                 
-                console.log('📋 TV: Datos de To-Do recibidos:', todoData);
+                console.log('[tv] Datos de To-Do recibidos:', todoData);
                 
                 if (!todoData || todoData.length === 0) {
                     content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay tareas pendientes</p>';
@@ -1085,7 +1090,7 @@
                     
                     todoElement.innerHTML = `
                         <div class="tv-todo-checkbox ${todo.completed ? 'checked' : ''}" data-todo-id="${todo.id}">
-                            ${todo.completed ? '✓' : ''}
+                            ${todo.completed ? '<span class="material-symbols-outlined" style="font-size:16px">check</span>' : ''}
                         </div>
                         <div class="tv-todo-content">
                             <div class="tv-todo-title">${todo.title}</div>
@@ -1095,7 +1100,7 @@
                             </div>
                             ${todo.dueDate ? `
                                 <div class="tv-todo-due-date ${isOverdue ? 'overdue' : ''}">
-                                    📅 ${this.formatDate(todo.dueDate)}
+                                    ${this.formatDate(todo.dueDate)}
                                 </div>
                             ` : ''}
                             ${todo.notes ? `
@@ -1241,7 +1246,7 @@
                         }
                     }
                 } catch (error) {
-                    console.error('❌ Error actualizando todo:', error);
+                    console.error('Error actualizando todo:', error);
                 }
             }
             
@@ -1279,10 +1284,10 @@
             
             updateCleaningSection(cleaningData) {
                 const content = document.getElementById('tvCleaningContent');
-                console.log('🧹 TV: Datos de limpieza recibidos:', cleaningData);
+                console.log('[tv] Datos de limpieza recibidos:', cleaningData);
                 
                 if (!cleaningData || cleaningData.length === 0) {
-                    console.log('🧹 TV: No hay datos de limpieza');
+                    console.log('[tv] No hay datos de limpieza');
                     content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay tareas programadas</p>';
                     return;
                 }
@@ -1290,7 +1295,7 @@
                 const today = new Date();
                 const todayStr = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
                 
-                console.log('🧹 TV: Fecha actual (YYYY-MM-DD):', todayStr);
+                console.log('[tv] Fecha actual (YYYY-MM-DD):', todayStr);
                 
                 // Filtrar tareas para hoy usando fecha_programada
                 const todayTasks = cleaningData.filter(task => {
@@ -1298,7 +1303,7 @@
                     return taskDate === todayStr;
                 });
                 
-                console.log('🧹 TV: Tareas de hoy:', todayTasks);
+                console.log('[tv] Tareas de hoy:', todayTasks);
                 
                 if (todayTasks.length === 0) {
                     // Mostrar fechas disponibles para depuración
@@ -1306,7 +1311,7 @@
                         task.fecha_programada ? task.fecha_programada.split('T')[0] : null
                     ).filter(date => date))];
                     
-                    console.log('🧹 TV: Fechas disponibles:', availableDates);
+                    console.log('[tv] Fechas disponibles:', availableDates);
                     
                     content.innerHTML = `
                         <p style="text-align: center; color: var(--text-secondary);">No hay tareas para hoy</p>
@@ -1381,7 +1386,7 @@
                     const isToday = dayDate === today.toISOString().split('T')[0];
                     dayHeader.innerHTML = `
                         ${dayNames[i]}
-                        ${isToday ? ' 📅' : ''}
+                        ${isToday ? ' ·' : ''}
                     `;
                     dayColumn.appendChild(dayHeader);
                     
@@ -1401,7 +1406,7 @@
                         
                         eventItem.innerHTML = `
                             <div style="font-size: 0.8rem; color: var(--text-muted);">${startTime}</div>
-                            <div>${eventIcon} ${event.title}</div>
+                            <div><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">${eventIcon}</span> ${event.title}</div>
                         `;
                         
                         dayColumn.appendChild(eventItem);
@@ -1520,30 +1525,30 @@
             
             formatMealName(meal) {
                 const mealNames = {
-                    'desayuno': '🌅 Desayuno',
-                    'almuerzo': '☀️ Almuerzo',
-                    'cena': '🌙 Cena',
-                    'merienda': '🍎 Merienda'
+                    'desayuno': 'Desayuno',
+                    'almuerzo': 'Almuerzo',
+                    'cena': 'Cena',
+                    'merienda': 'Merienda'
                 };
                 return mealNames[meal] || meal.charAt(0).toUpperCase() + meal.slice(1);
             }
             
             formatCategoryName(category) {
                 const categoryNames = {
-                    'verduras': '🥬 Verduras',
-                    'carniceria': '🥩 Carnicería',
-                    'pescaderia': '🐟 Pescadería',
-                    'huevos_lacteos': '🥚 Huevos y Lácteos',
-                    'despensa': '🥫 Despensa',
-                    'frutas': '🍎 Frutas',
-                    'congelados': '🧊 Congelados',
-                    'bebidas': '🥤 Bebidas',
-                    'limpieza': '🧹 Limpieza',
-                    'higiene': '🧴 Higiene',
-                    'otros': '📦 Otros'
+                    'verduras': 'Verduras',
+                    'carniceria': 'Carnicería',
+                    'pescaderia': 'Pescadería',
+                    'huevos_lacteos': 'Huevos y Lácteos',
+                    'despensa': 'Despensa',
+                    'frutas': 'Frutas',
+                    'congelados': 'Congelados',
+                    'bebidas': 'Bebidas',
+                    'limpieza': 'Limpieza',
+                    'higiene': 'Higiene',
+                    'otros': 'Otros'
                 };
                 
-                return categoryNames[category.toLowerCase()] || `📦 ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+                return categoryNames[category.toLowerCase()] || category.charAt(0).toUpperCase() + category.slice(1);
             }
             
             getEventType(event) {
@@ -1564,12 +1569,12 @@
             getEventIcon(event) {
                 const type = this.getEventType(event);
                 const icons = {
-                    'google': '📅',
-                    'cleaning': '🧹',
-                    'menu': '🍽️',
-                    'otros': '📌'
+                    'google': 'today',
+                    'cleaning': 'cleaning_services',
+                    'menu': 'restaurant_menu',
+                    'otros': 'event'
                 };
-                return icons[type] || '📅';
+                return icons[type] || 'event';
             }
             
             // ============================================
@@ -1579,7 +1584,7 @@
             startTVVoiceRecording() {
                 // Verificar si el navegador soporta reconocimiento de voz
                 if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                    console.log('❌ TV: Navegador no soporta reconocimiento de voz');
+                    console.log('[tv] Navegador no soporta reconocimiento de voz');
                     return;
                 }
 
@@ -1595,7 +1600,7 @@
 
                 // Eventos del reconocimiento
                 this.tvRecognition.onstart = () => {
-                    console.log('🎤 TV: Iniciando reconocimiento de voz...');
+                    console.log('[tv] Iniciando reconocimiento de voz...');
                     this.tvIsRecording = true;
                     this.tvVoiceTranscript = '';
                     this.showTVVoiceInterface();
@@ -1627,12 +1632,12 @@
                 };
 
                 this.tvRecognition.onerror = (event) => {
-                    console.error('❌ TV: Error en reconocimiento de voz:', event.error);
+                    console.error('[tv] Error en reconocimiento de voz:', event.error);
                     this.stopTVVoiceRecording();
                 };
 
                 this.tvRecognition.onend = () => {
-                    console.log('🎤 TV: Reconocimiento de voz finalizado');
+                    console.log('[tv] Reconocimiento de voz finalizado');
                     if (this.tvIsRecording) {
                         this.updateTVVoiceInterface('processing', 'Procesando...');
                         
@@ -1650,7 +1655,7 @@
                 try {
                     this.tvRecognition.start();
                 } catch (error) {
-                    console.error('❌ TV: Error iniciando reconocimiento:', error);
+                    console.error('[tv] Error iniciando reconocimiento:', error);
                 }
             }
 
@@ -1712,7 +1717,7 @@
             async createTodoFromTVVoice() {
                 const transcript = this.tvVoiceTranscript.trim();
                 if (!transcript) {
-                    console.log('❌ TV: No hay texto para crear la tarea');
+                    console.log('[tv] No hay texto para crear la tarea');
                     return;
                 }
 
@@ -1746,17 +1751,17 @@
                         this.todos.push(result.data);
                         this.updateTodoSection(this.todos);
                         this.hideTVVoiceInterface();
-                        console.log('✅ TV: Tarea creada por voz correctamente');
+                        console.log('[tv] Tarea creada por voz correctamente');
                     } else {
                         throw new Error(result.message || 'Error guardando tarea');
                     }
                 } catch (error) {
-                    console.error('❌ TV: Error guardando todo por voz:', error);
+                    console.error('[tv] Error guardando todo por voz:', error);
                     // Fallback: guardar localmente
                     this.todos.push(todo);
                     this.updateTodoSection(this.todos);
                     this.hideTVVoiceInterface();
-                    console.log('📋 TV: Tarea guardada localmente');
+                    console.log('[tv] Tarea guardada localmente');
                 }
             }
 

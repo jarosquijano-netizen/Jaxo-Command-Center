@@ -257,7 +257,7 @@ class ShoppingManager {
                 return;
             }
 
-            console.log('🔄 Iniciando generación de PDF...');
+            console.log('[pdf] Iniciando generación de PDF...');
 
             // Parsear lista de compras
             let shoppingList;
@@ -265,7 +265,7 @@ class ShoppingManager {
                 shoppingList = typeof this.currentShoppingList === 'string' 
                     ? JSON.parse(this.currentShoppingList) 
                     : this.currentShoppingList;
-                console.log('📋 Lista parseada:', shoppingList);
+                console.log('[shopping] Lista parseada:', shoppingList);
             } catch (error) {
                 console.error('Error parseando lista de compras:', error);
                 alert('Error al procesar la lista de compras');
@@ -274,9 +274,9 @@ class ShoppingManager {
 
             // Inicializar jsPDF
             const { jsPDF } = window.jspdf;
-            console.log('📄 jsPDF disponible:', jsPDF);
+            console.log('[pdf] jsPDF disponible:', jsPDF);
             const doc = new jsPDF();
-            console.log('📄 Documento PDF creado');
+            console.log('[pdf] Documento PDF creado');
 
             // Configuración de fuentes y estilos
             doc.setFont('helvetica');
@@ -393,14 +393,14 @@ class ShoppingManager {
 
             // Descargar PDF
             const fileName = `lista_compras_${new Date().toISOString().split('T')[0]}.pdf`;
-            console.log('💾 Guardando PDF como:', fileName);
+            console.log('[pdf] Guardando PDF como:', fileName);
             doc.save(fileName);
 
-            console.log('✅ PDF generado exitosamente');
+            console.log('[ok] PDF generado exitosamente');
             alert('PDF generado exitosamente');
             
         } catch (error) {
-            console.error('❌ Error generando PDF:', error);
+            console.error('[err] Error generando PDF:', error);
             alert('Error al generar el PDF: ' + error.message);
         }
     }

@@ -1,27 +1,27 @@
 class CalendarManager {
     constructor() {
-        console.log('📅 CalendarManager constructor');
+        console.log('[cal] CalendarManager constructor');
         this.currentWeek = null;
         this.events = [];
         // No inicializar aquí, esperar a init()
     }
 
     async init() {
-        console.log('📅 CalendarManager init - START');
+        console.log('[cal] CalendarManager init - START');
         this.setupEventListeners();
         await this.loadWeek();
-        console.log('📅 CalendarManager init - END');
+        console.log('[cal] CalendarManager init - END');
     }
 
     setupEventListeners() {
-        console.log('📅 Setting up event listeners');
+        console.log('[cal] Setting up event listeners');
         const prevBtn = document.getElementById('prevWeek');
         const nextBtn = document.getElementById('nextWeek');
         const todayBtn = document.getElementById('todayWeek');
         
-        console.log('📅 prevWeek:', prevBtn);
-        console.log('📅 nextWeek:', nextBtn);
-        console.log('📅 todayWeek:', todayBtn);
+        console.log('[cal] prevWeek:', prevBtn);
+        console.log('[cal] nextWeek:', nextBtn);
+        console.log('[cal] todayWeek:', todayBtn);
         
         if (prevBtn) prevBtn.addEventListener('click', () => this.navigateWeek(-1));
         if (nextBtn) nextBtn.addEventListener('click', () => this.navigateWeek(1));
@@ -29,12 +29,12 @@ class CalendarManager {
     }
 
     async loadWeek(weekStart = null) {
-        console.log('📅 loadWeek called with:', weekStart);
+        console.log('[cal] loadWeek called with:', weekStart);
         try {
             const url = weekStart ? `/api/calendar/week?week=${weekStart}` : '/api/calendar/week';
-            console.log('📅 Fetching URL:', url);
+            console.log('[cal] Fetching URL:', url);
             const response = await api.get(url);
-            console.log('📅 Calendar response:', response);
+            console.log('[cal] Calendar response:', response);
             
             if (!response.success) {
                 throw new Error(response.message || 'Error cargando calendario');
@@ -42,29 +42,29 @@ class CalendarManager {
             
             this.currentWeek = new Date(response.data.week_start);
             this.events = response.data.events || [];
-            console.log('📅 Events loaded:', this.events);
+            console.log('[cal] Events loaded:', this.events);
             this.renderWeek();
             this.updateWeekDisplay();
         } catch (error) {
-            console.error('📅 Error cargando calendario:', error);
+            console.error('[cal] Error cargando calendario:', error);
             this.showError(error.message);
         }
     }
 
     renderWeek() {
-        console.log('📅 renderWeek called');
+        console.log('[cal] renderWeek called');
         const container = document.getElementById('eventsContainer');
-        console.log('📅 eventsContainer:', container);
+        console.log('[cal] eventsContainer:', container);
         
         if (!container) {
-            console.error('❌ #eventsContainer no encontrado');
+            console.error('[err] #eventsContainer no encontrado');
             return;
         }
 
         // FORZAR que la sección calendario sea visible con estilos agresivos
         const calendarSection = document.getElementById('calendar');
         if (calendarSection) {
-            console.log('📅 Forzando visibilidad de la sección calendario');
+            console.log('[cal] Forzando visibilidad de la sección calendario');
             calendarSection.style.display = 'block !important';
             calendarSection.style.visibility = 'visible !important';
             calendarSection.style.opacity = '1 !important';
@@ -89,7 +89,7 @@ class CalendarManager {
         }
 
         const sortedEvents = [...this.events].sort((a, b) => new Date(a.start) - new Date(b.start));
-        console.log('📅 Sorted events:', sortedEvents);
+        console.log('[cal] Sorted events:', sortedEvents);
         
         const html = sortedEvents.map(event => {
             const start = new Date(event.start);
@@ -116,9 +116,9 @@ class CalendarManager {
             `;
         }).join('');
         
-        console.log('📅 Setting HTML to container');
+        console.log('[cal] Setting HTML to container');
         container.innerHTML = html;
-        console.log('📅 renderWeek completed');
+        console.log('[cal] renderWeek completed');
     }
 
     updateWeekDisplay() {
@@ -129,12 +129,12 @@ class CalendarManager {
         const options = { day: '2-digit', month: 'short' };
         const txt = `${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}`;
         const display = document.getElementById('weekDisplay');
-        console.log('📅 Updating week display to:', txt);
+        console.log('[cal] Updating week display to:', txt);
         if (display) display.textContent = txt;
     }
 
     navigateWeek(direction) {
-        console.log('📅 navigateWeek:', direction);
+        console.log('[cal] navigateWeek:', direction);
         if (!this.currentWeek) return;
         const newWeek = new Date(this.currentWeek);
         newWeek.setDate(newWeek.getDate() + (direction * 7));
@@ -142,12 +142,12 @@ class CalendarManager {
     }
 
     goToToday() {
-        console.log('📅 goToToday');
+        console.log('[cal] goToToday');
         this.loadWeek();
     }
 
     showError(message) {
-        console.log('📅 showError:', message);
+        console.log('[cal] showError:', message);
         const container = document.getElementById('eventsContainer');
         if (container) {
             container.innerHTML = `
@@ -161,5 +161,5 @@ class CalendarManager {
 }
 
 // Crear instancia global SIN inicializar automáticamente
-console.log('📅 Creating calendarManager instance');
+console.log('[cal] Creating calendarManager instance');
 const calendarManager = new CalendarManager();

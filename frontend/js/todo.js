@@ -76,7 +76,7 @@ class TodoManager {
             const result = await api.get('/api/todos');
             this.todos = result.success ? result.data : this.getLocalTodos();
         } catch (error) {
-            console.error('❌ Error cargando todos:', error);
+            console.error('Error cargando todos:', error);
             this.todos = this.getLocalTodos();
         }
     }
@@ -126,7 +126,7 @@ class TodoManager {
                 throw new Error(result.message || 'Error guardando tarea');
             }
         } catch (error) {
-            console.error('❌ Error guardando todo:', error);
+            console.error('Error guardando todo:', error);
             // Fallback: guardar localmente
             this.todos.push(todo);
             this.saveTodosToLocal();
@@ -150,7 +150,7 @@ class TodoManager {
                 throw new Error(result.message || 'Error actualizando tarea');
             }
         } catch (error) {
-            console.error('❌ Error actualizando todo:', error);
+            console.error('Error actualizando todo:', error);
             // Fallback: actualizar localmente
             const index = this.todos.findIndex(t => t.id === todoId);
             if (index !== -1) {
@@ -173,7 +173,7 @@ class TodoManager {
                 throw new Error(result.message || 'Error eliminando tarea');
             }
         } catch (error) {
-            console.error('❌ Error eliminando todo:', error);
+            console.error('Error eliminando todo:', error);
             // Fallback: eliminar localmente
             this.todos = this.todos.filter(t => t.id !== todoId);
             this.saveTodosToLocal();
@@ -295,7 +295,7 @@ class TodoManager {
         return `
             <div class="todo-item ${todo.completed ? 'completed' : ''}" data-todo-id="${todo.id}">
                 <div class="todo-checkbox ${todo.completed ? 'checked' : ''}" data-todo-id="${todo.id}">
-                    ${todo.completed ? '✓' : ''}
+                    ${todo.completed ? '<span class="material-symbols-outlined" style="font-size:16px">check</span>' : ''}
                 </div>
                 <div class="todo-content">
                     <div class="todo-header">
@@ -507,7 +507,7 @@ class TodoManager {
 
         // Eventos del reconocimiento
         this.recognition.onstart = () => {
-            console.log('🎤 Iniciando reconocimiento de voz...');
+            console.log('Iniciando reconocimiento de voz...');
             this.isRecording = true;
             this.voiceTranscript = '';
             this.showVoiceInterface();
@@ -539,7 +539,7 @@ class TodoManager {
         };
 
         this.recognition.onerror = (event) => {
-            console.error('❌ Error en reconocimiento de voz:', event.error);
+            console.error('Error en reconocimiento de voz:', event.error);
             let errorMessage = 'Error en el reconocimiento de voz';
             
             switch (event.error) {
@@ -562,7 +562,7 @@ class TodoManager {
         };
 
         this.recognition.onend = () => {
-            console.log('🎤 Reconocimiento de voz finalizado');
+            console.log('Reconocimiento de voz finalizado');
             if (this.isRecording) {
                 this.updateVoiceInterface('processing', 'Procesando...');
                 
@@ -581,7 +581,7 @@ class TodoManager {
         try {
             this.recognition.start();
         } catch (error) {
-            console.error('❌ Error iniciando reconocimiento:', error);
+            console.error('Error iniciando reconocimiento:', error);
             this.showNotification('Error al iniciar el reconocimiento de voz', 'error');
         }
     }
@@ -676,7 +676,7 @@ class TodoManager {
                 throw new Error(result.message || 'Error guardando tarea');
             }
         } catch (error) {
-            console.error('❌ Error guardando todo por voz:', error);
+            console.error('Error guardando todo por voz:', error);
             // Fallback: guardar localmente
             this.todos.push(todo);
             this.saveTodosToLocal();
@@ -790,8 +790,8 @@ document.head.appendChild(style);
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof TodoManager !== 'undefined') {
         window.todoManager = new TodoManager();
-        console.log('✅ TodoManager inicializado');
+        console.log('TodoManager inicializado');
     } else {
-        console.error('❌ TodoManager no encontrado');
+        console.error('TodoManager no encontrado');
     }
 });

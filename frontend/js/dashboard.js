@@ -54,7 +54,7 @@ class DashboardManager {
             this.renderCleaning(cleaningData);
             this.renderStatCards(familyData, menuData, cleaningData, calendarData);
         } catch (err) {
-            console.error('❌ Dashboard load error:', err);
+            console.error('Dashboard load error:', err);
         }
     }
 

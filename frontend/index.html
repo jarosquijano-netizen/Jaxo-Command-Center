@@ -329,7 +329,7 @@
             <section id="menu" class="module-section">
                 <div class="content-header">
                     <div>
-                        <h2>🍳 Menú Semanal</h2>
+                        <h2>Menú Semanal</h2>
                         <p class="subtitle">Planifica tus comidas con IA</p>
                     </div>
                     <div class="header-actions">
@@ -360,13 +360,13 @@
                 <div class="view-controls">
                     <div class="view-toggle">
                         <button class="toggle-btn" data-view-mode="adultos">
-                            🧑 Adultos
+                            Adultos
                         </button>
                         <button class="toggle-btn" data-view-mode="ninos">
-                            👶 Niños
+                            Niños
                         </button>
                         <button class="toggle-btn active" data-view-mode="ambos">
-                            📋 Ambos
+                            Ambos
                         </button>
                     </div>
                     <div class="meal-filter">
@@ -394,7 +394,7 @@
                             <span class="material-symbols-outlined">bar_chart</span>
                         </div>
                         <div>
-                            <h3>📊 Resumen Semanal</h3>
+                            <h3>Resumen Semanal</h3>
                             <p class="stat-subtitle">Estadísticas del menú</p>
                         </div>
                     </div>
@@ -566,7 +566,7 @@
                     <!-- Voice Interface -->
                     <div class="voice-interface" id="voiceInterface" style="display: none;">
                         <div class="voice-header">
-                            <h3>🎤 Comando de Voz</h3>
+                            <h3><span class="material-symbols-outlined">mic</span> Comando de Voz</h3>
                             <button class="btn btn-secondary" id="stopVoiceBtn">
                                 <span class="material-symbols-outlined">stop</span> Detener
                             </button>
@@ -1134,7 +1134,7 @@
                 <div class="tv-view-container">
                     <div class="tv-view-card glass-card">
                         <div class="tv-view-header">
-                            <h3>📺 Vista para Televisión</h3>
+                            <h3><span class="material-symbols-outlined">tv</span> Vista para Televisión</h3>
                             <p class="tv-description">Vista optimizada para TV de 24" en la cocina con dashboard en tiempo real</p>
                         </div>
                         
@@ -1147,19 +1147,19 @@
                                 
                                 <div class="tv-preview-grid">
                                     <div class="preview-card">
-                                        <div class="preview-icon">🍽️</div>
+                                        <div class="preview-icon"><span class="material-symbols-outlined">restaurant_menu</span></div>
                                         <span>Menú de Hoy</span>
                                     </div>
                                     <div class="preview-card">
-                                        <div class="preview-icon">🛒</div>
+                                        <div class="preview-icon"><span class="material-symbols-outlined">shopping_cart</span></div>
                                         <span>Lista Compras</span>
                                     </div>
                                     <div class="preview-card">
-                                        <div class="preview-icon">🧹</div>
+                                        <div class="preview-icon"><span class="material-symbols-outlined">cleaning_services</span></div>
                                         <span>Tareas Hoy</span>
                                     </div>
                                     <div class="preview-card">
-                                        <div class="preview-icon">📅</div>
+                                        <div class="preview-icon"><span class="material-symbols-outlined">calendar_month</span></div>
                                         <span>Semana</span>
                                     </div>
                                 </div>
@@ -1199,8 +1199,8 @@
     <div id="generateMenuModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✨ Generar Menú Semanal</h3>
-                <button class="close-btn" id="closeGenerateModalBtn">✕</button>
+                <h3>Generar Menú Semanal</h3>
+                <button class="close-btn" id="closeGenerateModalBtn"><span class="material-symbols-outlined">close</span></button>
             </div>
             
             <form id="generateMenuForm">
@@ -1287,7 +1287,7 @@
                     Cancelar
                 </button>
                 <button type="button" class="btn-primary" id="confirmGenerateMenuBtn">
-                    ✨ Generar con IA
+                    <span class="material-symbols-outlined">auto_awesome</span> Generar con IA
                 </button>
             </div>
         </div>
@@ -1304,8 +1304,8 @@
     <div id="shoppingListModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>🛒 Lista de Compra</h3>
-                <button class="close-btn" id="closeShoppingModalBtn">✕</button>
+                <h3>Lista de Compra</h3>
+                <button class="close-btn" id="closeShoppingModalBtn"><span class="material-symbols-outlined">close</span></button>
             </div>
             
             <div class="shopping-list-actions">
@@ -1351,17 +1351,17 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Iniciando Family Command Center Dashboard...');
+            console.log('[init] Iniciando Family Command Center Dashboard...');
             
             // Initialize Lucide icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
-                console.log('✅ Iconos Lucide inicializados');
+                console.log('[ok] Iconos Lucide inicializados');
             }
             
             // Wait for all managers to be ready
             setTimeout(() => {
-                console.log('⏰ Esperando que los managers estén listos...');
+                console.log('[init] Esperando que los managers estén listos...');
                 
                 if (typeof familyManager !== 'undefined') {
                     familyManager.loadMembers();
@@ -1376,11 +1376,11 @@
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
                         const target = e.target.closest('.nav-link').getAttribute('href').substring(1);
-                        console.log('🔗 Click en navegación hacia:', target);
+                        console.log('[nav] Click en navegación hacia:', target);
                         
                         // Cambiar sección activa
                         document.querySelectorAll('.module-section').forEach(section => {
-                            console.log('🔗 Quitando clase active de:', section.id);
+                            console.log('[nav] Quitando clase active de:', section.id);
                             section.classList.remove('active');
                         });
                         document.querySelectorAll('.nav-link').forEach(navLink => {
@@ -1390,10 +1390,10 @@
                         // Activar nueva sección
                         const targetSection = document.getElementById(target);
                         if (targetSection) {
-                            console.log('🔗 Activando sección:', target);
+                            console.log('[nav] Activando sección:', target);
                             targetSection.classList.add('active');
-                            console.log('🔗 Clases de la sección:', targetSection.className);
-                            console.log('🔗 Estilo computed display:', getComputedStyle(targetSection).display);
+                            console.log('[nav] Clases de la sección:', targetSection.className);
+                            console.log('[nav] Estilo computed display:', getComputedStyle(targetSection).display);
                         }
                         e.target.closest('.nav-link').classList.add('active');
                         
@@ -1412,7 +1412,7 @@
                             }, 100);
                         } else if (target === 'calendar' && calendarManager) {
                             setTimeout(() => {
-                                console.log('🔗 Llamando a calendarManager.loadCurrentWeek()');
+                                console.log('[nav] Llamando a calendarManager.loadCurrentWeek()');
                                 calendarManager.loadCurrentWeek();
                             }, 100);
                         }
@@ -1425,28 +1425,28 @@
     <script>
         // Inicializar managers cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Iniciando Family Command Center...');
+            console.log('[init] Iniciando Family Command Center...');
             
             // Inicializar MenuManager
             if (typeof MenuManager !== 'undefined') {
                 window.menuManager = new MenuManager();
-                console.log('✅ MenuManager inicializado');
+                console.log('[ok] MenuManager inicializado');
             } else {
-                console.error('❌ MenuManager no encontrado');
+                console.error('MenuManager no encontrado');
             }
             
             // Inicializar DashboardManager
             if (typeof DashboardManager !== 'undefined') {
                 window.dashboardManager = new DashboardManager();
-                console.log('✅ DashboardManager inicializado');
+                console.log('[ok] DashboardManager inicializado');
                 
                 // Esperar un momento para que los managers carguen datos
                 setTimeout(() => {
-                    console.log('🔄 Forzando carga de datos del dashboard...');
+                    console.log('[refresh] Forzando carga de datos del dashboard...');
                     window.dashboardManager.loadRealData();
                 }, 2000);
             } else {
-                console.error('❌ DashboardManager no encontrado');
+                console.error('DashboardManager no encontrado');
             }
         });
     </script>
