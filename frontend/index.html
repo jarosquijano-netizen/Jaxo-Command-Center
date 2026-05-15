@@ -65,159 +65,157 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Dashboard Section -->
-            <section id="dashboard" class="module-section active">
+<!-- Dashboard Section -->
+<section id="dashboard" class="module-section active">
 
-                <!-- Page Header -->
-                <div class="dash-page-header">
-                    <div>
-                        <h1 class="dash-page-title">Dashboard</h1>
-                        <p class="dash-page-date" id="currentDate">—</p>
-                    </div>
-                    <div class="family-avatars" id="dash-family-avatars"></div>
+    <!-- Page Header -->
+    <header class="db-header">
+        <div class="db-header-left">
+            <h1 class="db-title">Family Command Center</h1>
+            <span class="db-badge">BackOffice</span>
+        </div>
+        <div class="db-header-right">
+            <div class="db-search">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" placeholder="Search Command Center..." class="db-search-input">
+            </div>
+            <button class="db-icon-btn" title="Notificaciones">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+            <button class="db-icon-btn" title="Ajustes" onclick="document.querySelector('[href=\'#settings\']').click()">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+            <div class="db-avatar" id="db-avatar">J</div>
+        </div>
+    </header>
+
+    <!-- Quick Stat Chips -->
+    <div class="db-chips">
+        <div class="db-chip">
+            <span class="db-chip-icon">
+                <span class="material-symbols-outlined">restaurant_menu</span>
+            </span>
+            <div class="db-chip-body">
+                <p class="db-chip-value" id="chip-menu-value">—</p>
+                <p class="db-chip-label">MENÚ</p>
+            </div>
+        </div>
+        <div class="db-chip">
+            <span class="db-chip-icon db-chip-icon--secondary">
+                <span class="material-symbols-outlined">shopping_cart</span>
+            </span>
+            <div class="db-chip-body">
+                <p class="db-chip-value" id="chip-shopping-value">—</p>
+                <p class="db-chip-label">COMPRAS</p>
+            </div>
+        </div>
+        <div class="db-chip">
+            <span class="db-chip-icon db-chip-icon--tertiary">
+                <span class="material-symbols-outlined">cleaning_services</span>
+            </span>
+            <div class="db-chip-body">
+                <p class="db-chip-value" id="chip-cleaning-value">0/0</p>
+                <p class="db-chip-label">LIMPIEZA</p>
+            </div>
+        </div>
+        <div class="db-chip">
+            <span class="db-chip-icon">
+                <span class="material-symbols-outlined">calendar_today</span>
+            </span>
+            <div class="db-chip-body">
+                <p class="db-chip-value" id="chip-events-value">0 hoy</p>
+                <p class="db-chip-label">CALENDARIO</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bento Grid -->
+    <div class="db-bento">
+
+        <!-- Menú de Hoy -->
+        <section class="db-panel db-panel--menu glass-card">
+            <div class="db-panel-hd">
+                <span class="material-symbols-outlined db-panel-icon">restaurant_menu</span>
+                <h2 class="db-panel-title">Menú de Hoy</h2>
+                <span class="db-day-tag" id="db-day-tag">—</span>
+            </div>
+            <div id="db-menu-content" class="db-menu-content">
+                <div class="db-menu-skeleton">
+                    <p class="db-menu-loading">Cargando menú...</p>
                 </div>
+            </div>
+        </section>
 
-                <!-- Quick Stats Row -->
-                <div class="dash-stats-row">
-                    <!-- Menú de Hoy -->
-                    <div class="dash-stat-card dash-stat-card--primary fade-in stagger-1">
-                        <p class="dash-stat-label">Menú de Hoy</p>
-                        <h3 class="dash-stat-value" id="dash-stat-menu-value">—</h3>
-                        <div class="dash-stat-sub dash-stat-sub--secondary">
-                            <span class="material-symbols-outlined" style="font-size:18px;">restaurant</span>
-                            <span id="dash-stat-menu-type">Cargando...</span>
-                        </div>
-                    </div>
-                    <!-- Tareas Pendientes -->
-                    <div class="dash-stat-card fade-in stagger-2">
-                        <p class="dash-stat-label">Tareas Pendientes</p>
-                        <div class="dash-stat-numeric">
-                            <span class="dash-stat-number dash-stat-number--secondary" id="dash-stat-tasks-count">—</span>
-                            <span class="dash-stat-unit">activas</span>
-                        </div>
-                        <div class="dash-mini-progress">
-                            <div class="dash-mini-bar" id="dash-stat-tasks-bar" style="width:0%"></div>
-                        </div>
-                    </div>
-                    <!-- Próximo Evento -->
-                    <div class="dash-stat-card fade-in stagger-3">
-                        <p class="dash-stat-label">Próximo Evento</p>
-                        <h3 class="dash-stat-value" id="dash-stat-event-value">—</h3>
-                        <div class="dash-stat-sub dash-stat-sub--tertiary">
-                            <span class="material-symbols-outlined" style="font-size:18px;">schedule</span>
-                            <span id="dash-stat-event-time">—</span>
-                        </div>
-                    </div>
-                    <!-- Lista de Compras -->
-                    <div class="dash-stat-card fade-in stagger-4">
-                        <p class="dash-stat-label">Lista de Compras</p>
-                        <div class="dash-stat-numeric">
-                            <span class="dash-stat-number" id="dash-stat-shopping-count">—</span>
-                            <span class="dash-stat-unit">artículos</span>
-                        </div>
-                        <div class="dash-stat-sub dash-stat-sub--primary">
-                            <span class="material-symbols-outlined" style="font-size:18px;">shopping_cart</span>
-                            <span>Ver detalles</span>
-                        </div>
-                    </div>
+        <!-- Lista de Compras -->
+        <section class="db-panel db-panel--shopping glass-card">
+            <div class="db-panel-hd">
+                <span class="material-symbols-outlined db-panel-icon db-panel-icon--secondary">shopping_cart</span>
+                <h2 class="db-panel-title">Lista de Compras</h2>
+                <span class="db-counter" id="db-shopping-counter">—</span>
+            </div>
+            <ul class="db-shopping-list" id="db-shopping-list">
+                <li class="db-shopping-item db-shopping-empty">Cargando lista...</li>
+            </ul>
+            <button class="db-add-btn" onclick="document.querySelector('[href=\'#shopping\']').click()">
+                <span class="material-symbols-outlined">add_circle</span>
+                ADD MISSING ITEMS
+            </button>
+        </section>
+
+        <!-- Tareas de Hoy -->
+        <section class="db-panel db-panel--tasks glass-card">
+            <div class="db-panel-hd">
+                <span class="material-symbols-outlined db-panel-icon db-panel-icon--tertiary">cleaning_services</span>
+                <h2 class="db-panel-title">Tareas de Hoy</h2>
+                <span class="db-today-tag">Hoy</span>
+            </div>
+            <div id="db-tasks-content" class="db-tasks-content">
+                <!-- empty state or task list rendered by JS -->
+            </div>
+            <button class="db-add-btn db-add-btn--ghost" onclick="document.querySelector('[href=\'#cleaning\']').click()">
+                <span class="material-symbols-outlined">add</span>
+                Schedule New Task
+            </button>
+        </section>
+
+        <!-- Calendario Semanal — full width -->
+        <section class="db-panel db-panel--calendar glass-card">
+            <div class="db-cal-hd">
+                <div class="db-cal-hd-left">
+                    <span class="material-symbols-outlined db-panel-icon">calendar_month</span>
+                    <h2 class="db-panel-title">Calendario Semanal</h2>
                 </div>
+                <div class="db-cal-filters">
+                    <button class="db-filter active" data-filter="all">Todos</button>
+                    <button class="db-filter" data-filter="google">
+                        <span class="material-symbols-outlined">today</span>GOOGLE
+                    </button>
+                    <button class="db-filter" data-filter="cleaning">
+                        <span class="material-symbols-outlined">cleaning_services</span>Limpieza
+                    </button>
+                    <button class="db-filter" data-filter="menu">
+                        <span class="material-symbols-outlined">restaurant_menu</span>Menu
+                    </button>
+                    <button class="db-filter" data-filter="other">Otros</button>
+                </div>
+                <div class="db-cal-controls">
+                    <span class="db-cal-range" id="db-cal-range">—</span>
+                    <button class="db-cal-nav-btn" id="dbCalPrev">
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <button class="db-cal-nav-btn" id="dbCalNext">
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+            <div class="db-cal-grid" id="db-cal-grid">
+                <!-- 7 day columns rendered by JS -->
+            </div>
+        </section>
 
-                <!-- Bento Grid: 3 + 6 + 3 columns -->
-                <div class="dash-bento">
+    </div><!-- /.db-bento -->
 
-                    <!-- Left: Today's Meals -->
-                    <section class="dash-panel dash-panel--meals glass-card fade-in stagger-1">
-                        <h2 class="dash-panel-title">
-                            <span class="material-symbols-outlined">lunch_dining</span>
-                            Comidas
-                        </h2>
-                        <div class="dash-meals-list" id="dash-meals-content">
-                            <!-- skeleton rows -->
-                            <div class="dash-meal-row">
-                                <p class="dash-meal-label">DESAYUNO</p>
-                                <div class="dash-meal-item">
-                                    <div class="dash-meal-icon dash-meal-icon--primary">
-                                        <span class="material-symbols-outlined">breakfast_dining</span>
-                                    </div>
-                                    <div><p class="dash-meal-name">—</p></div>
-                                </div>
-                            </div>
-                            <div class="dash-meal-row">
-                                <p class="dash-meal-label dash-meal-label--secondary">ALMUERZO</p>
-                                <div class="dash-meal-item">
-                                    <div class="dash-meal-icon dash-meal-icon--secondary">
-                                        <span class="material-symbols-outlined">set_meal</span>
-                                    </div>
-                                    <div><p class="dash-meal-name">—</p></div>
-                                </div>
-                            </div>
-                            <div class="dash-meal-row">
-                                <p class="dash-meal-label">MERIENDA</p>
-                                <div class="dash-meal-item">
-                                    <div class="dash-meal-icon dash-meal-icon--tertiary">
-                                        <span class="material-symbols-outlined">nutrition</span>
-                                    </div>
-                                    <div><p class="dash-meal-name">—</p></div>
-                                </div>
-                            </div>
-                            <div class="dash-meal-row">
-                                <p class="dash-meal-label">CENA</p>
-                                <div class="dash-meal-item">
-                                    <div class="dash-meal-icon dash-meal-icon--muted">
-                                        <span class="material-symbols-outlined">egg_alt</span>
-                                    </div>
-                                    <div><p class="dash-meal-name">—</p></div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Center: Weekly Calendar -->
-                    <section class="dash-panel dash-panel--calendar glass-card fade-in stagger-2">
-                        <div class="dash-cal-header">
-                            <h2 class="dash-panel-title">
-                                <span class="material-symbols-outlined">calendar_month</span>
-                                Calendario Semanal
-                            </h2>
-                            <div class="dash-cal-nav">
-                                <button class="dash-cal-btn" id="dashCalPrev">
-                                    <span class="material-symbols-outlined">chevron_left</span>
-                                </button>
-                                <button class="dash-cal-btn" id="dashCalNext">
-                                    <span class="material-symbols-outlined">chevron_right</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Day labels -->
-                        <div class="dash-cal-day-labels">
-                            <span>Lun</span><span>Mar</span><span>Mié</span>
-                            <span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-                        </div>
-
-                        <!-- Day cells -->
-                        <div class="dash-cal-day-cells" id="dash-cal-days">
-                            <!-- Populated by JS -->
-                        </div>
-
-                        <!-- Events list -->
-                        <div class="dash-cal-events" id="dash-cal-events">
-                            <p class="dash-cal-empty">Sin eventos para hoy</p>
-                        </div>
-                    </section>
-
-                    <!-- Right: Cleaning Tasks -->
-                    <section class="dash-panel dash-panel--cleaning glass-card fade-in stagger-3">
-                        <h2 class="dash-panel-title">
-                            <span class="material-symbols-outlined">cleaning_services</span>
-                            Limpieza
-                        </h2>
-                        <div class="dash-cleaning-list" id="dash-cleaning-list">
-                            <p class="dash-empty-msg">Cargando tareas...</p>
-                        </div>
-                    </section>
-
-                </div><!-- /.dash-bento -->
-            </section>
+</section>
             
             <!-- Family Section -->
             <section id="family" class="module-section">
