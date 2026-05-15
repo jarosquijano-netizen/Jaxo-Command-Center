@@ -476,7 +476,8 @@ def generar_semana(fecha_lunes):
         # Filtrar miembros disponibles este día
         miembros_disponibles = []
         for m in members:
-            disponibilidad = json.loads(m.disponibilidad_dias) if m.disponibilidad_dias else dias_semana
+            parsed_disp = json.loads(m.disponibilidad_dias) if m.disponibilidad_dias else []
+            disponibilidad = parsed_disp if parsed_disp else dias_semana
             if dia in disponibilidad:
                 # Marycel solo L-V
                 if m.rol_hogar == 'empleado_hogar' and es_fin_de_semana:
