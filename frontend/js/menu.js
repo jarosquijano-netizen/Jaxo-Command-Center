@@ -481,30 +481,27 @@ class MenuManager {
     async generateMenu() {
         const modal = document.getElementById('generateMenuModal');
         const formData = new FormData(modal.querySelector('form'));
-        
-        // Obtener la semana seleccionada
+
         const selectedWeekStart = this.getSelectedWeekStart();
-        
-        // Obtener los filtros del formulario (nombres reales del HTML: dias / comidas)
+
         const selectedDays = Array.from(modal.querySelectorAll('input[name="dias"]:checked'))
             .map(input => input.value);
-        
+
         const selectedMeals = Array.from(modal.querySelectorAll('input[name="comidas"]:checked'))
             .map(input => input.value);
-        
+
         const presupuesto = parseInt(formData.get('presupuesto')) || 200;
         const supermercado = formData.get('supermercado') || 'Mercadona';
         const preferencias = formData.get('preferencias') || '';
-        const forzarRegeneracion = formData.get('regenerate') === 'on';
         const incluirListaCompra = formData.get('incluir_lista') === 'on';
         const considerarCalificaciones = formData.get('considerar_ratings') === 'on';
-        
+
         const data = {
             week_start: selectedWeekStart.toISOString().split('T')[0],
-            regenerate: forzarRegeneracion,
+            regenerate: true,
             settings: {
                 dias_menu: selectedDays.length > 0 ? selectedDays : ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'],
-                comidas_por_dia: selectedMeals.length > 0 ? selectedMeals : ['cena'], // Por defecto solo cena
+                comidas_por_dia: selectedMeals.length > 0 ? selectedMeals : ['cena'],
                 presupuesto_semanal: presupuesto,
                 supermercado_preferido: supermercado,
                 preferencias_especiales: preferencias,
@@ -512,73 +509,28 @@ class MenuManager {
                 considerar_calificaciones_anteriores: considerarCalificaciones
             }
         };
-        
-        console.log('� Enviando solicitud de menú:', data);
-        
+
+        console.log('[menu] Generando menú para semana:', data.week_start);
+
         try {
             this.setLoading(true);
-            
-            const response = await api.post('/api/menu/generate', data);
-            
-            if (response.success) {
-                const menuData = typeof response.menu.menu_data === 'string'
-                    ? JSON.parse(response.menu.menu_data)
-                    : response.menu.menu_data;
 
-                console.log('[debug] menuData keys:', menuData ? Object.keys(menuData) : null);
-                console.log('[debug] menu_adultos sample:', menuData?.menu_adultos ? Object.entries(menuData.menu_adultos).slice(0,1) : null);
-                if (this.hasAnyMealData(menuData)) {
-                    this.currentMenu = response.menu;
-                    this.currentWeek = new Date(response.menu.semana_inicio);
-                    this.renderMenu();
-                    this.updateWeekDisplay();
-                    this.closeModal('generateMenuModal');
-                    this.showSuccess('¡Menú generado exitosamente!');
-                    console.log('[ok] Menú con datos válidos cargado');
-                } else {
-                    console.warn('[warn] Menú generado sin datos válidos, mostrando estado vacío');
-                    this.showEmptyState();
-                    this.closeModal('generateMenuModal');
-                    this.showError('El menú se generó pero no contiene datos. Por favor, inténtalo de nuevo.');
-                }
+            const response = await api.post('/api/menu/generate', data);
+
+            if (response.success) {
+                this.currentMenu = response.menu;
+                this.currentWeek = new Date(response.menu.semana_inicio);
+                this.renderMenu();
+                this.updateWeekDisplay();
+                this.closeModal('generateMenuModal');
+                this.showSuccess('¡Menú generado exitosamente!');
             } else {
-                // Caso especial: ya existe menú para esta semana
-                if (response.message.includes('Ya existe un menú')) {
-                    if (confirm('Ya existe un menú para esta semana. ¿Deseas regenerarlo y sobreescribir el existente?')) {
-                        // Reintentar con regenerate: true
-                        console.log('[retry] Reintentando con regeneración forzada...');
-                        data.regenerate = true;
-                        try {
-                            const retryResponse = await api.post('/api/menu/generate', data);
-                            if (retryResponse.success) {
-                                const menuData = typeof retryResponse.menu.menu_data === 'string' 
-                                    ? JSON.parse(retryResponse.menu.menu_data) 
-                                    : retryResponse.menu.menu_data;
-                                
-                                if (this.hasAnyMealData(menuData)) {
-                                    this.currentMenu = retryResponse.menu;
-                                    this.currentWeek = new Date(retryResponse.menu.semana_inicio);
-                                    this.renderMenu();
-                                    this.updateWeekDisplay();
-                                    this.closeModal('generateMenuModal');
-                                    this.showSuccess('¡Menú regenerado exitosamente!');
-                                    return;
-                                }
-                            }
-                        } catch (error) {
-                            console.error('Error en reintento:', error);
-                        }
-                    }
-                    // Si el usuario cancela o falla el reintento, mostrar el menú existente
-                    this.loadCurrentWeekMenu();
-                    this.closeModal('generateMenuModal');
-                    return;
-                }
-                
-                this.showError(response.message || 'Error generando menú');
+                const msg = response.message || 'Error generando menú';
+                console.error('[menu] Error del backend:', msg);
+                this.showError(msg);
             }
         } catch (error) {
-            console.error('Error generando menú:', error);
+            console.error('[menu] Error generando menú:', error);
             this.showError('Error generando menú. Por favor, inténtalo de nuevo.');
         } finally {
             this.setLoading(false);
