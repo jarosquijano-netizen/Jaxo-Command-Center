@@ -51,10 +51,8 @@ class TodoManager {
         });
 
         // Filtros
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                this.setFilter(tab.dataset.filter);
-            });
+        document.querySelectorAll('.td-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.setFilter(btn.dataset.filter));
         });
 
         // Formulario
@@ -209,12 +207,9 @@ class TodoManager {
 
     setFilter(filter) {
         this.currentFilter = filter;
-        
-        // Actualizar tabs activas
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.filter === filter);
+        document.querySelectorAll('.td-filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
         });
-        
         this.renderTodos();
     }
 
@@ -243,27 +238,13 @@ class TodoManager {
         this.updateStats();
 
         if (filteredTodos.length === 0) {
-            todoList.innerHTML = `
-                <div class="todo-empty">
-                    <i data-lucide="check-square"></i>
-                    <p>No hay tareas para mostrar</p>
-                </div>
-            `;
+            todoList.innerHTML = `<div class="td-empty">Sin tareas para mostrar</div>`;
             return;
         }
 
-        // Ordenar por prioridad y fecha
         const sortedTodos = this.sortTodos(filteredTodos);
-
         todoList.innerHTML = sortedTodos.map(todo => this.createTodoElement(todo)).join('');
-        
-        // Añadir event listeners
         this.attachTodoEventListeners();
-        
-        // Re-inicializar icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
     }
 
     sortTodos(todos) {
@@ -291,66 +272,54 @@ class TodoManager {
     }
 
     createTodoElement(todo) {
-        const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
-        
+        const today = new Date().toISOString().split('T')[0];
+        const isOverdue = todo.dueDate && todo.dueDate < today && !todo.completed;
+
         return `
-            <div class="todo-item ${todo.completed ? 'completed' : ''}" data-todo-id="${todo.id}">
-                <div class="todo-checkbox ${todo.completed ? 'checked' : ''}" data-todo-id="${todo.id}">
-                    ${todo.completed ? '<span class="material-symbols-outlined" style="font-size:16px">check</span>' : ''}
-                </div>
-                <div class="todo-content">
-                    <div class="todo-header">
-                        <div class="todo-title">${todo.title}</div>
-                        <div class="todo-meta">
-                            <span class="todo-category">${this.formatCategory(todo.category)}</span>
-                            <span class="todo-priority ${todo.priority}">${this.formatPriority(todo.priority)}</span>
-                        </div>
-                    </div>
-                    ${todo.dueDate ? `
-                        <div class="todo-due-date ${isOverdue ? 'overdue' : ''}">
-                            <i data-lucide="calendar"></i>
-                            ${this.formatDate(todo.dueDate)}
-                        </div>
-                    ` : ''}
-                    ${todo.notes ? `
-                        <div class="todo-notes">${todo.notes}</div>
-                    ` : ''}
-                    <div class="todo-actions">
-                        <button class="todo-action-btn edit-btn" data-todo-id="${todo.id}">
-                            <i data-lucide="edit-2"></i>
-                        </button>
-                        <button class="todo-action-btn delete-btn" data-todo-id="${todo.id}">
-                            <i data-lucide="trash-2"></i>
-                        </button>
-                    </div>
-                </div>
+        <div class="td-task-item td-pri-${todo.priority} ${todo.completed ? 'completed' : ''}" data-todo-id="${todo.id}">
+            <div class="td-checkbox ${todo.completed ? 'checked' : ''}" data-todo-id="${todo.id}">
+                ${todo.completed ? '<span class="material-symbols-outlined">check</span>' : ''}
             </div>
-        `;
+            <div class="td-task-body">
+                <div class="td-task-title">${todo.title}</div>
+                <div class="td-task-meta">
+                    <span class="td-task-cat">${this.formatCategory(todo.category)}</span>
+                    <span class="td-task-pri ${todo.priority}">${this.formatPriority(todo.priority)}</span>
+                    ${todo.dueDate ? `
+                    <span class="td-task-due ${isOverdue ? 'overdue' : ''}">
+                        <span class="material-symbols-outlined">calendar_today</span>
+                        ${this.formatDate(todo.dueDate)}
+                    </span>` : ''}
+                </div>
+                ${todo.notes ? `<div class="td-task-notes">${todo.notes}</div>` : ''}
+            </div>
+            <div class="td-task-actions">
+                <button class="td-action-btn edit-btn" data-todo-id="${todo.id}">
+                    <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="td-action-btn delete-btn" data-todo-id="${todo.id}">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        </div>`;
     }
 
     attachTodoEventListeners() {
-        // Checkbox
-        document.querySelectorAll('.todo-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('click', () => {
-                const todoId = checkbox.dataset.todoId;
-                this.toggleTodoComplete(todoId);
-            });
+        document.querySelectorAll('.td-checkbox').forEach(cb => {
+            cb.addEventListener('click', () => this.toggleTodoComplete(cb.dataset.todoId));
         });
 
-        // Botones de acción
         document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const todoId = btn.dataset.todoId;
-                this.editTodo(todoId);
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.editTodo(btn.dataset.todoId);
             });
         });
 
         document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const todoId = btn.dataset.todoId;
-                if (confirm('¿Eliminar esta tarea?')) {
-                    this.deleteTodo(todoId);
-                }
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('¿Eliminar esta tarea?')) this.deleteTodo(btn.dataset.todoId);
             });
         });
     }
@@ -358,17 +327,19 @@ class TodoManager {
     showTodoForm() {
         const formContainer = document.getElementById('todoFormContainer');
         if (formContainer) {
-            formContainer.style.display = 'block';
-            document.getElementById('todoTitle').focus();
+            formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+        const titleInput = document.getElementById('todoTitle');
+        if (titleInput) titleInput.focus();
     }
 
     hideTodoForm() {
-        const formContainer = document.getElementById('todoFormContainer');
-        if (formContainer) {
-            formContainer.style.display = 'none';
-            document.getElementById('todoForm').reset();
-        }
+        const form = document.getElementById('todoForm');
+        if (form) form.reset();
+        // Restore submit to save (not update) after editing
+        const submitBtn = document.querySelector('#todoForm button[type="submit"]');
+        if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined">save</span> Guardar Tarea';
+        form.onsubmit = null;
     }
 
     editTodo(todoId) {
@@ -405,13 +376,47 @@ class TodoManager {
     }
 
     updateStats() {
-        const totalCount = this.todos.length;
-        const completedCount = this.todos.filter(t => t.completed).length;
-        const pendingCount = totalCount - completedCount;
+        const total = this.todos.length;
+        const completed = this.todos.filter(t => t.completed).length;
+        const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+        const today = new Date().toISOString().split('T')[0];
+        const overdue = this.todos.filter(t => !t.completed && t.dueDate && t.dueDate < today).length;
+        const todayDue = this.todos.filter(t => !t.completed && t.dueDate === today).length;
+        const criticalCount = overdue + todayDue;
 
-        document.getElementById('todoTotalCount').textContent = totalCount;
-        document.getElementById('todoCompletedCount').textContent = completedCount;
-        document.getElementById('todoPendingCount').textContent = pendingCount;
+        // Progress ring
+        const circ = 175.93;
+        const ring = document.getElementById('tdRingFill');
+        if (ring) ring.setAttribute('stroke-dashoffset', (circ * (1 - pct / 100)).toFixed(2));
+        const ringPct = document.getElementById('tdRingPct');
+        if (ringPct) ringPct.textContent = pct + '%';
+
+        // Counts
+        const compEl = document.getElementById('tdCompletedNum');
+        if (compEl) compEl.textContent = String(completed).padStart(2, '0');
+        const totalEl = document.getElementById('tdTotalNum');
+        if (totalEl) totalEl.textContent = String(total).padStart(2, '0');
+
+        // Progress subtitle
+        const sub = document.getElementById('tdProgressSub');
+        if (sub) sub.textContent = `Has completado el ${pct}% de tus objetivos semanales.`;
+
+        // Critical card
+        const critCard = document.getElementById('tdCriticalCard');
+        const critTitle = document.getElementById('tdCriticalTitle');
+        const overdueText = document.getElementById('tdOverdueText');
+        if (criticalCount === 0) {
+            if (critCard) critCard.classList.add('td-no-critical');
+            if (critTitle) critTitle.textContent = 'Al día';
+            if (overdueText) overdueText.textContent = 'Sin tareas vencidas';
+        } else {
+            if (critCard) critCard.classList.remove('td-no-critical');
+            if (critTitle) critTitle.textContent = overdue > 0 ? 'Vencidas' : 'Urgente';
+            if (overdueText) overdueText.textContent =
+                overdue > 0
+                    ? `${overdue} tarea${overdue !== 1 ? 's' : ''} vencida${overdue !== 1 ? 's' : ''}`
+                    : `${todayDue} tarea${todayDue !== 1 ? 's' : ''} vence${todayDue === 1 ? ' hoy' : 'n hoy'}`;
+        }
     }
 
     formatCategory(category) {

@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="css/main.css?v=20260524">
     <link rel="stylesheet" href="css/barcelona-theme.css?v=20260516">
     <link rel="stylesheet" href="css/calendar.css?v=20260201">
+    <link rel="stylesheet" href="css/todo.css?v=20260519">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -506,131 +507,159 @@
             
             <!-- To-Do List Section -->
             <section id="todo" class="module-section">
+                <!-- Header -->
                 <div class="content-header">
                     <div>
-                        <h2>To-Do List</h2>
-                        <p class="subtitle">Gestión de tareas y recordatorios</p>
+                        <h2>Dashboard de Tareas</h2>
+                        <p class="subtitle">Gestión inteligente de responsabilidades familiares y recordatorios personales.</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn btn-primary" id="addTodoBtn">
-                            <span class="material-symbols-outlined">add</span> Añadir Tarea
+                        <button class="btn btn-secondary" id="addTodoBtn">
+                            <span class="material-symbols-outlined">add_circle</span> Añadir Tarea
                         </button>
                         <button class="btn btn-secondary" id="clearCompletedBtn">
-                            <span class="material-symbols-outlined">delete</span> Limpiar Completadas
+                            <span class="material-symbols-outlined">delete_sweep</span> Limpiar Tareas
                         </button>
-                        <button class="btn btn-primary" id="voiceTodoBtn">
-                            <span class="material-symbols-outlined">mic</span> Voz
+                        <button class="btn btn-secondary" id="voiceTodoBtn" style="border-color:rgba(76,215,246,0.35);color:#4cd7f6;">
+                            <span class="material-symbols-outlined">mic</span> Comando de Voz
                         </button>
                     </div>
                 </div>
-                
-                <!-- Todo Filters -->
-                <div class="todo-filters">
-                    <div class="filter-tabs">
-                        <button class="filter-tab active" data-filter="all">Todas</button>
-                        <button class="filter-tab" data-filter="pending">Pendientes</button>
-                        <button class="filter-tab" data-filter="completed">Completadas</button>
-                        <button class="filter-tab" data-filter="today">Hoy</button>
+
+                <!-- Stats Row -->
+                <div class="td-stats-row">
+                    <!-- Progress Card -->
+                    <div class="td-progress-card">
+                        <div class="td-card-label">Progreso General</div>
+                        <div class="td-card-title">Estado de Tareas</div>
+                        <p class="td-card-sub" id="tdProgressSub">Has completado el 0% de tus objetivos semanales.</p>
+                        <div class="td-progress-content">
+                            <div class="td-ring-wrap">
+                                <svg class="td-ring-svg" width="80" height="80" viewBox="0 0 80 80">
+                                    <circle class="td-ring-track" cx="40" cy="40" r="28" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6"/>
+                                    <circle class="td-ring-fill" id="tdRingFill" cx="40" cy="40" r="28" fill="none" stroke="#adc6ff" stroke-width="6"
+                                        stroke-dasharray="175.93" stroke-dashoffset="175.93" stroke-linecap="round"/>
+                                </svg>
+                                <span class="td-ring-pct" id="tdRingPct">0%</span>
+                            </div>
+                            <div class="td-count-block">
+                                <div class="td-count-line">
+                                    <span class="td-count-num" id="tdCompletedNum">00</span>
+                                    <span class="td-count-sep">/</span>
+                                    <span class="td-count-total" id="tdTotalNum">00</span>
+                                </div>
+                                <span class="td-count-label">tareas</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="todo-stats">
-                        <span class="stat-item">
-                            <span class="stat-number" id="todoTotalCount">0</span>
-                            <span class="stat-label">Total</span>
-                        </span>
-                        <span class="stat-item">
-                            <span class="stat-number" id="todoCompletedCount">0</span>
-                            <span class="stat-label">Completadas</span>
-                        </span>
-                        <span class="stat-item">
-                            <span class="stat-number" id="todoPendingCount">0</span>
-                            <span class="stat-label">Pendientes</span>
-                        </span>
+                    <!-- Critical Card -->
+                    <div class="td-critical-card" id="tdCriticalCard">
+                        <div class="td-card-label">Prioridad Crítica</div>
+                        <div class="td-critical-title" id="tdCriticalTitle">Urgente</div>
+                        <div class="td-critical-warn">
+                            <span class="material-symbols-outlined">warning</span>
+                            <span id="tdOverdueText">0 tareas vencen hoy</span>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Todo List -->
-                <div class="todo-container">
-                    <div class="todo-list" id="todoList">
-                        <!-- Los items se cargarán dinámicamente -->
+
+                <!-- Voice Interface -->
+                <div class="voice-interface" id="voiceInterface" style="display: none;">
+                    <div class="voice-header">
+                        <h3><span class="material-symbols-outlined">mic</span> Comando de Voz</h3>
+                        <button class="btn btn-secondary" id="stopVoiceBtn">
+                            <span class="material-symbols-outlined">stop</span> Detener
+                        </button>
                     </div>
-                    
-                    <!-- Voice Interface -->
-                    <div class="voice-interface" id="voiceInterface" style="display: none;">
-                        <div class="voice-header">
-                            <h3><span class="material-symbols-outlined">mic</span> Comando de Voz</h3>
-                            <button class="btn btn-secondary" id="stopVoiceBtn">
-                                <span class="material-symbols-outlined">stop</span> Detener
-                            </button>
+                    <div class="voice-status">
+                        <div class="voice-indicator" id="voiceIndicator">
+                            <div class="pulse-ring"></div>
+                            <span class="material-symbols-outlined">mic</span>
                         </div>
-                        <div class="voice-status">
-                            <div class="voice-indicator" id="voiceIndicator">
-                                <div class="pulse-ring"></div>
-                                <span class="material-symbols-outlined">mic</span>
-                            </div>
-                            <p class="voice-text" id="voiceText">Escuchando...</p>
-                        </div>
-                        <div class="voice-transcript" id="voiceTranscript">
-                            <p id="transcriptText">Di tu tarea...</p>
-                        </div>
-                        <div class="voice-actions">
-                            <button class="btn btn-primary" id="createVoiceTodoBtn" disabled>
-                                <span class="material-symbols-outlined">add</span> Crear Tarea
-                            </button>
-                            <button class="btn btn-secondary" id="cancelVoiceBtn">
-                                <span class="material-symbols-outlined">close</span> Cancelar
-                            </button>
-                        </div>
+                        <p class="voice-text" id="voiceText">Escuchando...</p>
                     </div>
-                    
-                    <!-- Add Todo Form (hidden by default) -->
-                    <div class="todo-form-container" id="todoFormContainer" style="display: none;">
-                        <form class="todo-form" id="todoForm">
-                            <div class="form-group">
-                                <label for="todoTitle">Título</label>
-                                <input type="text" id="todoTitle" required placeholder="¿Qué necesitas hacer?">
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="todoCategory">Categoría</label>
-                                    <select id="todoCategory">
-                                        <option value="personal">Personal</option>
-                                        <option value="trabajo">Trabajo</option>
-                                        <option value="hogar">Hogar</option>
-                                        <option value="compras">Compras</option>
-                                        <option value="salud">Salud</option>
-                                        <option value="finanzas">Finanzas</option>
-                                        <option value="otros">Otros</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="todoPriority">Prioridad</label>
-                                    <select id="todoPriority">
-                                        <option value="baja">Baja</option>
-                                        <option value="media">Media</option>
-                                        <option value="alta">Alta</option>
-                                        <option value="urgente">Urgente</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="todoDueDate">Fecha límite</label>
-                                <input type="date" id="todoDueDate">
-                            </div>
-                            <div class="form-group">
-                                <label for="todoNotes">Notas</label>
-                                <textarea id="todoNotes" rows="3" placeholder="Notas adicionales..."></textarea>
-                            </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-primary">
-                                    <span class="material-symbols-outlined">save</span> Guardar Tarea
-                                </button>
-                                <button type="button" class="btn btn-secondary" id="cancelTodoBtn">
-                                    <span class="material-symbols-outlined">close</span> Cancelar
-                                </button>
-                            </div>
-                        </form>
+                    <div class="voice-transcript" id="voiceTranscript">
+                        <p id="transcriptText">Di tu tarea...</p>
+                    </div>
+                    <div class="voice-actions">
+                        <button class="btn btn-primary" id="createVoiceTodoBtn" disabled>
+                            <span class="material-symbols-outlined">add</span> Crear Tarea
+                        </button>
+                        <button class="btn btn-secondary" id="cancelVoiceBtn">
+                            <span class="material-symbols-outlined">close</span> Cancelar
+                        </button>
                     </div>
                 </div>
+
+                <!-- Task Form (always visible) -->
+                <div class="td-form-card" id="todoFormContainer">
+                    <div class="td-form-header">
+                        <div class="td-form-title">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            Nueva Tarea
+                        </div>
+                        <span class="td-ai-badge">
+                            <span class="material-symbols-outlined" style="font-size:11px">auto_awesome</span>
+                            AI Suggestion
+                        </span>
+                    </div>
+                    <form id="todoForm">
+                        <div class="td-field-group">
+                            <label class="td-label" for="todoTitle">Título de la Tarea</label>
+                            <input class="td-input" type="text" id="todoTitle" required placeholder="¿Qué necesitas hacer hoy?">
+                        </div>
+                        <div class="td-field-row">
+                            <div class="td-field-group">
+                                <label class="td-label" for="todoCategory">Categoría</label>
+                                <select class="td-select" id="todoCategory">
+                                    <option value="personal">Personal</option>
+                                    <option value="trabajo">Trabajo</option>
+                                    <option value="hogar">Hogar</option>
+                                    <option value="compras">Compras</option>
+                                    <option value="salud">Salud</option>
+                                    <option value="finanzas">Finanzas</option>
+                                    <option value="otros">Otros</option>
+                                </select>
+                            </div>
+                            <div class="td-field-group">
+                                <label class="td-label" for="todoPriority">Prioridad</label>
+                                <select class="td-select" id="todoPriority">
+                                    <option value="baja">Baja</option>
+                                    <option value="media">Media</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="urgente">Urgente</option>
+                                </select>
+                            </div>
+                            <div class="td-field-group">
+                                <label class="td-label" for="todoDueDate">Fecha Límite</label>
+                                <input class="td-input" type="date" id="todoDueDate">
+                            </div>
+                        </div>
+                        <div class="td-field-group">
+                            <label class="td-label" for="todoNotes">Notas Adicionales</label>
+                            <textarea class="td-textarea" id="todoNotes" rows="3" placeholder="Detalles, sub-tareas o enlaces..."></textarea>
+                        </div>
+                        <div class="td-form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-symbols-outlined">save</span> Guardar Tarea
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="cancelTodoBtn">
+                                <span class="material-symbols-outlined">close</span> Limpiar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="td-filter-bar">
+                    <button class="td-filter-btn active" data-filter="all">Todas</button>
+                    <button class="td-filter-btn" data-filter="pending">Pendientes</button>
+                    <button class="td-filter-btn" data-filter="completed">Completadas</button>
+                    <button class="td-filter-btn" data-filter="today">Hoy</button>
+                </div>
+
+                <!-- Task List -->
+                <div id="todoList" class="td-task-list"></div>
             </section>
             
             <!-- Settings Section -->
@@ -1334,7 +1363,7 @@
     <script src="js/cleaning.js?v=20260523"></script>
     <script src="js/calendar.js?v=20260524"></script>
     <script src="js/shopping.js?v=20260520"></script>
-    <script src="js/todo.js?v=20260519"></script>
+    <script src="js/todo.js?v=20260520"></script>
     <script src="js/settings.js?v=20260516"></script>
     <script>
         // ============================================
