@@ -4830,3 +4830,13 @@ body {
 .mn-empty-icon { font-size: 48px; color: #424754; }
 .mn-empty-title { font-size: 16px; font-weight: 600; color: #c2c6d6; margin: 0; }
 .mn-empty-sub { font-size: 13px; margin: 0; }
+
+/* Menu ambos-mode badges */
+.mn-meal-type-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.mn-meal-badge {
+    font-size: 8px; font-weight: 700; letter-spacing: .08em; padding: 2px 6px;
+    border-radius: 9999px; text-transform: uppercase;
+}
+.mn-meal-badge--adult { background: rgba(173,198,255,.15); color: #adc6ff; border: 1px solid rgba(173,198,255,.3); }
+.mn-meal-badge--kid   { background: rgba(208,188,255,.15); color: #d0bcff; border: 1px solid rgba(208,188,255,.3); }
+.mn-meal-card--split { border-color: rgba(255,255,255,.06) !important; }

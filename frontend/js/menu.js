@@ -169,11 +169,34 @@ class MenuManager {
         const days     = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
         const dayNames = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
         const todayKey = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date().getDay()];
-
-        const menu = this.viewMode === 'ninos' ? (parsed.menu_ninos || parsed.menu_adultos) : (parsed.menu_adultos || parsed.menu_ninos);
         const availableMeals = this.getAvailableMeals(parsed);
 
         grid.innerHTML = '';
+
+        const buildCard = (day, meal, md, badge) => {
+            if (!md) return `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
+            const name = md.plato || md.primero || '';
+            const desc = md.descripcion || '';
+            const time = md.tiempo_prep ? `${md.tiempo_prep} min` : '';
+            const kcal = md.calorias ? `${md.calorias} kcal` : '';
+            const tags = Array.isArray(md.alergenos) ? md.alergenos.filter(Boolean).slice(0, 2) : [];
+            const tagsHtml = tags.map(t => `<span class="mn-tag">${t}</span>`).join('');
+            const metaHtml = (time || kcal) ? `<div class="mn-meal-meta">
+                ${time ? `<span class="mn-meal-time"><span class="material-symbols-outlined">schedule</span>${time}</span>` : ''}
+                ${kcal ? `<span class="mn-meal-kcal">${kcal}</span>` : ''}
+            </div>` : '';
+            const badgeHtml = badge ? `<span class="mn-meal-badge mn-meal-badge--${badge === 'adultos' ? 'adult' : 'kid'}">${badge === 'adultos' ? 'Adultos' : 'Niños'}</span>` : '';
+            return `<div class="mn-meal-card glass-card${badge ? ' mn-meal-card--split' : ''}" onclick="menuManager.showMealDetails('${day}','${meal}')">
+                <div class="mn-meal-type-row">
+                    <span class="mn-meal-type">${meal.toUpperCase()}</span>
+                    ${badgeHtml}
+                </div>
+                <h3 class="mn-meal-name">${name}</h3>
+                ${desc ? `<p class="mn-meal-desc">${desc}</p>` : ''}
+                ${metaHtml}
+                ${tagsHtml ? `<div class="mn-meal-tags">${tagsHtml}</div>` : ''}
+            </div>`;
+        };
 
         days.forEach((day, i) => {
             const col = document.createElement('div');
@@ -182,37 +205,19 @@ class MenuManager {
             const isToday = day === todayKey;
             col.innerHTML = `<h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}">${dayNames[i]}</h2>`;
 
-            const dayMenu = menu?.[day];
-
-            if (!dayMenu || availableMeals.length === 0) {
+            if (availableMeals.length === 0) {
                 col.innerHTML += `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
-            } else {
+            } else if (this.viewMode === 'ambos') {
                 availableMeals.forEach(meal => {
-                    const md = dayMenu[meal];
-                    if (!md) {
-                        col.innerHTML += `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
-                        return;
-                    }
-                    const name  = md.plato || md.primero || '';
-                    const desc  = md.descripcion || '';
-                    const time  = md.tiempo_prep ? `${md.tiempo_prep} min` : '';
-                    const kcal  = md.calorias ? `${md.calorias} kcal` : '';
-                    const tags  = Array.isArray(md.alergenos) ? md.alergenos.filter(Boolean).slice(0, 3) : [];
-                    const tagsHtml = tags.map(t => `<span class="mn-tag">${t}</span>`).join('');
-                    const metaHtml = (time || kcal) ? `
-                        <div class="mn-meal-meta">
-                            ${time ? `<span class="mn-meal-time"><span class="material-symbols-outlined">schedule</span>${time}</span>` : ''}
-                            ${kcal ? `<span class="mn-meal-kcal">${kcal}</span>` : ''}
-                        </div>` : '';
-
-                    col.innerHTML += `
-                        <div class="mn-meal-card glass-card" onclick="menuManager.showMealDetails('${day}','${meal}')">
-                            <div class="mn-meal-type">${meal.toUpperCase()}</div>
-                            <h3 class="mn-meal-name">${name}</h3>
-                            ${desc ? `<p class="mn-meal-desc">${desc}</p>` : ''}
-                            ${metaHtml}
-                            ${tagsHtml ? `<div class="mn-meal-tags">${tagsHtml}</div>` : ''}
-                        </div>`;
+                    const adultMd = parsed.menu_adultos?.[day]?.[meal];
+                    const kidMd   = parsed.menu_ninos?.[day]?.[meal];
+                    col.innerHTML += buildCard(day, meal, adultMd, 'adultos');
+                    col.innerHTML += buildCard(day, meal, kidMd, 'ninos');
+                });
+            } else {
+                const menu = this.viewMode === 'ninos' ? (parsed.menu_ninos || parsed.menu_adultos) : (parsed.menu_adultos || parsed.menu_ninos);
+                availableMeals.forEach(meal => {
+                    col.innerHTML += buildCard(day, meal, menu?.[day]?.[meal], null);
                 });
             }
 
