@@ -197,7 +197,6 @@ class MenuManager {
         // Crear filas de comidas - detectar dinámicamente qué comidas existen
         const availableMeals = this.getAvailableMeals(parsedMenuData);
         console.log('[menu] Comidas disponibles:', availableMeals);
-        console.log('[menu] menu_adultos raw:', JSON.stringify(parsedMenuData.menu_adultos).slice(0, 500));
         
         if (availableMeals.length === 0) {
             console.warn('[warn] No se encontraron comidas en el menú');

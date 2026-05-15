@@ -970,34 +970,66 @@ Si regeneras solo una comida:
         """Extrae JSON válido de la respuesta de Claude"""
         try:
             logger.info(f"Contenido crudo de Claude (primeros 500 chars): {content[:500]}")
-            
-            # Buscar bloques de código JSON
-            if '```json' in content:
-                start = content.find('```json') + 7
-                end = content.find('```', start)
-                json_str = content[start:end].strip()
-            elif '```' in content:
-                start = content.find('```') + 3
-                end = content.find('```', start)
-                json_str = content[start:end].strip()
-            else:
-                # Si no hay bloques, intentar parsear todo el contenido
-                json_str = content.strip()
-            
-            logger.info(f"JSON extraído (primeros 300 chars): {json_str[:300]}...")
-            
-            # Intentar parseo directo primero
-            try:
-                result = json.loads(json_str)
-                logger.info(f"JSON parseado exitosamente (directo)")
-                return result
-            except json.JSONDecodeError as e:
-                logger.error(f"Error en parseo JSON directo: {e}")
-                logger.error(f"JSON que falló: {json_str}")
-                
-                # Si falla, aplicar limpieza y reconstrucción
-                return self._basic_json_reconstruction(json_str)
-            
+
+            # 1. Try markdown code blocks first
+            for marker in ('```json', '```'):
+                if marker in content:
+                    start = content.find(marker) + len(marker)
+                    end = content.find('```', start)
+                    if end > start:
+                        candidate = content[start:end].strip()
+                        try:
+                            result = json.loads(candidate)
+                            logger.info("JSON parseado exitosamente (bloque markdown)")
+                            return result
+                        except json.JSONDecodeError:
+                            break  # fall through to brace-scan
+
+            # 2. Scan for the outermost { ... } using a brace counter
+            first_brace = content.find('{')
+            if first_brace != -1:
+                depth = 0
+                in_string = False
+                escape_next = False
+                for i, ch in enumerate(content[first_brace:], start=first_brace):
+                    if escape_next:
+                        escape_next = False
+                        continue
+                    if ch == '\\' and in_string:
+                        escape_next = True
+                        continue
+                    if ch == '"':
+                        in_string = not in_string
+                        continue
+                    if in_string:
+                        continue
+                    if ch == '{':
+                        depth += 1
+                    elif ch == '}':
+                        depth -= 1
+                        if depth == 0:
+                            candidate = content[first_brace:i + 1]
+                            try:
+                                result = json.loads(candidate)
+                                logger.info("JSON parseado exitosamente (brace-scan)")
+                                return result
+                            except json.JSONDecodeError as e:
+                                logger.error(f"Error brace-scan JSON: {e}")
+                                # Try stripping trailing commas as a last resort
+                                import re as _re
+                                cleaned = _re.sub(r',\s*([}\]])', r'\1', candidate)
+                                try:
+                                    result = json.loads(cleaned)
+                                    logger.info("JSON parseado exitosamente (brace-scan + comma strip)")
+                                    return result
+                                except json.JSONDecodeError:
+                                    pass
+                            break
+
+            logger.error("No se encontró JSON válido en la respuesta")
+            logger.error(f"Contenido completo: {content}")
+            return None
+
         except Exception as e:
             logger.error(f"Error extrayendo JSON: {str(e)}")
             logger.error(f"Contenido completo: {content}")
