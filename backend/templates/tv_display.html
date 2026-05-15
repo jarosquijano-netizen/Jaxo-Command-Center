@@ -175,10 +175,13 @@
         <h2 class="text-3xl font-bold uppercase tracking-wider text-white">Adultos</h2>
       </div>
 
-      {{ meal_card('Desayuno', meals_adultos.desayuno) }}
-      {{ meal_card('Comida', meals_adultos.comida, featured=true, badge='Recomendado', badge_color='cyan') }}
-      {{ meal_card('Merienda', meals_adultos.merienda) }}
-      {{ meal_card('Cena', meals_adultos.cena) }}
+      {%- if meals_adultos.desayuno %}{{ meal_card('Desayuno', meals_adultos.desayuno) }}{% endif %}
+      {%- if meals_adultos.comida %}{{ meal_card('Comida', meals_adultos.comida, featured=true, badge='Recomendado', badge_color='cyan') }}{% endif %}
+      {%- if meals_adultos.merienda %}{{ meal_card('Merienda', meals_adultos.merienda) }}{% endif %}
+      {%- if meals_adultos.cena %}{{ meal_card('Cena', meals_adultos.cena) }}{% endif %}
+      {%- if not (meals_adultos.desayuno or meals_adultos.comida or meals_adultos.merienda or meals_adultos.cena) %}
+        <p class="text-slate-500 italic text-lg px-2">Sin menú hoy</p>
+      {%- endif %}
     </div>
 
     {# Niñas column #}
@@ -190,10 +193,13 @@
         <h2 class="text-3xl font-bold uppercase tracking-wider text-white">Niñas</h2>
       </div>
 
-      {{ meal_card('Desayuno', meals_ninos.desayuno) }}
-      {{ meal_card('Comida', meals_ninos.comida, featured=true, badge='Favorito', badge_color='pink') }}
-      {{ meal_card('Merienda', meals_ninos.merienda) }}
-      {{ meal_card('Cena', meals_ninos.cena) }}
+      {%- if meals_ninos.desayuno %}{{ meal_card('Desayuno', meals_ninos.desayuno) }}{% endif %}
+      {%- if meals_ninos.comida %}{{ meal_card('Comida', meals_ninos.comida, featured=true, badge='Favorito', badge_color='pink') }}{% endif %}
+      {%- if meals_ninos.merienda %}{{ meal_card('Merienda', meals_ninos.merienda) }}{% endif %}
+      {%- if meals_ninos.cena %}{{ meal_card('Cena', meals_ninos.cena) }}{% endif %}
+      {%- if not (meals_ninos.desayuno or meals_ninos.comida or meals_ninos.merienda or meals_ninos.cena) %}
+        <p class="text-slate-500 italic text-lg px-2">Sin menú hoy</p>
+      {%- endif %}
     </div>
   </section>
 

@@ -494,3 +494,27 @@ def delete_menu(menu_id):
             'success': False,
             'message': 'Error interno del servidor'
         }), 500
+
+
+@menu_bp.route('/tv-debug', methods=['GET'])
+def tv_debug():
+    """Diagnostic: shows what menu data available for TV display."""
+    from datetime import datetime
+    _DAY_KEYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+    today_key = _DAY_KEYS[datetime.now().weekday()]
+    weekly = menu_service.get_weekly_menu()
+    latest = menu_service.get_latest_menu()
+    result = {
+        'today_key': today_key,
+        'weekly_menu_found': weekly is not None,
+        'latest_menu_found': latest is not None,
+    }
+    if latest:
+        md = latest.get('menu_data') or {}
+        result['menu_data_top_keys'] = list(md.keys())
+        adultos = md.get('menu_adultos', {})
+        result['adultos_days'] = list(adultos.keys())
+        result['adultos_today'] = adultos.get(today_key)
+        ninos = md.get('menu_ninos', {})
+        result['ninos_today'] = ninos.get(today_key)
+    return jsonify(result)
