@@ -198,12 +198,23 @@ class MenuManager {
             </div>`;
         };
 
+        // Restore collapsed state across re-renders
+        const collapsed = new Set(
+            [...document.querySelectorAll('.mn-day.mn-day--collapsed')].map(el => el.dataset.day)
+        );
+
         days.forEach((day, i) => {
             const col = document.createElement('div');
-            col.className = 'mn-day';
+            col.className = 'mn-day' + (collapsed.has(day) ? ' mn-day--collapsed' : '');
+            col.dataset.day = day;
 
             const isToday = day === todayKey;
-            col.innerHTML = `<h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}">${dayNames[i]}</h2>`;
+            col.innerHTML = `
+                <h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}" onclick="menuManager.toggleDay(this)" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
+                    <span>${dayNames[i]}</span>
+                    <span class="mn-day-chevron material-symbols-outlined" style="font-size:16px;transition:transform .2s;opacity:0.5;">expand_more</span>
+                </h2>
+                <div class="mn-day-body">`;
 
             if (availableMeals.length === 0) {
                 col.innerHTML += `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
@@ -221,11 +232,18 @@ class MenuManager {
                 });
             }
 
+            col.innerHTML += `</div>`;
             grid.appendChild(col);
         });
 
         this.updateStatistics();
         console.log('[menu] Grid renderizado');
+    }
+
+    toggleDay(headerEl) {
+        const col = headerEl.closest('.mn-day');
+        if (!col) return;
+        col.classList.toggle('mn-day--collapsed');
     }
 
     getAvailableMeals(menuData) {
