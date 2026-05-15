@@ -130,6 +130,7 @@ body {
     align-items: center;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-2xl);
+    padding: var(--spacing-sm) 0;
 }
 
 .sidebar-header i {
