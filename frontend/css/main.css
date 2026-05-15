@@ -5066,3 +5066,189 @@ body {
     .cl-status { min-width: 0; }
     .cl-filters { flex-direction: column; }
 }
+
+/* ===================================================
+   MOBILE RESPONSIVE — ≤768px
+   Sidebar → bottom nav bar; all sections reflow
+   =================================================== */
+
+@media (max-width: 768px) {
+
+    /* ── Layout ── */
+    .app-layout {
+        flex-direction: column;
+    }
+
+    /* Sidebar becomes a fixed bottom nav */
+    .sidebar {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        width: 100%;
+        height: 56px;
+        flex-direction: row;
+        align-items: center;
+        padding: 0;
+        border-right: none;
+        border-top: 1px solid rgba(255,255,255,.08);
+        z-index: 200;
+        background: rgba(12,19,36,.95);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        overflow-x: auto;
+        /* hide scrollbar */
+        scrollbar-width: none;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
+
+    .sidebar-header { display: none; }
+
+    .sidebar-nav {
+        flex-direction: row;
+        width: 100%;
+        gap: 0;
+        justify-content: space-around;
+        padding: 0;
+    }
+
+    .nav-link {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 4px 2px;
+        gap: 2px;
+        border-radius: 0;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: .04em;
+        min-width: 44px;
+        flex: 1;
+        border-left: none !important;
+        border-bottom: 2px solid transparent;
+        transition: color .2s, border-color .2s;
+    }
+    .nav-link .material-symbols-outlined {
+        font-size: 22px;
+        width: auto;
+    }
+    /* Hide text labels on very small screens, show on slightly larger */
+    .nav-link span:last-child { display: none; }
+    .nav-link.active {
+        background: transparent;
+        color: #4cd7f6;
+        border-bottom: 2px solid #4cd7f6;
+        box-shadow: none;
+        padding-left: 4px;
+    }
+
+    /* Main content: full width, bottom padding for nav bar */
+    .main-content {
+        padding: 12px 12px 68px;
+        min-height: 100vh;
+    }
+
+    .module-section {
+        padding: 16px 12px;
+        border-radius: 12px;
+    }
+
+    /* ── Content headers ── */
+    .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .header-actions .btn {
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+        font-size: 11px;
+        padding: 8px 10px;
+    }
+
+    /* ── Dashboard ── */
+    .db-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .db-header-right { width: 100%; justify-content: space-between; }
+    .db-search { flex: 1; min-width: 0; }
+    .db-search-input { width: 100%; }
+    .db-chips { flex-wrap: wrap; gap: 8px; }
+    .db-chip { min-width: calc(50% - 4px); flex: 1; }
+    .db-bento { grid-template-columns: 1fr; gap: 12px; }
+    .db-panel { min-height: unset; }
+
+    /* ── Menu Semanal (mn-*) ── */
+    .mn-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .mn-header-right { flex-direction: column; width: 100%; gap: 10px; }
+    .mn-week-nav { justify-content: center; }
+    .mn-toggle { width: 100%; justify-content: stretch; }
+    .mn-toggle-btn { flex: 1; text-align: center; font-size: 11px; }
+    .mn-ai-wrap { flex-direction: column; }
+    .mn-ai-cta { width: 100%; }
+    .mn-shopping-btn { width: 100%; justify-content: center; }
+    .mn-grid { grid-template-columns: repeat(2,1fr) !important; gap: 8px; }
+    .mn-stats-inner { flex-direction: column; gap: 12px; }
+
+    /* ── Shopping ── */
+    .shopping-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .shopping-week-nav { justify-content: center; }
+
+    /* ── Cleaning (cl-*) ── */
+    .cl-header { flex-direction: column; gap: 10px; }
+    .cl-header-actions { width: 100%; }
+    .cl-btn-primary, .cl-btn-secondary { flex: 1; justify-content: center; }
+    .cl-controls { flex-direction: column; }
+    .cl-status { min-width: 0; }
+    .cl-status-inner { flex-wrap: wrap; gap: 12px; }
+    .cl-status-divider { display: none; }
+    .cl-status-next { width: 100%; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); }
+    .cl-filters { flex-direction: row; flex-wrap: wrap; }
+    .cl-select { min-width: 130px; }
+    .cl-grid { grid-template-columns: repeat(2,1fr) !important; min-width: 0 !important; gap: 8px; }
+
+    /* ── Calendar ── */
+    .calendar-week-nav,
+    .calendar-header { flex-wrap: wrap; gap: 8px; }
+
+    /* ── Modals ── */
+    .modal-content {
+        width: 95% !important;
+        max-width: 95vw !important;
+        max-height: 90vh !important;
+        margin: 5vh auto;
+        overflow-y: auto;
+    }
+    .modal-header { padding: 14px 16px; }
+    .modal-body, .modal-footer { padding: 14px 16px; }
+
+    /* ── Family ── */
+    .family-grid { grid-template-columns: 1fr !important; }
+    .family-member-card { max-width: 100%; }
+
+    /* ── Settings ── */
+    .settings-grid { grid-template-columns: 1fr !important; }
+    .settings-layout { flex-direction: column; }
+    .settings-sidebar { width: 100%; max-width: 100%; }
+
+    /* ── To-Do ── */
+    .todo-layout { flex-direction: column; }
+    .todo-sidebar { width: 100%; }
+}
+
+/* ≤480px — small phones */
+@media (max-width: 480px) {
+    .main-content { padding: 8px 8px 66px; }
+    .module-section { padding: 12px 10px; }
+
+    .db-chip { min-width: 100%; }
+    .mn-grid { grid-template-columns: 1fr !important; }
+    .cl-grid { grid-template-columns: 1fr !important; }
+
+    .cl-header-actions { flex-direction: column; }
+    .cl-btn-primary, .cl-btn-secondary { width: 100%; }
+
+    .mn-toggle { flex-wrap: wrap; }
+}
