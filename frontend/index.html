@@ -27,9 +27,13 @@
 <body>
     <div class="app-layout">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="appSidebar">
+            <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Colapsar menú">
+                <span class="material-symbols-outlined">menu_open</span>
+            </button>
             <div class="sidebar-header">
-                <img src="images/jaxo-logo-primary.svg" alt="JAXo Command Center" style="width:200px;height:auto;">
+                <img src="images/jaxo-logo-primary.svg" alt="JAXo Command Center" class="sidebar-logo-full" style="width:200px;height:auto;">
+                <img src="images/jaxo-icon.svg" alt="JAXo" class="sidebar-logo-icon" style="width:36px;height:36px;display:none;">
             </div>
 
             <nav class="sidebar-nav">
@@ -1469,6 +1473,17 @@
                 console.error('DashboardManager no encontrado');
             }
         });
+    </script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const collapsed = sidebar.classList.toggle('sidebar--collapsed');
+            localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+        }
+        // Restore state on load
+        if (localStorage.getItem('sidebarCollapsed') === '1') {
+            document.getElementById('appSidebar').classList.add('sidebar--collapsed');
+        }
     </script>
 </body>
 </html>
