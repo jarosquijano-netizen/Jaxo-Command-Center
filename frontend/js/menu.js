@@ -435,41 +435,19 @@ class MenuManager {
         this.setupWeekSelection();
 
         modal.style.display = 'flex';
-        
-        // Añadir event listeners a los botones
-        const closeBtn = modal.querySelector('.close-btn');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                this.closeModal('generateMenuModal');
-            });
-        }
-        
-        const cancelBtn = modal.querySelector('.btn-secondary');
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                this.closeModal('generateMenuModal');
-            });
-        }
-        
-        const generateBtn = modal.querySelector('.btn-primary');
-        if (generateBtn) {
-            generateBtn.addEventListener('click', () => {
-                this.generateMenu();
-            });
-        }
     }
 
     setupWeekSelection() {
         const weekSelection = document.getElementById('weekSelection');
         const customDate = document.getElementById('customDate');
-        
-        // Event listener para el dropdown
+        if (!weekSelection || weekSelection._listenerBound) return;
+        weekSelection._listenerBound = true;
+
         weekSelection.addEventListener('change', (e) => {
             if (e.target.value === 'custom') {
                 customDate.style.display = 'block';
                 customDate.required = true;
-                
-                // Establecer fecha por defecto (próximo lunes)
+
                 const nextMonday = this.getMonday(new Date());
                 nextMonday.setDate(nextMonday.getDate() + 7);
                 customDate.value = nextMonday.toISOString().split('T')[0];
@@ -543,10 +521,12 @@ class MenuManager {
             const response = await api.post('/api/menu/generate', data);
             
             if (response.success) {
-                const menuData = typeof response.menu.menu_data === 'string' 
-                    ? JSON.parse(response.menu.menu_data) 
+                const menuData = typeof response.menu.menu_data === 'string'
+                    ? JSON.parse(response.menu.menu_data)
                     : response.menu.menu_data;
-                
+
+                console.log('[debug] menuData keys:', menuData ? Object.keys(menuData) : null);
+                console.log('[debug] menu_adultos sample:', menuData?.menu_adultos ? Object.entries(menuData.menu_adultos).slice(0,1) : null);
                 if (this.hasAnyMealData(menuData)) {
                     this.currentMenu = response.menu;
                     this.currentWeek = new Date(response.menu.semana_inicio);
