@@ -213,7 +213,7 @@ class MenuManager {
                 <h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
                     <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;">${dayNames[i]}</span>
                     <span style="display:flex;align-items:center;gap:4px;">
-                        <button class="mn-regen-btn" title="Generar día" onclick="menuManager.openGenerateDayModal('${day}')" tabindex="-1">
+                        <button class="mn-regen-btn" title="Generar día" onclick="event.stopPropagation();menuManager.openGenerateDayModal('${day}')" tabindex="-1">
                             <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
                         </button>
                         <span class="mn-day-chevron material-symbols-outlined" style="font-size:16px;transition:transform .2s;opacity:0.5;" onclick="menuManager.toggleDay(this.closest('h2'))">expand_more</span>
@@ -222,7 +222,7 @@ class MenuManager {
                 <div class="mn-day-body">`;
 
             if (availableMeals.length === 0) {
-                col.innerHTML += `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
+                col.innerHTML += `<div class="mn-meal-empty" onclick="menuManager.openGenerateDayModal('${day}')" style="cursor:pointer;" title="Generar día"><span class="material-symbols-outlined">add</span></div>`;
             } else if (this.viewMode === 'ambos') {
                 availableMeals.forEach(meal => {
                     const adultMd = parsed.menu_adultos?.[day]?.[meal];
@@ -1002,35 +1002,48 @@ class MenuManager {
     // ── Generate Day Modal ──────────────────────────────────────────────────
 
     openGenerateDayModal(preselectedDay = null) {
-        this._gdState = { day: null, meals: ['desayuno','comida','cena'], tipo: 'ambos', cocina: '', diff: '', time: null, notes: '' };
-        this._gdStep = 1;
+        // Show modal immediately — reset state after
+        const modal = document.getElementById('generateDayModal');
+        if (!modal) { console.error('[gd] modal element not found'); return; }
+        modal.style.display = 'flex';
 
-        // Reset UI
-        document.querySelectorAll('.gd-day-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.gd-tipo-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector('[data-tipo="ambos"]')?.classList.add('active');
-        document.querySelectorAll('#gdMealPicker input').forEach(cb => {
-            cb.checked = ['desayuno','comida','cena'].includes(cb.value);
-        });
-        document.querySelectorAll('#gdCuisineChips .gd-chip').forEach(c => c.classList.remove('active'));
-        document.querySelector('#gdCuisineChips [data-value=""]')?.classList.add('active');
-        document.querySelectorAll('[data-diff]').forEach(c => c.classList.remove('active'));
-        document.querySelector('[data-diff=""]')?.classList.add('active');
-        document.getElementById('gdTimeInput').value = '';
-        document.getElementById('gdNotesInput').value = '';
-        document.getElementById('gdError').style.display = 'none';
-        document.getElementById('gdWarning').style.display = 'none';
-        document.getElementById('gdGenerateBtn').disabled = false;
-        document.getElementById('gdGenerateBtn').innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1;font-size:18px;">auto_awesome</span> Generar con IA';
+        try {
+            this._gdState = { day: preselectedDay || null, meals: ['desayuno','comida','cena'], tipo: 'ambos', cocina: '', diff: '', time: null, notes: '' };
+            this._gdStep = 1;
 
-        if (preselectedDay) {
-            const btn = document.querySelector(`.gd-day-btn[data-day="${preselectedDay}"]`);
-            if (btn) { btn.classList.add('active'); this._gdState.day = preselectedDay; }
+            document.querySelectorAll('.gd-day-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.day === preselectedDay);
+            });
+            document.querySelectorAll('.gd-tipo-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.tipo === 'ambos');
+            });
+            document.querySelectorAll('#gdMealPicker input').forEach(cb => {
+                cb.checked = ['desayuno','comida','cena'].includes(cb.value);
+            });
+            document.querySelectorAll('#gdCuisineChips .gd-chip').forEach(c => c.classList.remove('active'));
+            document.querySelector('#gdCuisineChips [data-value=""]')?.classList.add('active');
+            document.querySelectorAll('[data-diff]').forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-diff=""]')?.classList.add('active');
+
+            const timeInput = document.getElementById('gdTimeInput');
+            if (timeInput) timeInput.value = '';
+            const notesInput = document.getElementById('gdNotesInput');
+            if (notesInput) notesInput.value = '';
+            const errEl = document.getElementById('gdError');
+            if (errEl) errEl.style.display = 'none';
+            const warnEl = document.getElementById('gdWarning');
+            if (warnEl) warnEl.style.display = 'none';
+            const genBtn = document.getElementById('gdGenerateBtn');
+            if (genBtn) {
+                genBtn.disabled = false;
+                genBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">auto_awesome</span> Generar con IA';
+            }
+
+            this._bindGenerateDayModal();
+            this._showGdStep(1);
+        } catch(e) {
+            console.error('[gd] openGenerateDayModal error:', e);
         }
-
-        this._bindGenerateDayModal();
-        this._showGdStep(1);
-        document.getElementById('generateDayModal').style.display = 'flex';
     }
 
     closeGenerateDayModal() {

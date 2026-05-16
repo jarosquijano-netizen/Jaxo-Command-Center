@@ -5353,8 +5353,8 @@ body {
 .mn-day--glow { animation: gdGlow 1.8s ease 2; }
 /* Regen icon on day header */
 .mn-regen-btn {
-    background: none; border: none; color: #424754; cursor: pointer;
-    padding: 0 2px; line-height: 1; font-size: 16px; transition: color .15s;
-    display: flex; align-items: center;
+    background: none; border: none; color: #4cd7f6; cursor: pointer;
+    padding: 0 2px; line-height: 1; font-size: 16px; transition: color .15s, opacity .15s;
+    display: flex; align-items: center; opacity: 0.7;
 }
-.mn-regen-btn:hover { color: #4cd7f6; }
+.mn-regen-btn:hover { color: #fff; opacity: 1; }
