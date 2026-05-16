@@ -50,7 +50,7 @@ class MenuManager {
         // Botones principales
         document.getElementById('generateMenuBtn')?.addEventListener('click', () => this.showGenerateModal());
         document.getElementById('shoppingListBtn')?.addEventListener('click', () => this.showShoppingList());
-        
+
         // Toggle vista
         document.querySelectorAll('[data-view-mode]').forEach(btn => {
             btn.addEventListener('click', (e) => this.changeViewMode(e.target.dataset.viewMode));
@@ -65,6 +65,29 @@ class MenuManager {
         document.getElementById('cancelGenerateMenuBtn')?.addEventListener('click', () => this.closeModal('generateMenuModal'));
         document.getElementById('confirmGenerateMenuBtn')?.addEventListener('click', () => this.generateMenu());
         document.getElementById('closeShoppingModalBtn')?.addEventListener('click', () => this.closeModal('shoppingListModal'));
+
+        // Event delegation for dynamically-rendered menu grid
+        document.getElementById('menuGrid')?.addEventListener('click', (e) => {
+            const regenBtn = e.target.closest('.mn-regen-btn');
+            if (regenBtn) {
+                e.stopPropagation();
+                this.openGenerateDayModal(regenBtn.dataset.day || null);
+                return;
+            }
+            const emptyCard = e.target.closest('.mn-meal-empty');
+            if (emptyCard) {
+                this.openGenerateDayModal(emptyCard.dataset.day || null);
+                return;
+            }
+        });
+
+        // Generate day modal — backdrop close
+        document.getElementById('generateDayModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'generateDayModal') this.closeGenerateDayModal();
+        });
+
+        // Bind static modal buttons once
+        this._bindGenerateDayModal();
     }
 
     async loadCurrentWeekMenu() {
@@ -174,7 +197,7 @@ class MenuManager {
         grid.innerHTML = '';
 
         const buildCard = (day, meal, md, badge) => {
-            if (!md) return `<div class="mn-meal-empty" onclick="menuManager.openGenerateDayModal('${day}')" title="Generar comida" style="cursor:pointer;"><span class="material-symbols-outlined">add</span></div>`;
+            if (!md) return `<div class="mn-meal-empty" data-day="${day}" title="Generar comida" style="cursor:pointer;"><span class="material-symbols-outlined">add</span></div>`;
             const name = md.plato || md.primero || '';
             const desc = md.descripcion || '';
             const time = md.tiempo_prep ? `${md.tiempo_prep} min` : '';
@@ -213,7 +236,7 @@ class MenuManager {
                 <h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
                     <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;">${dayNames[i]}</span>
                     <span style="display:flex;align-items:center;gap:4px;">
-                        <button class="mn-regen-btn" title="Generar día" onclick="event.stopPropagation();menuManager.openGenerateDayModal('${day}')" tabindex="-1">
+                        <button class="mn-regen-btn" data-day="${day}" title="Generar día" tabindex="-1">
                             <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
                         </button>
                         <span class="mn-day-chevron material-symbols-outlined" style="font-size:16px;transition:transform .2s;opacity:0.5;" onclick="menuManager.toggleDay(this.closest('h2'))">expand_more</span>
@@ -222,7 +245,7 @@ class MenuManager {
                 <div class="mn-day-body">`;
 
             if (availableMeals.length === 0) {
-                col.innerHTML += `<div class="mn-meal-empty" onclick="menuManager.openGenerateDayModal('${day}')" style="cursor:pointer;" title="Generar día"><span class="material-symbols-outlined">add</span></div>`;
+                col.innerHTML += `<div class="mn-meal-empty" data-day="${day}" style="cursor:pointer;" title="Generar día"><span class="material-symbols-outlined">add</span></div>`;
             } else if (this.viewMode === 'ambos') {
                 availableMeals.forEach(meal => {
                     const adultMd = parsed.menu_adultos?.[day]?.[meal];
@@ -1039,7 +1062,6 @@ class MenuManager {
                 genBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">auto_awesome</span> Generar con IA';
             }
 
-            this._bindGenerateDayModal();
             this._showGdStep(1);
         } catch(e) {
             console.error('[gd] openGenerateDayModal error:', e);
@@ -1051,14 +1073,12 @@ class MenuManager {
     }
 
     _bindGenerateDayModal() {
-        if (this._gdBound) return;
-        this._gdBound = true;
-
+        // Called once from setupEventListeners — wires up the static modal buttons
         document.querySelectorAll('.gd-day-btn').forEach(b => {
             b.addEventListener('click', () => {
                 document.querySelectorAll('.gd-day-btn').forEach(x => x.classList.remove('active'));
                 b.classList.add('active');
-                this._gdState.day = b.dataset.day;
+                if (this._gdState) this._gdState.day = b.dataset.day;
             });
         });
 
@@ -1066,7 +1086,7 @@ class MenuManager {
             b.addEventListener('click', () => {
                 document.querySelectorAll('.gd-tipo-btn').forEach(x => x.classList.remove('active'));
                 b.classList.add('active');
-                this._gdState.tipo = b.dataset.tipo;
+                if (this._gdState) this._gdState.tipo = b.dataset.tipo;
             });
         });
 
@@ -1074,7 +1094,7 @@ class MenuManager {
             c.addEventListener('click', () => {
                 document.querySelectorAll('#gdCuisineChips .gd-chip').forEach(x => x.classList.remove('active'));
                 c.classList.add('active');
-                this._gdState.cocina = c.dataset.value;
+                if (this._gdState) this._gdState.cocina = c.dataset.value;
             });
         });
 
@@ -1082,12 +1102,8 @@ class MenuManager {
             c.addEventListener('click', () => {
                 document.querySelectorAll('[data-diff]').forEach(x => x.classList.remove('active'));
                 c.classList.add('active');
-                this._gdState.diff = c.dataset.diff;
+                if (this._gdState) this._gdState.diff = c.dataset.diff;
             });
-        });
-
-        document.getElementById('generateDayModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('generateDayModal')) this.closeGenerateDayModal();
         });
     }
 
