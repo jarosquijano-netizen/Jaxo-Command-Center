@@ -80,8 +80,7 @@ class DashboardManager {
     async fetchCalendar(monday) {
         try {
             const start = monday.toISOString().split('T')[0];
-            const end   = new Date(monday.getTime() + 6 * 86400000).toISOString().split('T')[0];
-            const r = await api.get(`/api/calendar/week?start=${start}&end=${end}`);
+            const r = await api.get(`/api/calendar/week?week=${start}`);
             return r.success ? r.data : { events: [] };
         } catch { return { events: [] }; }
     }
@@ -135,8 +134,8 @@ class DashboardManager {
         // Chip 4 — Eventos hoy
         const evEl = document.getElementById('chip-events-value');
         if (evEl) {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const count    = (calendarData?.events || []).filter(e => e.start?.startsWith(todayStr)).length;
+            const _td = new Date(); const todayStr = `${_td.getFullYear()}-${String(_td.getMonth()+1).padStart(2,'0')}-${String(_td.getDate()).padStart(2,'0')}`;
+            const count    = (calendarData?.events || []).filter(e => { const d = new Date(e.start); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === todayStr; }).length;
             evEl.textContent = `${count} hoy`;
         }
     }
@@ -333,7 +332,8 @@ class DashboardManager {
         const events   = (calendarData?.events || []).filter(e =>
             this.calendarFilter === 'all' || this.getEventType(e) === this.calendarFilter
         );
-        const todayStr = new Date().toISOString().split('T')[0];
+        const _now = new Date();
+        const todayStr = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
 
         // Update range label
         const rangeEl = document.getElementById('db-cal-range');
@@ -346,9 +346,14 @@ class DashboardManager {
 
         grid.innerHTML = Array.from({ length: 7 }, (_, i) => {
             const d    = new Date(monday.getTime() + i * 86400000);
-            const dStr = d.toISOString().split('T')[0];
+            const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             const isToday = dStr === todayStr;
-            const dayEvents = events.filter(e => e.start?.startsWith(dStr));
+            const dayEvents = events.filter(e => {
+                if (!e.start) return false;
+                const evD = new Date(e.start);
+                const evStr = `${evD.getFullYear()}-${String(evD.getMonth()+1).padStart(2,'0')}-${String(evD.getDate()).padStart(2,'0')}`;
+                return evStr === dStr;
+            });
 
             const eventsHtml = dayEvents.length
                 ? dayEvents.slice(0, 4).map(ev => {

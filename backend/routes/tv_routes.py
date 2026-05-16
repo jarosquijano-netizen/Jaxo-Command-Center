@@ -169,11 +169,12 @@ def tv_view():
             use_pytz = False
 
         now_utc = datetime.utcnow()
+        # Query upcoming events; add small buffer so events starting now aren't missed
         upcoming = (
             GoogleImportedEvent.query
-            .filter(GoogleImportedEvent.start_datetime >= now_utc)
+            .filter(GoogleImportedEvent.start_datetime >= now_utc - timedelta(hours=2))
             .order_by(GoogleImportedEvent.start_datetime)
-            .limit(3)
+            .limit(10)
             .all()
         )
         for ev in upcoming:
@@ -182,8 +183,7 @@ def tv_view():
                 start_local = start_utc.replace(tzinfo=pytz.utc).astimezone(madrid)
                 ev_date = start_local.date()
             else:
-                # +1h offset approximation when pytz unavailable
-                start_local = start_utc + timedelta(hours=1)
+                start_local = start_utc + timedelta(hours=2)
                 ev_date = start_local.date()
 
             if ev_date == today_date:
@@ -194,12 +194,17 @@ def tv_view():
                 day_label = _DAY_ABBR_ES[ev_date.weekday()]
 
             diff_min = (start_utc - now_utc).total_seconds() / 60
+            # Skip events that ended more than 30 min ago
+            if diff_min < -30:
+                continue
             events.append({
                 'title': ev.summary or 'Evento',
                 'time': start_local.strftime('%H:%M'),
                 'day_label': day_label,
-                'is_live': 0 <= diff_min <= 60,
+                'is_live': -30 <= diff_min <= 60,
             })
+            if len(events) >= 3:
+                break
     except Exception as e:
         logger.warning(f'[tv] events: {e}')
 
