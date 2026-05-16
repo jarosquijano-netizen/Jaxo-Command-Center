@@ -174,7 +174,7 @@ class MenuManager {
         grid.innerHTML = '';
 
         const buildCard = (day, meal, md, badge) => {
-            if (!md) return `<div class="mn-meal-empty"><span class="material-symbols-outlined">add</span></div>`;
+            if (!md) return `<div class="mn-meal-empty" onclick="menuManager.openGenerateDayModal('${day}')" title="Generar comida" style="cursor:pointer;"><span class="material-symbols-outlined">add</span></div>`;
             const name = md.plato || md.primero || '';
             const desc = md.descripcion || '';
             const time = md.tiempo_prep ? `${md.tiempo_prep} min` : '';
@@ -210,9 +210,14 @@ class MenuManager {
 
             const isToday = day === todayKey;
             col.innerHTML = `
-                <h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}" onclick="menuManager.toggleDay(this)" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
-                    <span>${dayNames[i]}</span>
-                    <span class="mn-day-chevron material-symbols-outlined" style="font-size:16px;transition:transform .2s;opacity:0.5;">expand_more</span>
+                <h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
+                    <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;">${dayNames[i]}</span>
+                    <span style="display:flex;align-items:center;gap:4px;">
+                        <button class="mn-regen-btn" title="Generar día" onclick="menuManager.openGenerateDayModal('${day}')" tabindex="-1">
+                            <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
+                        </button>
+                        <span class="mn-day-chevron material-symbols-outlined" style="font-size:16px;transition:transform .2s;opacity:0.5;" onclick="menuManager.toggleDay(this.closest('h2'))">expand_more</span>
+                    </span>
                 </h2>
                 <div class="mn-day-body">`;
 
@@ -992,6 +997,192 @@ class MenuManager {
         const day = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1);
         return new Date(d.setDate(diff));
+    }
+
+    // ── Generate Day Modal ──────────────────────────────────────────────────
+
+    openGenerateDayModal(preselectedDay = null) {
+        this._gdState = { day: null, meals: ['desayuno','comida','cena'], tipo: 'ambos', cocina: '', diff: '', time: null, notes: '' };
+        this._gdStep = 1;
+
+        // Reset UI
+        document.querySelectorAll('.gd-day-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.gd-tipo-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-tipo="ambos"]')?.classList.add('active');
+        document.querySelectorAll('#gdMealPicker input').forEach(cb => {
+            cb.checked = ['desayuno','comida','cena'].includes(cb.value);
+        });
+        document.querySelectorAll('#gdCuisineChips .gd-chip').forEach(c => c.classList.remove('active'));
+        document.querySelector('#gdCuisineChips [data-value=""]')?.classList.add('active');
+        document.querySelectorAll('[data-diff]').forEach(c => c.classList.remove('active'));
+        document.querySelector('[data-diff=""]')?.classList.add('active');
+        document.getElementById('gdTimeInput').value = '';
+        document.getElementById('gdNotesInput').value = '';
+        document.getElementById('gdError').style.display = 'none';
+        document.getElementById('gdWarning').style.display = 'none';
+        document.getElementById('gdGenerateBtn').disabled = false;
+        document.getElementById('gdGenerateBtn').innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1;font-size:18px;">auto_awesome</span> Generar con IA';
+
+        if (preselectedDay) {
+            const btn = document.querySelector(`.gd-day-btn[data-day="${preselectedDay}"]`);
+            if (btn) { btn.classList.add('active'); this._gdState.day = preselectedDay; }
+        }
+
+        this._bindGenerateDayModal();
+        this._showGdStep(1);
+        document.getElementById('generateDayModal').style.display = 'flex';
+    }
+
+    closeGenerateDayModal() {
+        document.getElementById('generateDayModal').style.display = 'none';
+    }
+
+    _bindGenerateDayModal() {
+        if (this._gdBound) return;
+        this._gdBound = true;
+
+        document.querySelectorAll('.gd-day-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                document.querySelectorAll('.gd-day-btn').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                this._gdState.day = b.dataset.day;
+            });
+        });
+
+        document.querySelectorAll('.gd-tipo-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                document.querySelectorAll('.gd-tipo-btn').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                this._gdState.tipo = b.dataset.tipo;
+            });
+        });
+
+        document.querySelectorAll('#gdCuisineChips .gd-chip').forEach(c => {
+            c.addEventListener('click', () => {
+                document.querySelectorAll('#gdCuisineChips .gd-chip').forEach(x => x.classList.remove('active'));
+                c.classList.add('active');
+                this._gdState.cocina = c.dataset.value;
+            });
+        });
+
+        document.querySelectorAll('[data-diff]').forEach(c => {
+            c.addEventListener('click', () => {
+                document.querySelectorAll('[data-diff]').forEach(x => x.classList.remove('active'));
+                c.classList.add('active');
+                this._gdState.diff = c.dataset.diff;
+            });
+        });
+
+        document.getElementById('generateDayModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('generateDayModal')) this.closeGenerateDayModal();
+        });
+    }
+
+    _showGdStep(step) {
+        this._gdStep = step;
+        [1,2,3].forEach(n => {
+            const panel = document.getElementById(`gdStep${n}`);
+            const tab = document.getElementById(`gdTab${n}`);
+            if (panel) panel.style.display = n === step ? 'block' : 'none';
+            if (tab) {
+                tab.style.color = n === step ? '#adc6ff' : (n < step ? '#6b7a99' : '#4a5568');
+                tab.style.borderBottomColor = n === step ? '#4cd7f6' : 'transparent';
+            }
+        });
+    }
+
+    gdNextStep(step) {
+        if (step === 2) {
+            if (!this._gdState.day) { this.showError('Elige un día para continuar'); return; }
+            const checked = [...document.querySelectorAll('#gdMealPicker input:checked')].map(c => c.value);
+            if (checked.length === 0) { this.showError('Elige al menos una comida'); return; }
+            this._gdState.meals = checked;
+        }
+        if (step === 3) {
+            this._gdState.time = document.getElementById('gdTimeInput').value || null;
+            this._gdState.notes = document.getElementById('gdNotesInput').value.trim();
+            this._buildGdSummary();
+        }
+        this._showGdStep(step);
+    }
+
+    _buildGdSummary() {
+        const dayLabel = { lunes:'Lunes', martes:'Martes', miercoles:'Miércoles', jueves:'Jueves', viernes:'Viernes', sabado:'Sábado', domingo:'Domingo' };
+        const s = this._gdState;
+        const lines = [
+            `<strong style="color:#4cd7f6">Día:</strong> ${dayLabel[s.day] || s.day}`,
+            `<strong style="color:#4cd7f6">Comidas:</strong> ${s.meals.join(', ')}`,
+            `<strong style="color:#4cd7f6">Para:</strong> ${s.tipo}`,
+        ];
+        if (s.cocina) lines.push(`<strong style="color:#4cd7f6">Cocina:</strong> ${s.cocina}`);
+        if (s.time) lines.push(`<strong style="color:#4cd7f6">Tiempo máx:</strong> ${s.time} min`);
+        if (s.diff) lines.push(`<strong style="color:#4cd7f6">Dificultad:</strong> ${s.diff}`);
+        if (s.notes) lines.push(`<strong style="color:#4cd7f6">Notas:</strong> ${s.notes}`);
+        document.getElementById('gdSummary').innerHTML = lines.join('<br>');
+
+        // Check if day already has data
+        if (this.currentMenu) {
+            const md = typeof this.currentMenu.menu_data === 'string' ? JSON.parse(this.currentMenu.menu_data) : this.currentMenu.menu_data;
+            const hasData = md?.menu_adultos?.[s.day] && Object.keys(md.menu_adultos[s.day]).length > 0;
+            document.getElementById('gdWarning').style.display = hasData ? 'block' : 'none';
+        }
+    }
+
+    async submitGenerateDay() {
+        const s = this._gdState;
+        const btn = document.getElementById('gdGenerateBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;animation:spin 1s linear infinite;">refresh</span> Generando...';
+        document.getElementById('gdError').style.display = 'none';
+
+        // Show shimmer on target day column
+        const dayCol = document.querySelector(`.mn-day[data-day="${s.day}"]`);
+        let origContent = null;
+        if (dayCol) {
+            const body = dayCol.querySelector('.mn-day-body');
+            origContent = body?.innerHTML;
+            if (body) body.innerHTML = s.meals.map(() => `<div class="mn-card-shimmer"></div><div class="mn-card-shimmer" style="height:64px;margin-top:4px;"></div>`).join('');
+        }
+
+        try {
+            const payload = {
+                dia: s.day,
+                comidas: s.meals,
+                tipo: s.tipo,
+                cocina: s.cocina,
+                dificultad: s.diff,
+                notas: s.notes,
+            };
+            if (s.time) payload.tiempo_max = parseInt(s.time);
+            if (this.currentMenu?.id) payload.menu_id = this.currentMenu.id;
+
+            const result = await api.post('/api/menu/generate-day', payload);
+
+            if (result.success) {
+                this.currentMenu = result.menu;
+                this.closeGenerateDayModal();
+                this.renderMenu();
+                // Glow the updated day
+                setTimeout(() => {
+                    const col = document.querySelector(`.mn-day[data-day="${s.day}"]`);
+                    if (col) { col.classList.add('mn-day--glow'); setTimeout(() => col.classList.remove('mn-day--glow'), 3600); }
+                }, 50);
+                this.showSuccess(`Menú del ${s.day} generado correctamente`);
+            } else {
+                throw new Error(result.message || 'Error desconocido');
+            }
+        } catch (err) {
+            // Restore original content on error
+            if (dayCol && origContent) {
+                const body = dayCol.querySelector('.mn-day-body');
+                if (body) body.innerHTML = origContent;
+            }
+            const errEl = document.getElementById('gdError');
+            errEl.textContent = `Error: ${err.message}`;
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1;font-size:18px;">auto_awesome</span> Reintentar';
+        }
     }
 }
 

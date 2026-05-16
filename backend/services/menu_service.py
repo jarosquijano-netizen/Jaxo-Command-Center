@@ -166,7 +166,54 @@ class MenuService:
             logger.error(f"Error obteniendo último menú: {str(e)}")
             return None
     
-    def regenerate_day_menu(self, menu_id: int, dia: str, comida: str = None, 
+    def generate_day_menu(self, menu_id: Optional[int], dia: str,
+                         comidas: Optional[List[str]], tipo: str,
+                         preferences: Dict) -> Dict:
+        """
+        Genera el menú de un día con preferencias opcionales.
+        Si menu_id es None usa el menú más reciente; si no existe ninguno, crea uno nuevo.
+        """
+        try:
+            menu = None
+            if menu_id:
+                menu = WeeklyMenu.query.get(menu_id)
+
+            if not menu:
+                # Use latest menu, or create a new one for current week
+                menu = WeeklyMenu.query.order_by(WeeklyMenu.created_at.desc()).first()
+                if not menu:
+                    week_start = self._get_current_week_start()
+                    menu = WeeklyMenu(
+                        semana_inicio=week_start,
+                        menu_data=json.dumps({"menu_adultos": {}, "menu_ninos": {}}, ensure_ascii=False),
+                    )
+                    db.session.add(menu)
+                    db.session.flush()
+
+            current_data = json.loads(menu.menu_data) if isinstance(menu.menu_data, str) else menu.menu_data
+
+            family_members = self._get_family_members()
+
+            updated_data = self.ai_service.generate_single_day(
+                current_data, dia, comidas, tipo, family_members, preferences
+            )
+
+            menu.menu_data = json.dumps(updated_data, ensure_ascii=False)
+            menu.updated_at = datetime.utcnow()
+            db.session.commit()
+
+            return {
+                'success': True,
+                'message': f'Menú del {dia} generado correctamente',
+                'menu': menu.to_dict(),
+                'dia': dia,
+            }
+        except Exception as e:
+            logger.error(f"Error en generate_day_menu: {str(e)}")
+            db.session.rollback()
+            return {'success': False, 'message': f'Error generando menú: {str(e)}'}
+
+    def regenerate_day_menu(self, menu_id: int, dia: str, comida: str = None,
                           tipo: str = "adultos") -> Dict:
         """
         Regenera un día específico o comida específica

@@ -5293,3 +5293,68 @@ body {
 
     .mn-toggle { flex-wrap: wrap; }
 }
+
+/* ── Generate Day Modal ── */
+.gd-day-btn, .gd-tipo-btn {
+    padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(173,198,255,0.2);
+    background: rgba(25,31,49,0.6); color: #6b7a99; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+}
+.gd-day-btn:hover, .gd-tipo-btn:hover { border-color: rgba(76,215,246,.5); color: #4cd7f6; }
+.gd-day-btn.active, .gd-tipo-btn.active {
+    background: rgba(76,215,246,.12); border-color: #4cd7f6; color: #4cd7f6;
+}
+.gd-meal-check {
+    display: flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 8px;
+    border: 1px solid rgba(173,198,255,0.2); background: rgba(25,31,49,0.6);
+    color: #6b7a99; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.gd-meal-check input { accent-color: #4cd7f6; width: 14px; height: 14px; }
+.gd-meal-check:has(input:checked) { border-color: #4cd7f6; color: #4cd7f6; background: rgba(76,215,246,.12); }
+.gd-chip {
+    padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(173,198,255,0.2);
+    background: rgba(25,31,49,0.6); color: #6b7a99; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+}
+.gd-chip:hover { border-color: rgba(76,215,246,.5); color: #4cd7f6; }
+.gd-chip.active { background: rgba(76,215,246,.12); border-color: #4cd7f6; color: #4cd7f6; }
+.gd-next-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #4cd7f6, #adc6ff); color: #0c1324;
+    font-size: 14px; font-weight: 700; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; gap: 6px; transition: opacity .15s;
+}
+.gd-next-btn:hover { opacity: .85; }
+.gd-next-btn:disabled { opacity: .45; cursor: not-allowed; }
+.gd-back-btn {
+    padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(173,198,255,0.2);
+    background: rgba(25,31,49,0.6); color: #6b7a99; font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s;
+}
+.gd-back-btn:hover { border-color: rgba(173,198,255,.5); color: #adc6ff; }
+.gd-generate-btn {
+    padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #4cd7f6, #adc6ff); color: #0c1324;
+    font-size: 14px; font-weight: 700; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; gap: 8px; transition: opacity .15s;
+}
+.gd-generate-btn:hover { opacity: .85; }
+.gd-generate-btn:disabled { opacity: .45; cursor: not-allowed; }
+.gd-step-tab { transition: color .2s, border-color .2s; }
+/* Shimmer on meal cards during generation */
+@keyframes gdShimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+.mn-card-shimmer {
+    border-radius: 12px; height: 80px;
+    background: linear-gradient(90deg, rgba(25,31,49,0.6) 25%, rgba(76,215,246,.07) 50%, rgba(25,31,49,0.6) 75%);
+    background-size: 400px 100%; animation: gdShimmer 1.2s infinite;
+}
+/* Glow on updated day column */
+@keyframes gdGlow { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 20px rgba(76,215,246,.35)} }
+.mn-day--glow { animation: gdGlow 1.8s ease 2; }
+/* Regen icon on day header */
+.mn-regen-btn {
+    background: none; border: none; color: #424754; cursor: pointer;
+    padding: 0 2px; line-height: 1; font-size: 16px; transition: color .15s;
+    display: flex; align-items: center;
+}
+.mn-regen-btn:hover { color: #4cd7f6; }

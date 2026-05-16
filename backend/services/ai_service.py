@@ -875,7 +875,105 @@ IMPORTANTE:
 """
         return prompt
     
-    def _build_regeneration_prompt(self, menu_data: Dict, dia: str, comida: Optional[str], 
+    def generate_single_day(self, current_menu: Dict, dia: str,
+                            comidas: Optional[List[str]], tipo: str,
+                            family_members: List[Dict], preferences: Dict) -> Dict:
+        """Generate menu for a single day with optional meal/preference filters."""
+        try:
+            prompt = self._build_single_day_prompt(current_menu, dia, comidas, tipo, family_members, preferences)
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=3000,
+                temperature=0.8,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.content[0].text
+            new_data = self._extract_json_from_response(content)
+            if not new_data:
+                raise ValueError("No se pudo extraer JSON de la respuesta de Claude")
+            return self._merge_menu_changes(current_menu, new_data, dia, None, tipo)
+        except Exception as e:
+            logger.error(f"Error en generate_single_day: {str(e)}")
+            raise
+
+    def _build_single_day_prompt(self, current_menu: Dict, dia: str,
+                                  comidas: Optional[List[str]], tipo: str,
+                                  family_members: List[Dict], preferences: Dict) -> str:
+        """Build the focused single-day generation prompt."""
+        adultos = [m for m in family_members if m.get('tipo') == 'adulto']
+        ninos = [m for m in family_members if m.get('tipo') == 'nino']
+
+        familia_desc = ""
+        for m in adultos:
+            alergias = ', '.join(m.get('alergias', [])) or 'Ninguna'
+            familia_desc += f"- {m['nombre']} (adulto): {m.get('estilo_alimentacion','Mediterráneo')}, Alergias: {alergias}\n"
+        for m in ninos:
+            alergias = ', '.join(m.get('alergias', [])) or 'Ninguna'
+            familia_desc += f"- {m['nombre']} (niño {m.get('edad','?')} años): Alergias: {alergias}\n"
+
+        comidas_str = ', '.join(comidas) if comidas else 'desayuno, comida, merienda, cena'
+
+        prefs = []
+        if preferences.get('cocina'):
+            prefs.append(f"Cocina: {preferences['cocina']}")
+        if preferences.get('tiempo_max'):
+            prefs.append(f"Tiempo máximo por plato: {preferences['tiempo_max']} minutos")
+        if preferences.get('dificultad'):
+            prefs.append(f"Dificultad: {preferences['dificultad']}")
+        if preferences.get('notas'):
+            prefs.append(f"Notas adicionales: {preferences['notas']}")
+        prefs_str = '\n'.join(prefs) if prefs else 'Sin preferencias especiales'
+
+        tipo_instruccion = {
+            'adultos': 'Genera SOLO menu_adultos.',
+            'ninos': 'Genera SOLO menu_ninos.',
+            'ambos': 'Genera menu_adultos Y menu_ninos.',
+        }.get(tipo, 'Genera menu_adultos Y menu_ninos.')
+
+        return f"""Genera el menú del día {dia} para una familia.
+
+FAMILIA:
+{familia_desc}
+COMIDAS A GENERAR: {comidas_str}
+PREFERENCIAS:
+{prefs_str}
+
+{tipo_instruccion}
+
+Cada comida debe tener exactamente estos campos:
+- plato: nombre del plato (string)
+- descripcion: descripción corta 1 frase (string)
+- tiempo_prep: minutos (número)
+- calorias: kcal aproximadas (número)
+- dificultad: "Fácil", "Media" o "Difícil"
+- alergenos: array de strings (vacío si ninguno)
+- ingredientes: array de máximo 8 strings con cantidades (ej: "200g pechuga de pollo")
+- preparacion: array de máximo 5 pasos cortos (strings)
+
+Responde SOLO con JSON válido en este formato exacto:
+{{
+  "menu_adultos": {{
+    "{dia}": {{
+      "desayuno": {{ ... }},
+      "comida": {{ ... }},
+      "merienda": {{ ... }},
+      "cena": {{ ... }}
+    }}
+  }},
+  "menu_ninos": {{
+    "{dia}": {{
+      "desayuno": {{ ... }},
+      "comida": {{ ... }},
+      "merienda": {{ ... }},
+      "cena": {{ ... }}
+    }}
+  }}
+}}
+
+Incluye solo las comidas solicitadas ({comidas_str}). No incluyas comidas no solicitadas.
+"""
+
+    def _build_regeneration_prompt(self, menu_data: Dict, dia: str, comida: Optional[str],
                                  tipo: str, family_members: List[Dict]) -> str:
         """Construye prompt para regeneración específica"""
         

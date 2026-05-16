@@ -1317,6 +1317,135 @@
         </div>
     </div>
 
+    <!-- Generate Day Modal -->
+    <div id="generateDayModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:520px;width:92%;padding:0;border-radius:16px;overflow:hidden;">
+
+            <!-- Step indicator -->
+            <div style="display:flex;gap:0;background:rgba(12,19,36,0.95);">
+                <div class="gd-step-tab active" id="gdTab1" style="flex:1;padding:14px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;color:#adc6ff;border-bottom:2px solid #4cd7f6;cursor:default;">1 · DÍA &amp; COMIDAS</div>
+                <div class="gd-step-tab" id="gdTab2" style="flex:1;padding:14px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;color:#4a5568;border-bottom:2px solid transparent;">2 · PREFERENCIAS</div>
+                <div class="gd-step-tab" id="gdTab3" style="flex:1;padding:14px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;color:#4a5568;border-bottom:2px solid transparent;">3 · CONFIRMAR</div>
+                <button onclick="menuManager.closeGenerateDayModal()" style="background:none;border:none;color:#4a5568;padding:14px 18px;cursor:pointer;font-size:20px;line-height:1;">&times;</button>
+            </div>
+
+            <!-- Step 1 -->
+            <div id="gdStep1" style="padding:24px;">
+                <h3 style="color:#adc6ff;font-size:18px;margin:0 0 6px;">¿Qué día quieres generar?</h3>
+                <p style="color:#6b7a99;font-size:13px;margin:0 0 20px;">Elige el día y qué comidas incluir.</p>
+
+                <!-- Day picker -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;color:#6b7a99;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">DÍA</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="gdDayPicker">
+                        <button class="gd-day-btn" data-day="lunes">Lunes</button>
+                        <button class="gd-day-btn" data-day="martes">Martes</button>
+                        <button class="gd-day-btn" data-day="miercoles">Miércoles</button>
+                        <button class="gd-day-btn" data-day="jueves">Jueves</button>
+                        <button class="gd-day-btn" data-day="viernes">Viernes</button>
+                        <button class="gd-day-btn" data-day="sabado">Sábado</button>
+                        <button class="gd-day-btn" data-day="domingo">Domingo</button>
+                    </div>
+                </div>
+
+                <!-- Meal checkboxes -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;color:#6b7a99;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">COMIDAS</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="gdMealPicker">
+                        <label class="gd-meal-check"><input type="checkbox" value="desayuno" checked> Desayuno</label>
+                        <label class="gd-meal-check"><input type="checkbox" value="comida" checked> Comida</label>
+                        <label class="gd-meal-check"><input type="checkbox" value="merienda"> Merienda</label>
+                        <label class="gd-meal-check"><input type="checkbox" value="cena" checked> Cena</label>
+                    </div>
+                </div>
+
+                <!-- Tipo -->
+                <div style="margin-bottom:24px;">
+                    <label style="display:block;color:#6b7a99;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">PARA QUIÉN</label>
+                    <div style="display:flex;gap:8px;">
+                        <button class="gd-tipo-btn active" data-tipo="ambos">Todos</button>
+                        <button class="gd-tipo-btn" data-tipo="adultos">Adultos</button>
+                        <button class="gd-tipo-btn" data-tipo="ninos">Niños</button>
+                    </div>
+                </div>
+
+                <button class="gd-next-btn" onclick="menuManager.gdNextStep(2)">Siguiente <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">arrow_forward</span></button>
+            </div>
+
+            <!-- Step 2 -->
+            <div id="gdStep2" style="padding:24px;display:none;">
+                <h3 style="color:#adc6ff;font-size:18px;margin:0 0 6px;">¿Tienes alguna preferencia?</h3>
+                <p style="color:#6b7a99;font-size:13px;margin:0 0 20px;">Todo es opcional — déjalo en blanco para sorprenderte.</p>
+
+                <!-- Cuisine chips -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;color:#6b7a99;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">TIPO DE COCINA</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="gdCuisineChips">
+                        <button class="gd-chip" data-value="">Cualquiera</button>
+                        <button class="gd-chip" data-value="mediterránea">Mediterránea</button>
+                        <button class="gd-chip" data-value="italiana">Italiana</button>
+                        <button class="gd-chip" data-value="asiática">Asiática</button>
+                        <button class="gd-chip" data-value="mexicana">Mexicana</button>
+                        <button class="gd-chip" data-value="vegana">Vegana</button>
+                        <button class="gd-chip" data-value="española">Española</button>
+                    </div>
+                </div>
+
+                <!-- Time + difficulty -->
+                <div style="display:flex;gap:14px;margin-bottom:20px;">
+                    <div style="flex:1;">
+                        <label style="display:block;color:#6b7a99;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">TIEMPO MÁX (min)</label>
+                        <input id="gdTimeInput" type="number" min="10" max="180" placeholder="Sin límite" style="width:100%;background:rgba(25,31,49,0.8);border:1px solid rgba(173,198,255,0.15);border-radius:8px;color:#adc6ff;padding:10px 12px;font-size:14px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block;color:#6b7a99;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">DIFICULTAD</label>
+                        <div style="display:flex;gap:6px;padding-top:2px;">
+                            <button class="gd-chip" data-diff="">Cualquiera</button>
+                            <button class="gd-chip" data-diff="Fácil">Fácil</button>
+                            <button class="gd-chip" data-diff="Media">Media</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Free text -->
+                <div style="margin-bottom:24px;">
+                    <label style="display:block;color:#6b7a99;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">NOTAS ADICIONALES</label>
+                    <textarea id="gdNotesInput" rows="2" placeholder="Ej: sin gluten, ligero para el verano, con proteína..." style="width:100%;background:rgba(25,31,49,0.8);border:1px solid rgba(173,198,255,0.15);border-radius:8px;color:#adc6ff;padding:10px 12px;font-size:14px;resize:vertical;box-sizing:border-box;"></textarea>
+                </div>
+
+                <div style="display:flex;gap:10px;">
+                    <button class="gd-back-btn" onclick="menuManager.gdNextStep(1)"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">arrow_back</span> Atrás</button>
+                    <button class="gd-next-btn" style="flex:1;" onclick="menuManager.gdNextStep(3)">Ver resumen <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">arrow_forward</span></button>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div id="gdStep3" style="padding:24px;display:none;">
+                <h3 style="color:#adc6ff;font-size:18px;margin:0 0 6px;">Confirmar generación</h3>
+                <p style="color:#6b7a99;font-size:13px;margin:0 0 20px;">Revisa los detalles antes de generar.</p>
+
+                <div id="gdSummary" style="background:rgba(25,31,49,0.6);border:1px solid rgba(173,198,255,0.1);border-radius:12px;padding:16px;margin-bottom:20px;font-size:14px;line-height:1.8;color:#adc6ff;"></div>
+
+                <!-- Warning if day has data -->
+                <div id="gdWarning" style="display:none;background:rgba(255,180,0,0.08);border:1px solid rgba(255,180,0,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#fbbf24;">
+                    <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:4px;">warning</span>
+                    Este día ya tiene menú. Se reemplazarán las comidas seleccionadas.
+                </div>
+
+                <div id="gdError" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#f87171;"></div>
+
+                <div style="display:flex;gap:10px;">
+                    <button class="gd-back-btn" onclick="menuManager.gdNextStep(2)"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">arrow_back</span> Atrás</button>
+                    <button class="gd-generate-btn" id="gdGenerateBtn" style="flex:1;" onclick="menuManager.submitGenerateDay()">
+                        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;font-size:18px;">auto_awesome</span>
+                        Generar con IA
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Meal Details Modal -->
     <div id="mealDetailsModal" class="modal" style="display: none;">
         <div class="modal-content">

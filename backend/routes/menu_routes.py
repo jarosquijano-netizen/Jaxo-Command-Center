@@ -496,6 +496,61 @@ def delete_menu(menu_id):
         }), 500
 
 
+@menu_bp.route('/generate-day', methods=['POST'])
+def generate_day():
+    """
+    Genera el menú de un día específico con preferencias opcionales.
+    Body:
+    {
+        "menu_id": 1,           // opcional — si existe, actualiza; si no, crea/actualiza el de la semana actual
+        "dia": "lunes",
+        "comidas": ["comida","cena"],  // opcional — si omitido, genera todo el día
+        "tipo": "ambos",        // adultos | ninos | ambos
+        "cocina": "mediterránea",     // opcional
+        "tiempo_max": 30,            // opcional, minutos
+        "dificultad": "fácil",       // opcional
+        "notas": "sin gluten"        // opcional
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Se requieren datos en el body'}), 400
+
+        dia = data.get('dia')
+        if not dia:
+            return jsonify({'success': False, 'message': 'Se requiere el campo dia'}), 400
+
+        dias_validos = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+        if dia not in dias_validos:
+            return jsonify({'success': False, 'message': f'Día inválido. Use: {", ".join(dias_validos)}'}), 400
+
+        menu_id = data.get('menu_id')
+        comidas = data.get('comidas')  # list or None
+        tipo = data.get('tipo', 'ambos')
+        preferences = {
+            'cocina': data.get('cocina', ''),
+            'tiempo_max': data.get('tiempo_max'),
+            'dificultad': data.get('dificultad', ''),
+            'notas': data.get('notas', ''),
+        }
+
+        tipos_validos = ['adultos', 'ninos', 'ambos']
+        if tipo not in tipos_validos:
+            return jsonify({'success': False, 'message': f'Tipo inválido. Use: {", ".join(tipos_validos)}'}), 400
+
+        result = menu_service.generate_day_menu(menu_id, dia, comidas, tipo, preferences)
+
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        logger.error(f"Error en generate_day: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+
 @menu_bp.route('/tv-debug', methods=['GET'])
 def tv_debug():
     """Diagnostic: shows what menu data available for TV display."""
