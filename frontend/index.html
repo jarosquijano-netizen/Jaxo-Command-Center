@@ -1170,16 +1170,17 @@
                 </div>
 
                 <!-- Live iframe preview -->
-                <div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(76,215,246,.2);box-shadow:0 0 40px rgba(76,215,246,.07);background:#0c1324;">
+                <div style="border-radius:16px;overflow:hidden;border:1px solid rgba(76,215,246,.2);box-shadow:0 0 40px rgba(76,215,246,.07);background:#0c1324;">
+                    <!-- Browser chrome -->
                     <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(12,19,36,0.95);border-bottom:1px solid rgba(173,198,255,.08);">
-                        <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
-                        <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></span>
-                        <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
-                        <span id="tvUrlInBrowser" style="flex:1;text-align:center;font-size:11px;color:#4a5568;font-family:monospace;"></span>
-                        <button onclick="document.getElementById('tvPreviewFrame').src='/tv?_='+Date.now()" style="background:none;border:none;color:#4a5568;cursor:pointer;font-size:13px;padding:2px 6px;" title="Recargar preview">⟳</button>
+                        <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;display:inline-block;"></span>
+                        <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;display:inline-block;"></span>
+                        <span style="width:10px;height:10px;border-radius:50%;background:#28c840;display:inline-block;"></span>
+                        <span id="tvUrlInBrowser" style="flex:1;text-align:center;font-size:11px;color:#4a5568;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                        <button id="tvReloadBtn" style="background:none;border:none;color:#4a5568;cursor:pointer;font-size:16px;padding:2px 6px;line-height:1;" title="Recargar preview">⟳</button>
                     </div>
-                    <!-- Scale iframe to fit the container while keeping TV proportions -->
-                    <div style="position:relative;width:100%;padding-bottom:56.25%;overflow:hidden;">
+                    <!-- Scaled iframe viewport: iframe is position:absolute so it doesn't expand layout -->
+                    <div id="tvFrameWrapper" style="position:relative;width:100%;overflow:hidden;">
                         <iframe id="tvPreviewFrame" src="/tv" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;" scrolling="no"></iframe>
                     </div>
                 </div>
@@ -1639,15 +1640,20 @@
 
             window.scaleTvFrame = function() {
                 const frame = document.getElementById('tvPreviewFrame');
-                if (!frame) return;
-                const container = frame.parentElement;
-                const w = container.offsetWidth;
+                const wrapper = document.getElementById('tvFrameWrapper');
+                if (!frame || !wrapper) return;
+                const w = wrapper.offsetWidth;
                 if (!w) return;
                 const scale = w / 1920;
                 frame.style.transform = `scale(${scale})`;
-                container.style.paddingBottom = Math.round(1080 * scale) + 'px';
+                // iframe is position:absolute — set wrapper height explicitly
+                wrapper.style.height = Math.round(1080 * scale) + 'px';
             };
             window.addEventListener('resize', window.scaleTvFrame);
+            document.getElementById('tvReloadBtn')?.addEventListener('click', () => {
+                const f = document.getElementById('tvPreviewFrame');
+                if (f) f.src = '/tv?_=' + Date.now();
+            });
         })();
     </script>
 </body>
