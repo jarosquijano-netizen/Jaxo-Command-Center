@@ -206,7 +206,7 @@ def tv_view():
                 'day_label': day_label,
                 'is_live': -30 <= diff_min <= 60,
             })
-            if len(events) >= 3:
+            if len(events) >= 5:
                 break
     except Exception as e:
         logger.warning(f'[tv] events: {e}')
