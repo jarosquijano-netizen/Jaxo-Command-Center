@@ -924,6 +924,17 @@ IMPORTANTE:
             prefs.append(f"Notas adicionales: {preferences['notas']}")
         prefs_str = '\n'.join(prefs) if prefs else 'Sin preferencias especiales'
 
+        fridge_items = preferences.get('fridge_items', [])
+        fridge_mode = preferences.get('fridge_mode', 'base')
+        if fridge_items:
+            items_str = ', '.join(fridge_items)
+            if fridge_mode == 'strict':
+                fridge_block = f"RESTRICCIÓN IMPORTANTE: El menú debe crearse ÚNICAMENTE con estos ingredientes disponibles en casa: {items_str}. No incluyas ningún ingrediente que no esté en esta lista. Si no es posible hacer una comida completa, simplifica el plato o combina los ingredientes de forma creativa."
+            else:
+                fridge_block = f"PREFERENCIA: El usuario tiene estos ingredientes en casa y prefiere usarlos como base: {items_str}. Construye el menú alrededor de estos ingredientes pero puedes añadir otros básicos de despensa si es necesario para completar el plato."
+        else:
+            fridge_block = ''
+
         tipo_instruccion = {
             'adultos': 'Genera SOLO menu_adultos.',
             'ninos': 'Genera SOLO menu_ninos.',
@@ -937,7 +948,7 @@ FAMILIA:
 COMIDAS A GENERAR: {comidas_str}
 PREFERENCIAS:
 {prefs_str}
-
+{(chr(10) + fridge_block) if fridge_block else ''}
 {tipo_instruccion}
 
 Cada comida debe tener exactamente estos campos:

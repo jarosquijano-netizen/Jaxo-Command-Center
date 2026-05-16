@@ -1348,9 +1348,45 @@
             </div>
 
             <!-- Step 2 -->
-            <div id="gdStep2" style="padding:24px;display:none;">
+            <div id="gdStep2" style="padding:24px;display:none;max-height:70vh;overflow-y:auto;">
                 <h3 style="color:#adc6ff;font-size:18px;margin:0 0 6px;">¿Tienes alguna preferencia?</h3>
                 <p style="color:#6b7a99;font-size:13px;margin:0 0 20px;">Todo es opcional — déjalo en blanco para sorprenderte.</p>
+
+                <!-- 🧊 Fridge card -->
+                <div style="background:rgba(76,215,246,.06);border:1px solid rgba(76,215,246,.25);border-radius:14px;padding:16px;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                        <span style="font-size:22px;">🧊</span>
+                        <div>
+                            <div style="color:#4cd7f6;font-size:14px;font-weight:700;">¿Qué tienes en la nevera?</div>
+                            <div style="color:#6b7a99;font-size:11px;">La IA creará un menú usando lo que ya tienes en casa</div>
+                        </div>
+                        <button id="gdFridgeClear" style="margin-left:auto;background:none;border:none;color:#4a5568;font-size:11px;cursor:pointer;white-space:nowrap;">Limpiar nevera</button>
+                    </div>
+
+                    <!-- Tag input -->
+                    <div id="gdFridgeTags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;align-items:center;background:rgba(12,19,36,0.5);border:1px solid rgba(76,215,246,.2);border-radius:8px;padding:6px 10px;margin-bottom:10px;cursor:text;" onclick="document.getElementById('gdFridgeInput').focus()">
+                        <!-- chips injected here by JS -->
+                        <input id="gdFridgeInput" type="text" placeholder="Ej: pollo, calabacín, huevos..." style="border:none;background:none;color:#adc6ff;font-size:13px;outline:none;min-width:160px;flex:1;" />
+                    </div>
+
+                    <!-- Quick suggestions -->
+                    <div id="gdFridgeSuggestions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+                        <span style="color:#4a5568;font-size:11px;align-self:center;">+ Rápido:</span>
+                        <!-- populated by JS from family profile or defaults -->
+                    </div>
+
+                    <!-- Mode toggle -->
+                    <div style="display:flex;gap:12px;">
+                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:#adc6ff;">
+                            <input type="radio" name="gdFridgeMode" value="base" checked style="accent-color:#4cd7f6;">
+                            Usar estos <span style="color:#6b7a99;">+ lo que haga falta</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:#adc6ff;">
+                            <input type="radio" name="gdFridgeMode" value="strict" style="accent-color:#4cd7f6;">
+                            <span style="color:#fbbf24;">Solo estos ingredientes</span>
+                        </label>
+                    </div>
+                </div>
 
                 <!-- Cuisine chips -->
                 <div style="margin-bottom:20px;">
@@ -1543,6 +1579,8 @@
                                 console.log('[nav] Llamando a calendarManager.loadCurrentWeek()');
                                 calendarManager.loadCurrentWeek();
                             }, 100);
+                        } else if (target === 'tv') {
+                            setTimeout(() => { if (window.scaleTvFrame) window.scaleTvFrame(); }, 100);
                         }
                     });
                 });
@@ -1592,25 +1630,24 @@
         // TV preview: fill URL fields and scale iframe to fit container
         (function initTvPreview() {
             const tvUrl = window.location.origin + '/tv';
-            const urlDisplay = document.getElementById('tvUrlDisplay');
-            const urlInBrowser = document.getElementById('tvUrlInBrowser');
+            ['tvUrlDisplay','tvUrlInBrowser'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = tvUrl;
+            });
             const openLink = document.getElementById('tvOpenLink');
-            if (urlDisplay) urlDisplay.textContent = tvUrl;
-            if (urlInBrowser) urlInBrowser.textContent = tvUrl;
             if (openLink) openLink.href = tvUrl;
 
-            function scaleFrame() {
+            window.scaleTvFrame = function() {
                 const frame = document.getElementById('tvPreviewFrame');
                 if (!frame) return;
                 const container = frame.parentElement;
-                const scale = container.offsetWidth / 1920;
+                const w = container.offsetWidth;
+                if (!w) return;
+                const scale = w / 1920;
                 frame.style.transform = `scale(${scale})`;
-                container.style.paddingBottom = (1080 * scale) + 'px';
-            }
-            window.addEventListener('resize', scaleFrame);
-            document.addEventListener('DOMContentLoaded', scaleFrame);
-            // Also run after a short delay in case layout hasn't settled
-            setTimeout(scaleFrame, 300);
+                container.style.paddingBottom = Math.round(1080 * scale) + 'px';
+            };
+            window.addEventListener('resize', window.scaleTvFrame);
         })();
     </script>
 </body>

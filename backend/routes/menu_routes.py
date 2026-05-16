@@ -533,6 +533,8 @@ def generate_day():
             'tiempo_max': data.get('tiempo_max'),
             'dificultad': data.get('dificultad', ''),
             'notas': data.get('notas', ''),
+            'fridge_items': data.get('fridge_items', []),
+            'fridge_mode': data.get('fridge_mode', 'base'),
         }
 
         tipos_validos = ['adultos', 'ninos', 'ambos']

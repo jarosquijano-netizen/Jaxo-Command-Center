@@ -1118,6 +1118,74 @@ class MenuManager {
                 if (this._gdState) this._gdState.diff = c.dataset.diff;
             });
         });
+
+        // Fridge tag input
+        this._fridgeItems = JSON.parse(localStorage.getItem('jaxo_fridge_items') || '[]');
+        this._renderFridgeTags();
+        this._loadFridgeSuggestions();
+
+        document.getElementById('gdFridgeInput')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const val = e.target.value.trim().replace(/,$/, '');
+                if (val) { this._addFridgeItem(val); e.target.value = ''; }
+            }
+            if (e.key === 'Backspace' && !e.target.value && this._fridgeItems.length) {
+                this._fridgeItems.pop();
+                this._renderFridgeTags();
+            }
+        });
+
+        document.getElementById('gdFridgeClear')?.addEventListener('click', () => {
+            this._fridgeItems = [];
+            this._renderFridgeTags();
+            localStorage.removeItem('jaxo_fridge_items');
+        });
+    }
+
+    _addFridgeItem(text) {
+        const clean = text.trim().toLowerCase();
+        if (clean && !this._fridgeItems.includes(clean)) {
+            this._fridgeItems.push(clean);
+            this._renderFridgeTags();
+            localStorage.setItem('jaxo_fridge_items', JSON.stringify(this._fridgeItems));
+        }
+    }
+
+    _renderFridgeTags() {
+        const container = document.getElementById('gdFridgeTags');
+        const input = document.getElementById('gdFridgeInput');
+        if (!container || !input) return;
+        // Remove old chips (keep the input)
+        [...container.querySelectorAll('.gd-fridge-chip')].forEach(c => c.remove());
+        this._fridgeItems.forEach(item => {
+            const chip = document.createElement('span');
+            chip.className = 'gd-fridge-chip';
+            chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:rgba(76,215,246,.15);border:1px solid rgba(76,215,246,.4);border-radius:20px;color:#4cd7f6;font-size:12px;font-weight:600;padding:3px 8px;';
+            chip.innerHTML = `${item} <span style="cursor:pointer;opacity:.7;font-size:14px;line-height:1;" data-remove="${item}">&times;</span>`;
+            chip.querySelector('[data-remove]').addEventListener('click', () => {
+                this._fridgeItems = this._fridgeItems.filter(i => i !== item);
+                this._renderFridgeTags();
+                localStorage.setItem('jaxo_fridge_items', JSON.stringify(this._fridgeItems));
+            });
+            container.insertBefore(chip, input);
+        });
+    }
+
+    _loadFridgeSuggestions() {
+        const defaults = ['ajo','cebolla','aceite de oliva','tomate','huevos','limón','pasta','arroz'];
+        const suggestions = document.getElementById('gdFridgeSuggestions');
+        if (!suggestions) return;
+        // Clear existing suggestion chips (keep the label span)
+        [...suggestions.querySelectorAll('.gd-sugg-chip')].forEach(c => c.remove());
+        defaults.forEach(s => {
+            const btn = document.createElement('button');
+            btn.className = 'gd-sugg-chip';
+            btn.textContent = s;
+            btn.style.cssText = 'background:rgba(25,31,49,.8);border:1px solid rgba(173,198,255,.15);border-radius:20px;color:#6b7a99;font-size:11px;padding:3px 10px;cursor:pointer;';
+            btn.addEventListener('click', () => { this._addFridgeItem(s); });
+            suggestions.appendChild(btn);
+        });
     }
 
     _showGdStep(step) {
@@ -1143,6 +1211,8 @@ class MenuManager {
         if (step === 3) {
             this._gdState.time = document.getElementById('gdTimeInput').value || null;
             this._gdState.notes = document.getElementById('gdNotesInput').value.trim();
+            this._gdState.fridgeItems = [...(this._fridgeItems || [])];
+            this._gdState.fridgeMode = document.querySelector('input[name="gdFridgeMode"]:checked')?.value || 'base';
             this._buildGdSummary();
         }
         this._showGdStep(step);
@@ -1156,6 +1226,10 @@ class MenuManager {
             `<strong style="color:#4cd7f6">Comidas:</strong> ${s.meals.join(', ')}`,
             `<strong style="color:#4cd7f6">Para:</strong> ${s.tipo}`,
         ];
+        if (s.fridgeItems?.length) {
+            const modeLabel = s.fridgeMode === 'strict' ? 'solo estos' : 'base + básicos';
+            lines.push(`<strong style="color:#4cd7f6">🧊 Nevera (${modeLabel}):</strong> ${s.fridgeItems.join(', ')}`);
+        }
         if (s.cocina) lines.push(`<strong style="color:#4cd7f6">Cocina:</strong> ${s.cocina}`);
         if (s.time) lines.push(`<strong style="color:#4cd7f6">Tiempo máx:</strong> ${s.time} min`);
         if (s.diff) lines.push(`<strong style="color:#4cd7f6">Dificultad:</strong> ${s.diff}`);
@@ -1194,6 +1268,8 @@ class MenuManager {
                 cocina: s.cocina,
                 dificultad: s.diff,
                 notas: s.notes,
+                fridge_items: s.fridgeItems || [],
+                fridge_mode: s.fridgeMode || 'base',
             };
             if (s.time) payload.tiempo_max = parseInt(s.time);
             if (this.currentMenu?.id) payload.menu_id = this.currentMenu.id;
