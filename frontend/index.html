@@ -1153,65 +1153,40 @@
                         <h2>Vista TV</h2>
                         <p class="subtitle">Pantalla para cocina con auto-refresh</p>
                     </div>
-                </div>
-                
-                <div class="tv-view-container">
-                    <div class="tv-view-card glass-card">
-                        <div class="tv-view-header">
-                            <h3><span class="material-symbols-outlined">tv</span> Vista para Televisión</h3>
-                            <p class="tv-description">Vista optimizada para TV de 24" en la cocina con dashboard en tiempo real</p>
-                        </div>
-                        
-                        <div class="tv-view-content">
-                            <div class="tv-preview">
-                                <div class="tv-preview-header">
-                                    <h4>Family Command Center - TV View</h4>
-                                    <span class="tv-preview-size">Optimizado para 24"</span>
-                                </div>
-                                
-                                <div class="tv-preview-grid">
-                                    <div class="preview-card">
-                                        <div class="preview-icon"><span class="material-symbols-outlined">restaurant_menu</span></div>
-                                        <span>Menú de Hoy</span>
-                                    </div>
-                                    <div class="preview-card">
-                                        <div class="preview-icon"><span class="material-symbols-outlined">shopping_cart</span></div>
-                                        <span>Lista Compras</span>
-                                    </div>
-                                    <div class="preview-card">
-                                        <div class="preview-icon"><span class="material-symbols-outlined">cleaning_services</span></div>
-                                        <span>Tareas Hoy</span>
-                                    </div>
-                                    <div class="preview-card">
-                                        <div class="preview-icon"><span class="material-symbols-outlined">calendar_month</span></div>
-                                        <span>Semana</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="tv-view-actions">
-                                <button class="btn btn-primary btn-large" onclick="window.open('http://localhost:9000/tv', '_blank')">
-                                    <span class="material-symbols-outlined">tv</span>
-                                    Abrir Vista TV
-                                </button>
-
-                                <div class="tv-view-info">
-                                    <div class="info-item">
-                                        <span class="material-symbols-outlined">monitor</span>
-                                        <span>URL: http://localhost:9000/tv</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="material-symbols-outlined">refresh</span>
-                                        <span>Auto-refresh cada 5 minutos</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="material-symbols-outlined">fullscreen</span>
-                                        <span>Full screen optimizado</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="window.open(window.location.origin+'/tv','_blank')">
+                            <span class="material-symbols-outlined">open_in_new</span> Abrir en TV
+                        </button>
                     </div>
+                </div>
+
+                <!-- URL bar -->
+                <div class="tv-url-bar glass-card" style="display:flex;align-items:center;gap:12px;padding:12px 18px;margin-bottom:18px;border-radius:12px;">
+                    <span class="material-symbols-outlined" style="color:#4cd7f6;font-size:20px;">link</span>
+                    <span style="color:#6b7a99;font-size:12px;font-weight:700;letter-spacing:.08em;">URL TV</span>
+                    <code id="tvUrlDisplay" style="flex:1;color:#adc6ff;font-size:13px;font-family:monospace;"></code>
+                    <button onclick="navigator.clipboard.writeText(window.location.origin+'/tv').then(()=>{this.textContent='Copiado';setTimeout(()=>this.textContent='Copiar',1500)})" style="background:rgba(76,215,246,.1);border:1px solid rgba(76,215,246,.3);border-radius:8px;color:#4cd7f6;font-size:12px;font-weight:600;padding:5px 12px;cursor:pointer;">Copiar</button>
+                    <a id="tvOpenLink" href="/tv" target="_blank" style="background:rgba(173,198,255,.1);border:1px solid rgba(173,198,255,.25);border-radius:8px;color:#adc6ff;font-size:12px;font-weight:600;padding:5px 12px;text-decoration:none;white-space:nowrap;">Abrir ↗</a>
+                </div>
+
+                <!-- Live iframe preview -->
+                <div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(76,215,246,.2);box-shadow:0 0 40px rgba(76,215,246,.07);background:#0c1324;">
+                    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(12,19,36,0.95);border-bottom:1px solid rgba(173,198,255,.08);">
+                        <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
+                        <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></span>
+                        <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
+                        <span id="tvUrlInBrowser" style="flex:1;text-align:center;font-size:11px;color:#4a5568;font-family:monospace;"></span>
+                        <button onclick="document.getElementById('tvPreviewFrame').src='/tv?_='+Date.now()" style="background:none;border:none;color:#4a5568;cursor:pointer;font-size:13px;padding:2px 6px;" title="Recargar preview">⟳</button>
+                    </div>
+                    <!-- Scale iframe to fit the container while keeping TV proportions -->
+                    <div style="position:relative;width:100%;padding-bottom:56.25%;overflow:hidden;">
+                        <iframe id="tvPreviewFrame" src="/tv" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;" scrolling="no"></iframe>
+                    </div>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:8px;margin-top:12px;color:#4a5568;font-size:12px;">
+                    <span class="material-symbols-outlined" style="font-size:15px;">refresh</span>
+                    Auto-refresh cada 5 min · Optimizado para 24" 1080p · <span class="material-symbols-outlined" style="font-size:15px;margin-left:4px;">mouse</span> Sin cursor
                 </div>
             </section>
         </main>
@@ -1613,6 +1588,30 @@
         if (localStorage.getItem('sidebarCollapsed') === '1') {
             document.getElementById('appSidebar').classList.add('sidebar--collapsed');
         }
+
+        // TV preview: fill URL fields and scale iframe to fit container
+        (function initTvPreview() {
+            const tvUrl = window.location.origin + '/tv';
+            const urlDisplay = document.getElementById('tvUrlDisplay');
+            const urlInBrowser = document.getElementById('tvUrlInBrowser');
+            const openLink = document.getElementById('tvOpenLink');
+            if (urlDisplay) urlDisplay.textContent = tvUrl;
+            if (urlInBrowser) urlInBrowser.textContent = tvUrl;
+            if (openLink) openLink.href = tvUrl;
+
+            function scaleFrame() {
+                const frame = document.getElementById('tvPreviewFrame');
+                if (!frame) return;
+                const container = frame.parentElement;
+                const scale = container.offsetWidth / 1920;
+                frame.style.transform = `scale(${scale})`;
+                container.style.paddingBottom = (1080 * scale) + 'px';
+            }
+            window.addEventListener('resize', scaleFrame);
+            document.addEventListener('DOMContentLoaded', scaleFrame);
+            // Also run after a short delay in case layout hasn't settled
+            setTimeout(scaleFrame, 300);
+        })();
     </script>
 </body>
 </html>
