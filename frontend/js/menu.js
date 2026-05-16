@@ -86,6 +86,19 @@ class MenuManager {
             if (e.target.id === 'generateDayModal') this.closeGenerateDayModal();
         });
 
+        // Generate day modal — all static buttons (X, next, back, generate)
+        document.getElementById('generateDayModal')?.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-gd-action]');
+            if (!btn) return;
+            const action = btn.dataset.gdAction;
+            if (action === 'close')    this.closeGenerateDayModal();
+            if (action === 'step2')    this.gdNextStep(2);
+            if (action === 'step3')    this.gdNextStep(3);
+            if (action === 'back1')    this.gdNextStep(1);
+            if (action === 'back2')    this.gdNextStep(2);
+            if (action === 'generate') this.submitGenerateDay();
+        });
+
         // Bind static modal buttons once
         this._bindGenerateDayModal();
     }
