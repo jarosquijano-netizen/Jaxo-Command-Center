@@ -590,66 +590,98 @@ def get_shopping_list_by_week():
     if not menus:
         return jsonify({'success': False, 'message': 'No hay menú para las semanas solicitadas'}), 200
 
-    # Extract + group ingredients from all requested menus
-    def _extract_ingredients(menu_dict):
+    import json as _json
+
+    # Read budget from settings
+    try:
+        from models.settings import Settings
+        settings_obj = Settings.query.first()
+        presupuesto = settings_obj.presupuesto_semanal if settings_obj else 0
+    except Exception:
+        presupuesto = 0
+
+    # Try to use lista_compra from AI response (has prices)
+    cat_order = ['Verduras & Frutas', 'Proteínas', 'Lácteos', 'Despensa', 'Otros']
+    ordered = {}
+    coste_estimado = None
+
+    for menu_dict in menus.values():
         raw = menu_dict.get('menu_data') or {}
         if isinstance(raw, str):
-            import json as _json
             raw = _json.loads(raw)
-        items = []
-        for tipo in ('menu_adultos', 'menu_ninos'):
-            for day_data in (raw.get(tipo) or {}).values():
-                if not isinstance(day_data, dict):
+        lc = raw.get('lista_compra') or {}
+        if isinstance(lc, dict) and lc.get('items'):
+            if 'coste_estimado_semana' in lc:
+                coste_estimado = (coste_estimado or 0) + float(lc['coste_estimado_semana'])
+            for item in lc['items']:
+                if not isinstance(item, dict) or not item.get('nombre'):
                     continue
-                for meal_data in day_data.values():
-                    if not isinstance(meal_data, dict):
+                cat = item.get('categoria', 'Otros')
+                if cat not in cat_order:
+                    cat = 'Otros'
+                entry = {'nombre': item['nombre']}
+                if 'precio_estimado' in item:
+                    entry['precio'] = round(float(item['precio_estimado']), 2)
+                # Deduplicate by name
+                existing = ordered.get(cat, [])
+                if not any(e.get('nombre', '').lower() == entry['nombre'].lower() for e in existing):
+                    ordered.setdefault(cat, []).append(entry)
+
+    if not ordered:
+        # Fallback: extract ingredients from meal data (no prices)
+        CATEGORIAS = {
+            'Verduras & Frutas': ['calabacín','tomate','lechuga','espinaca','pimiento','cebolla','ajo',
+                                   'zanahoria','brócoli','pepino','aguacate','limón','naranja','manzana',
+                                   'plátano','fresa','uva','patata','boniato','champiñón','apio',
+                                   'rúcula','albahaca','perejil','cilantro','jengibre','puerro','alcachofa'],
+            'Proteínas':          ['pollo','pechuga','muslo','carne','ternera','cerdo','salmón','atún',
+                                   'bacalao','merluza','gambas','langostino','huevo','huevos','tofu',
+                                   'lenteja','garbanzo','alubia','judía','filete','bistec','sardina'],
+            'Lácteos':            ['leche','queso','yogur','mantequilla','nata','mozzarella','feta',
+                                   'parmesano','ricotta','crema','kéfir','requesón'],
+            'Despensa':           ['pasta','arroz','aceite','harina','azúcar','sal','pimienta','especias',
+                                   'vinagre','salsa','tomate frito','caldo','pan','galleta','avena',
+                                   'almendra','nuez','semilla','lentejas','garbanzos','alubias','maíz'],
+        }
+
+        def _categorize(ingredient):
+            low = ingredient.lower()
+            for cat, keywords in CATEGORIAS.items():
+                if any(k in low for k in keywords):
+                    return cat
+            return 'Otros'
+
+        seen = {}
+        for menu_dict in menus.values():
+            raw = menu_dict.get('menu_data') or {}
+            if isinstance(raw, str):
+                raw = _json.loads(raw)
+            for tipo in ('menu_adultos', 'menu_ninos'):
+                for day_data in (raw.get(tipo) or {}).values():
+                    if not isinstance(day_data, dict):
                         continue
-                    for ing in meal_data.get('ingredientes') or []:
-                        if ing and isinstance(ing, str):
-                            items.append(ing.strip())
-        return items
+                    for meal_data in day_data.values():
+                        if not isinstance(meal_data, dict):
+                            continue
+                        for ing in meal_data.get('ingredientes') or []:
+                            if ing and isinstance(ing, str):
+                                key = ing.strip().lower()
+                                if key not in seen:
+                                    seen[key] = ing.strip()
 
-    CATEGORIAS = {
-        'Verduras & Frutas': ['calabacín','tomate','lechuga','espinaca','pimiento','cebolla','ajo',
-                               'zanahoria','brócoli','pepino','aguacate','limón','naranja','manzana',
-                               'plátano','fresa','uva','patata','boniato','champiñón','apio',
-                               'rúcula','albahaca','perejil','cilantro','jengibre','puerro','alcachofa'],
-        'Proteínas':          ['pollo','pechuga','muslo','carne','ternera','cerdo','salmón','atún',
-                               'bacalao','merluza','gambas','langostino','huevo','huevos','tofu',
-                               'lenteja','garbanzo','alubia','judía','filete','bistec','sardina'],
-        'Lácteos':            ['leche','queso','yogur','mantequilla','nata','mozzarella','feta',
-                               'parmesano','ricotta','crema','kéfir','requesón'],
-        'Despensa':           ['pasta','arroz','aceite','harina','azúcar','sal','pimienta','especias',
-                               'vinagre','salsa','tomate frito','caldo','pan','galleta','avena',
-                               'almendra','nuez','semilla','lentejas','garbanzos','alubias','maíz'],
-    }
+        for key, ing in seen.items():
+            cat = _categorize(ing)
+            ordered.setdefault(cat, []).append({'nombre': ing})
 
-    def _categorize(ingredient):
-        low = ingredient.lower()
-        for cat, keywords in CATEGORIAS.items():
-            if any(k in low for k in keywords):
-                return cat
-        return 'Otros'
+    # Sort each category and enforce order
+    ordered = {c: sorted(ordered[c], key=lambda x: x['nombre']) for c in cat_order if c in ordered}
 
-    all_raw = []
-    for menu_dict in menus.values():
-        all_raw.extend(_extract_ingredients(menu_dict))
-
-    # Deduplicate (case-insensitive key)
-    seen = {}
-    for ing in all_raw:
-        key = ing.lower().strip()
-        if key not in seen:
-            seen[key] = ing
-
-    grouped = {}
-    for key, ing in seen.items():
-        cat = _categorize(ing)
-        grouped.setdefault(cat, []).append(ing)
-
-    # Order categories
-    cat_order = ['Verduras & Frutas', 'Proteínas', 'Lácteos', 'Despensa', 'Otros']
-    ordered = {c: sorted(grouped[c]) for c in cat_order if c in grouped}
+    # Compute category subtotals
+    subtotals = {}
+    for cat, items in ordered.items():
+        prices = [i['precio'] for i in items if 'precio' in i]
+        if prices:
+            subtotals[cat] = round(sum(prices), 2)
 
     # Build week label
     week_labels = []
@@ -672,6 +704,9 @@ def get_shopping_list_by_week():
             'subtitle': subtitle,
             'weeks_included': list(menus.keys()),
             'categories': ordered,
+            'subtotals': subtotals,
+            'coste_estimado': round(coste_estimado, 2) if coste_estimado else None,
+            'presupuesto': presupuesto,
             'total_items': sum(len(v) for v in ordered.values()),
         }
     }
@@ -679,10 +714,26 @@ def get_shopping_list_by_week():
     if fmt == 'txt':
         lines = [title, f'Semana: {subtitle}', '─' * 40, '']
         for cat, items in ordered.items():
-            lines.append(cat.upper())
+            sub = subtotals.get(cat)
+            cat_header = f"{cat.upper()}"
+            if sub:
+                cat_header += f"  ({sub:.2f}€)"
+            lines.append(cat_header)
             for item in items:
-                lines.append(f'  □ {item}')
+                precio_str = f"  {item['precio']:.2f}€" if 'precio' in item else ''
+                lines.append(f'  □ {item["nombre"]}{precio_str}')
             lines.append('')
+        lines.append('─' * 40)
+        if coste_estimado:
+            lines.append(f'COSTE ESTIMADO: {coste_estimado:.2f}€')
+        if presupuesto:
+            lines.append(f'PRESUPUESTO:    {presupuesto}€')
+            if coste_estimado:
+                diff = presupuesto - coste_estimado
+                if diff >= 0:
+                    lines.append(f'AHORRO:         {diff:.2f}€')
+                else:
+                    lines.append(f'EXCESO:         {abs(diff):.2f}€')
         lines.append('─' * 40)
         lines.append('Generado por JAXO Command Center')
         txt = '\n'.join(lines)

@@ -44,7 +44,7 @@ class MenuManager {
         this.setupEventListeners();
         await this.loadCurrentWeekMenu();
         this.setupWeekNavigation();
-        this.updateShoppingDropdown();
+        await this.updateShoppingDropdown(); // sets _hasNext, then calls checkWeekendBanner
     }
 
     setupEventListeners() {
@@ -136,62 +136,57 @@ class MenuManager {
     async loadCurrentWeekMenu() {
         try {
             this.setLoading(true);
-            
-            // Primero intentar cargar el menú más reciente que tenga datos
             console.log('[menu] Buscando menú con datos...');
-            
+
             let response = await api.get('/api/menu/current');
-            
+
             if (response.success && response.data) {
-                // Verificar si el menú actual tiene datos reales
-                const menuData = typeof response.data.menu_data === 'string' 
-                    ? JSON.parse(response.data.menu_data) 
+                const menuData = typeof response.data.menu_data === 'string'
+                    ? JSON.parse(response.data.menu_data)
                     : response.data.menu_data;
-                
-                const hasData = menuData.menu_adultos && 
-                    Object.keys(menuData.menu_adultos).length > 0 &&
-                    menuData.menu_adultos.lunes;
-                
-                if (hasData) {
+
+                if (this.hasAnyMealData(menuData)) {
                     console.log('[ok] Usando menú actual con datos:', response.data.id);
                     this.currentMenu = response.data;
-                    this.currentWeek = new Date(response.data.semana_inicio);
+                    this.currentWeek = new Date(response.data.semana_inicio + 'T12:00:00');
                     this.renderMenu();
                     this.updateWeekDisplay();
+                    this.checkWeekendBanner();
                     return;
                 }
             }
-            
-            // Si el menú actual no tiene datos, buscar el último que sí tenga
+
             console.log('[menu] Menú actual vacío, buscando último con datos...');
             const latestResponse = await api.get('/api/menu/latest');
-            
+
             if (latestResponse.success && latestResponse.data) {
-                const menuData = typeof latestResponse.data.menu_data === 'string' 
-                    ? JSON.parse(latestResponse.data.menu_data) 
+                const menuData = typeof latestResponse.data.menu_data === 'string'
+                    ? JSON.parse(latestResponse.data.menu_data)
                     : latestResponse.data.menu_data;
-                
-                const hasData = menuData.menu_adultos && 
-                    Object.keys(menuData.menu_adultos).length > 0 &&
-                    menuData.menu_adultos.lunes;
-                
-                if (hasData) {
+
+                if (this.hasAnyMealData(menuData)) {
                     console.log('[ok] Usando último menú con datos:', latestResponse.data.id);
                     this.currentMenu = latestResponse.data;
-                    this.currentWeek = new Date(latestResponse.data.semana_inicio);
+                    this.currentWeek = new Date(latestResponse.data.semana_inicio + 'T12:00:00');
                     this.renderMenu();
                     this.updateWeekDisplay();
+                    this.checkWeekendBanner();
                     return;
                 }
             }
-            
-            // Si no hay menús con datos, mostrar estado vacío
-            console.log('[menu] No hay menús con datos, mostrando estado vacío');
-            this.showEmptyState();
-            
+
+            console.log('[menu] No hay menús con datos, mostrando semana vacía');
+            this.currentMenu = null;
+            this.currentWeek = this.getMonday(new Date());
+            this.updateWeekDisplay();
+            this.showEmptyWeek();
+            this.checkWeekendBanner();
+
         } catch (error) {
             console.error('Error cargando menú:', error);
-            this.showError('Error cargando menú actual');
+            this.currentWeek = this.getMonday(new Date());
+            this.updateWeekDisplay();
+            this.showEmptyWeek();
         } finally {
             this.setLoading(false);
         }
@@ -507,11 +502,22 @@ class MenuManager {
 
             if (response.success) {
                 this.currentMenu = response.menu;
-                this.currentWeek = new Date(response.menu.semana_inicio);
+                this.currentWeek = new Date(response.menu.semana_inicio + 'T12:00:00');
                 this.renderMenu();
                 this.updateWeekDisplay();
                 this.closeModal('generateMenuModal');
+                this.updateShoppingDropdown();
                 this.showSuccess('¡Menú generado exitosamente!');
+
+                // Over-budget check
+                try {
+                    const md = typeof response.menu.menu_data === 'string' ? JSON.parse(response.menu.menu_data) : response.menu.menu_data;
+                    const coste = md?.lista_compra?.coste_estimado_semana;
+                    const budget = parseInt(formData.get('presupuesto')) || 0;
+                    if (coste && budget && coste > budget) {
+                        this._showOverBudgetAlert(coste, budget, data);
+                    }
+                } catch(_) {}
             } else {
                 const msg = response.message || 'Error generando menú';
                 console.error('[menu] Error del backend:', msg);
@@ -968,29 +974,67 @@ class MenuManager {
             if (title) title.textContent = data.title || 'Lista de Compra';
             if (subtitle) subtitle.textContent = `Semana: ${data.subtitle || ''}`;
 
-            // Store for download
             this._currentShoppingWeek = weekParam;
 
-            // Render categories
-            const catIcons = {
-                'Verduras & Frutas': '🥦',
-                'Proteínas': '🥩',
-                'Lácteos': '🧀',
-                'Despensa': '🫙',
-                'Otros': '📦',
-            };
+            const catIcons = { 'Verduras & Frutas':'🥦','Proteínas':'🥩','Lácteos':'🧀','Despensa':'🫙','Otros':'📦' };
             let html = '';
+
+            // Budget bar (only when we have cost estimate and budget set)
+            const coste = data.coste_estimado;
+            const presup = data.presupuesto;
+            if (coste && presup) {
+                const pct = Math.min(coste / presup, 1);
+                const overBudget = coste > presup;
+                const nearBudget = coste / presup >= 0.8;
+                const barColor = overBudget ? '#f87171' : (nearBudget ? '#fbbf24' : '#4ade80');
+                const ahorro = presup - coste;
+                html += `<div style="margin-bottom:20px;padding:16px;background:rgba(25,31,49,.8);border:1px solid rgba(173,198,255,.1);border-radius:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="color:#adc6ff;font-size:13px;font-weight:700;">Estimado presupuesto</span>
+                        ${overBudget ? `<span style="color:#f87171;font-size:11px;font-weight:700;background:rgba(248,113,113,.1);padding:2px 8px;border-radius:10px;">⚠ Excede ${Math.round((coste/presup-1)*100)}%</span>` : ''}
+                    </div>
+                    <div style="display:flex;gap:16px;margin-bottom:10px;">
+                        <div style="flex:1;text-align:center;">
+                            <div style="color:${barColor};font-size:22px;font-weight:700;">€${coste.toFixed(2)}</div>
+                            <div style="color:#6b7a99;font-size:10px;letter-spacing:.08em;">ESTIMADO</div>
+                        </div>
+                        <div style="width:1px;background:rgba(173,198,255,.1);"></div>
+                        <div style="flex:1;text-align:center;">
+                            <div style="color:#adc6ff;font-size:22px;font-weight:700;">€${presup}</div>
+                            <div style="color:#6b7a99;font-size:10px;letter-spacing:.08em;">PRESUPUESTO</div>
+                        </div>
+                        <div style="width:1px;background:rgba(173,198,255,.1);"></div>
+                        <div style="flex:1;text-align:center;">
+                            <div style="color:${ahorro >= 0 ? '#4ade80' : '#f87171'};font-size:22px;font-weight:700;">${ahorro >= 0 ? '+' : ''}€${Math.abs(ahorro).toFixed(2)}</div>
+                            <div style="color:#6b7a99;font-size:10px;letter-spacing:.08em;">${ahorro >= 0 ? 'AHORRO' : 'EXCESO'}</div>
+                        </div>
+                    </div>
+                    <div style="background:rgba(255,255,255,.06);border-radius:6px;height:8px;overflow:hidden;">
+                        <div style="height:100%;width:${(pct*100).toFixed(1)}%;background:${barColor};border-radius:6px;transition:width .4s ease;"></div>
+                    </div>
+                </div>`;
+            }
+
+            const hasPrices = Object.values(data.categories || {}).some(items => items.some(i => i.precio != null));
+
             for (const [cat, items] of Object.entries(data.categories || {})) {
+                const subtotal = data.subtotals?.[cat];
                 html += `<div style="margin-bottom:18px;">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                         <span style="font-size:16px;">${catIcons[cat] || '📦'}</span>
                         <span style="color:#4cd7f6;font-size:11px;font-weight:700;letter-spacing:.1em;">${cat.toUpperCase()}</span>
+                        ${subtotal ? `<span style="margin-left:auto;color:#6b7a99;font-size:11px;">€${subtotal.toFixed(2)}</span>` : ''}
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
-                        ${items.map(item => `<label style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;background:rgba(25,31,49,.6);cursor:pointer;">
-                            <input type="checkbox" style="accent-color:#4cd7f6;width:15px;height:15px;">
-                            <span style="color:#dce1fb;font-size:13px;">${item}</span>
-                        </label>`).join('')}
+                        ${items.map(item => {
+                            const nombre = typeof item === 'object' ? item.nombre : item;
+                            const precio = typeof item === 'object' ? item.precio : undefined;
+                            return `<label style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;background:rgba(25,31,49,.6);cursor:pointer;">
+                                <input type="checkbox" style="accent-color:#4cd7f6;width:15px;height:15px;">
+                                <span style="color:#dce1fb;font-size:13px;flex:1;">${nombre}</span>
+                                ${precio != null ? `<span style="color:#6b7a99;font-size:12px;white-space:nowrap;">€${precio.toFixed(2)}</span>` : (hasPrices ? '<span style="width:40px;"></span>' : '')}
+                            </label>`;
+                        }).join('')}
                     </div>
                 </div>`;
             }
@@ -1062,17 +1106,22 @@ class MenuManager {
         if (!banner) return;
         const dow = new Date().getDay(); // 0=Sun, 6=Sat
         const isWeekend = dow === 0 || dow === 6;
-        if (isWeekend && !this._hasNext) {
+        const showBanner = isWeekend && !this._hasNext;
+
+        if (showBanner) {
             const nextMonday = new Date(this.getMonday(new Date()));
             nextMonday.setDate(nextMonday.getDate() + 7);
-            const sun = new Date(nextMonday); sun.setDate(nextMonday.getDate() + 6);
             const label = `Generar semana del ${nextMonday.getDate()} ${nextMonday.toLocaleDateString('es-ES',{month:'long'})}`;
             const bannerLabel = document.getElementById('weekendBannerLabel');
             if (bannerLabel) bannerLabel.textContent = label;
-            banner.style.display = 'block';
+            banner.style.display = '';
         } else {
             banner.style.display = 'none';
         }
+
+        // Never show both the banner and the AI CTA card at the same time
+        const aiCta = document.getElementById('generateMenuBtn');
+        if (aiCta) aiCta.style.display = showBanner ? 'none' : '';
     }
 
     updateWeekDisplay() {
@@ -1442,6 +1491,57 @@ class MenuManager {
             const hasData = md?.menu_adultos?.[s.day] && Object.keys(md.menu_adultos[s.day]).length > 0;
             document.getElementById('gdWarning').style.display = hasData ? 'block' : 'none';
         }
+    }
+
+    _showOverBudgetAlert(coste, budget, originalData) {
+        const excess = (coste - budget).toFixed(2);
+        const pct = Math.round((coste / budget - 1) * 100);
+        const el = document.createElement('div');
+        el.id = 'overBudgetAlert';
+        el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(12,19,36,.97);border:1px solid rgba(248,113,113,.4);border-radius:14px;padding:16px 20px;max-width:480px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.6);';
+        el.innerHTML = `
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+                <span style="font-size:22px;line-height:1;">⚠️</span>
+                <div style="flex:1;">
+                    <div style="color:#f87171;font-weight:700;font-size:14px;margin-bottom:4px;">Presupuesto superado (+${pct}%)</div>
+                    <div style="color:#9ca3af;font-size:12px;margin-bottom:12px;">Estimado <strong style="color:#f87171;">€${coste.toFixed(2)}</strong> vs presupuesto <strong style="color:#adc6ff;">€${budget}</strong> (exceso €${excess})</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button id="regenBudgetBtn" style="background:linear-gradient(135deg,#4cd7f6,#adc6ff);border:none;border-radius:8px;color:#0c1324;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;">Regenerar ajustando presupuesto</button>
+                        <button id="dismissBudgetBtn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#6b7a99;font-size:12px;padding:8px 14px;cursor:pointer;">Mantener este menú</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(el);
+
+        el.querySelector('#dismissBudgetBtn').addEventListener('click', () => el.remove());
+        el.querySelector('#regenBudgetBtn').addEventListener('click', async () => {
+            el.remove();
+            // Re-generate with explicit budget constraint note
+            const tightData = { ...originalData };
+            tightData.settings = { ...(tightData.settings || {}), presupuesto_semanal: budget, regenerate: true };
+            tightData.settings.preferencias_especiales = `IMPORTANTE: el presupuesto MÁXIMO es ${budget}€ esta semana, usa ingredientes económicos y de temporada.`;
+            try {
+                this.setLoading(true);
+                const r = await api.post('/api/menu/generate', tightData);
+                if (r.success) {
+                    this.currentMenu = r.menu;
+                    this.currentWeek = new Date(r.menu.semana_inicio + 'T12:00:00');
+                    this.renderMenu();
+                    this.updateWeekDisplay();
+                    this.updateShoppingDropdown();
+                    this.showSuccess('Menú regenerado dentro del presupuesto');
+                } else {
+                    this.showError(r.message || 'Error regenerando');
+                }
+            } catch(e) {
+                this.showError('Error regenerando menú');
+            } finally {
+                this.setLoading(false);
+            }
+        });
+
+        // Auto-dismiss after 15s
+        setTimeout(() => el.remove(), 15000);
     }
 
     async submitGenerateDay() {

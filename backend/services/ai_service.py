@@ -188,7 +188,8 @@ NIÑOS: {chr(10).join(preferencias_ninos) if preferencias_ninos else 'No niños'
 1. SOLO generar comidas: {', '.join(comidas)}
 2. SOLO para días: {', '.join(dias_menu)}
 3. Dos menús: adultos y niños adaptados
-4. Responder SOLO con JSON válido, sin texto adicional
+4. Generar lista_compra con precio_estimado realista por ingrediente (precios de {supermercado} en España) y coste_estimado_semana total
+5. Responder SOLO con JSON válido, sin texto adicional
 
 IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
 - plato, descripcion, tiempo_prep, calorias, dificultad, alergenos (array), ingredientes (array de strings, máx 8 items), preparacion (array de strings, máx 5 pasos breves)
@@ -223,7 +224,14 @@ IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
       }}
     }}
   }},
-  "lista_compra": {{}},
+  "lista_compra": {{
+    "coste_estimado_semana": 95.50,
+    "items": [
+      {{"nombre": "Tomates (1 kg)", "categoria": "Verduras & Frutas", "precio_estimado": 2.40}},
+      {{"nombre": "Pechuga de pollo (500 g)", "categoria": "Proteínas", "precio_estimado": 5.20}},
+      {{"nombre": "Pasta (500 g)", "categoria": "Despensa", "precio_estimado": 1.30}}
+    ]
+  }},
   "consejos_semana": [],
   "consideraciones_aplicadas": []
 }}
