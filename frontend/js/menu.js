@@ -44,12 +44,12 @@ class MenuManager {
         this.setupEventListeners();
         await this.loadCurrentWeekMenu();
         this.setupWeekNavigation();
+        this.updateShoppingDropdown();
     }
 
     setupEventListeners() {
         // Botones principales
         document.getElementById('generateMenuBtn')?.addEventListener('click', () => this.showGenerateModal());
-        document.getElementById('shoppingListBtn')?.addEventListener('click', () => this.showShoppingList());
 
         // Toggle vista
         document.querySelectorAll('[data-view-mode]').forEach(btn => {
@@ -65,6 +65,36 @@ class MenuManager {
         document.getElementById('cancelGenerateMenuBtn')?.addEventListener('click', () => this.closeModal('generateMenuModal'));
         document.getElementById('confirmGenerateMenuBtn')?.addEventListener('click', () => this.generateMenu());
         document.getElementById('closeShoppingModalBtn')?.addEventListener('click', () => this.closeModal('shoppingListModal'));
+
+        // Shopping dropdown toggle
+        document.getElementById('shoppingListBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dd = document.getElementById('shoppingDropdown');
+            if (dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        });
+        document.querySelectorAll('.sl-opt').forEach(opt => {
+            opt.addEventListener('mouseenter', () => opt.style.background = 'rgba(76,215,246,.06)');
+            opt.addEventListener('mouseleave', () => opt.style.background = '');
+            opt.addEventListener('click', () => {
+                const week = opt.dataset.week;
+                document.getElementById('shoppingDropdown').style.display = 'none';
+                this.showShoppingList(week);
+            });
+        });
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('shoppingDropdownWrap')?.contains(e.target)) {
+                const dd = document.getElementById('shoppingDropdown');
+                if (dd) dd.style.display = 'none';
+            }
+        });
+
+        // Weekend banner CTA
+        document.getElementById('weekendBannerBtn')?.addEventListener('click', () => {
+            const nextMonday = new Date(this.getMonday(new Date()));
+            nextMonday.setDate(nextMonday.getDate() + 7);
+            const weekStr = nextMonday.toISOString().split('T')[0];
+            this.loadWeekMenu(weekStr).then(() => this.showGenerateModal());
+        });
 
         // Event delegation for dynamically-rendered menu grid
         document.getElementById('menuGrid')?.addEventListener('click', (e) => {
@@ -170,22 +200,62 @@ class MenuManager {
     async loadWeekMenu(weekStart) {
         try {
             this.setLoading(true);
+            console.log('[menu] Solicitando semana:', weekStart);
+            // Always set currentWeek to the REQUESTED week, not the found one
+            const [y, m, d] = weekStart.split('-').map(Number);
+            this._requestedWeek = new Date(y, m - 1, d);
+            this.currentWeek = this._requestedWeek;
+            this.updateWeekDisplay();
+
             const response = await api.get(`/api/menu/weekly?week_start=${weekStart}`);
-            
-            if (response.success) {
+            console.log('[menu] Respuesta del servidor:', response.success, response.data?.semana_inicio);
+
+            if (response.success && response.data) {
                 this.currentMenu = response.data;
-                this.currentWeek = new Date(response.data.semana_inicio);
                 this.renderMenu();
-                this.updateWeekDisplay();
             } else {
-                this.showEmptyState();
+                // No menu for this week — show empty grid so user can generate
+                this.currentMenu = null;
+                this.showEmptyWeek();
             }
+            this.updateShoppingDropdown();
+            this.checkWeekendBanner();
         } catch (error) {
-            console.error('Error cargando menú de la semana:', error);
-            this.showError('Error cargando menú de la semana');
+            console.error('[menu] Error cargando semana:', error);
+            this.showEmptyWeek();
         } finally {
             this.setLoading(false);
         }
+    }
+
+    showEmptyWeek() {
+        const grid = document.getElementById('menuGrid');
+        if (!grid) return;
+        const days     = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+        const dayNames = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+        grid.innerHTML = '';
+        days.forEach((day, i) => {
+            const col = document.createElement('div');
+            col.className = 'mn-day';
+            col.dataset.day = day;
+            col.innerHTML = `
+                <h2 class="mn-day-name" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
+                    <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;">${dayNames[i]}</span>
+                    <span style="display:flex;align-items:center;gap:4px;">
+                        <button class="mn-regen-btn" data-day="${day}" title="Generar día" tabindex="-1">
+                            <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
+                        </button>
+                        <span class="mn-day-chevron material-symbols-outlined" style="font-size:16px;transition:transform .2s;opacity:0.5;" onclick="menuManager.toggleDay(this.closest('h2'))">expand_more</span>
+                    </span>
+                </h2>
+                <div class="mn-day-body">
+                    <div class="mn-meal-empty" data-day="${day}" style="cursor:pointer;height:80px;" title="Generar día">
+                        <span class="material-symbols-outlined">add</span>
+                    </div>
+                </div>`;
+            grid.appendChild(col);
+        });
+        document.getElementById('menuStatistics').innerHTML = '';
     }
 
     renderMenu() {
@@ -878,30 +948,160 @@ class MenuManager {
         // TODO: Cargar ratings existentes y mostrarlos
     }
 
-    showShoppingList() {
-        if (!this.currentMenu) {
-            this.showError('No hay un menú actual');
-            return;
+    async showShoppingList(weekParam = 'current') {
+        const modal = document.getElementById('shoppingListModal');
+        const content = document.getElementById('shoppingListContent');
+        const title = document.getElementById('slModalTitle');
+        const subtitle = document.getElementById('slModalSubtitle');
+        if (!modal || !content) return;
+
+        content.innerHTML = '<div style="text-align:center;padding:32px;color:#6b7a99;">Cargando...</div>';
+        modal.style.display = 'flex';
+
+        try {
+            const res = await api.get(`/api/menu/shopping-list?week=${weekParam}`);
+            if (!res.success) {
+                content.innerHTML = `<div style="text-align:center;padding:32px;color:#f87171;">No hay menú disponible para generar la lista.</div>`;
+                return;
+            }
+            const data = res.data;
+            if (title) title.textContent = data.title || 'Lista de Compra';
+            if (subtitle) subtitle.textContent = `Semana: ${data.subtitle || ''}`;
+
+            // Store for download
+            this._currentShoppingWeek = weekParam;
+
+            // Render categories
+            const catIcons = {
+                'Verduras & Frutas': '🥦',
+                'Proteínas': '🥩',
+                'Lácteos': '🧀',
+                'Despensa': '🫙',
+                'Otros': '📦',
+            };
+            let html = '';
+            for (const [cat, items] of Object.entries(data.categories || {})) {
+                html += `<div style="margin-bottom:18px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <span style="font-size:16px;">${catIcons[cat] || '📦'}</span>
+                        <span style="color:#4cd7f6;font-size:11px;font-weight:700;letter-spacing:.1em;">${cat.toUpperCase()}</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        ${items.map(item => `<label style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;background:rgba(25,31,49,.6);cursor:pointer;">
+                            <input type="checkbox" style="accent-color:#4cd7f6;width:15px;height:15px;">
+                            <span style="color:#dce1fb;font-size:13px;">${item}</span>
+                        </label>`).join('')}
+                    </div>
+                </div>`;
+            }
+            content.innerHTML = html || '<div style="padding:24px;color:#6b7a99;text-align:center;">No se encontraron ingredientes.</div>';
+
+            // Wire download button
+            document.getElementById('slDownloadBtn')?.removeEventListener('click', this._slDownload);
+            this._slDownload = () => window.open(`/api/menu/shopping-list?week=${weekParam}&format=txt`, '_blank');
+            document.getElementById('slDownloadBtn')?.addEventListener('click', this._slDownload);
+
+        } catch (e) {
+            content.innerHTML = `<div style="color:#f87171;padding:24px;">Error cargando lista: ${e.message}</div>`;
+        }
+    }
+
+    // Shopping dropdown state
+    async updateShoppingDropdown() {
+        const thisMonday = this.getMonday(new Date());
+        const nextMonday = new Date(thisMonday);
+        nextMonday.setDate(thisMonday.getDate() + 7);
+
+        const fmt = (d) => {
+            const sun = new Date(d); sun.setDate(d.getDate() + 6);
+            return `${d.getDate()}–${sun.getDate()} ${d.toLocaleDateString('es-ES',{month:'short'})}`;
+        };
+
+        // Check which weeks have menus
+        let hasCurrent = false, hasNext = false;
+        try {
+            const [rc, rn] = await Promise.all([
+                api.get(`/api/menu/weekly?week_start=${thisMonday.toISOString().split('T')[0]}`),
+                api.get(`/api/menu/weekly?week_start=${nextMonday.toISOString().split('T')[0]}`),
+            ]);
+            hasCurrent = rc.success && !!rc.data;
+            hasNext = rn.success && !!rn.data;
+        } catch(_) {}
+
+        // Status pills
+        const pills = document.getElementById('weekStatusPills');
+        if (pills) {
+            const pill = (label, active) => `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${active ? 'rgba(76,215,246,.15)' : 'rgba(74,85,104,.15)'};color:${active ? '#4cd7f6' : '#4a5568'};border:1px solid ${active ? 'rgba(76,215,246,.3)' : 'rgba(74,85,104,.3)'};">${active ? '●' : '○'} ${label}</span>`;
+            pills.innerHTML = pill('Esta semana', hasCurrent) + pill('Próx. semana', hasNext);
         }
 
-        // TODO: Implementar modal de lista de compra
-        this.showInfo('Lista de compra próximamente');
+        // Dropdown options
+        const styleOpt = (el, enabled, range) => {
+            if (!el) return;
+            el.querySelector('.sl-opt-range').textContent = range;
+            if (enabled) {
+                el.style.opacity = '1'; el.style.pointerEvents = 'auto';
+                el.title = '';
+            } else {
+                el.style.opacity = '0.4'; el.style.pointerEvents = 'none';
+                el.title = 'Genera el menú primero';
+            }
+        };
+        styleOpt(document.querySelector('[data-week="current"]'), hasCurrent, fmt(thisMonday));
+        styleOpt(document.querySelector('[data-week="next"]'), hasNext, fmt(nextMonday));
+        styleOpt(document.querySelector('[data-week="both"]'), hasCurrent && hasNext, '');
+
+        // Weekend banner
+        this._hasCurrent = hasCurrent;
+        this._hasNext = hasNext;
+        this.checkWeekendBanner();
+    }
+
+    checkWeekendBanner() {
+        const banner = document.getElementById('weekendBanner');
+        if (!banner) return;
+        const dow = new Date().getDay(); // 0=Sun, 6=Sat
+        const isWeekend = dow === 0 || dow === 6;
+        if (isWeekend && !this._hasNext) {
+            const nextMonday = new Date(this.getMonday(new Date()));
+            nextMonday.setDate(nextMonday.getDate() + 7);
+            const sun = new Date(nextMonday); sun.setDate(nextMonday.getDate() + 6);
+            const label = `Generar semana del ${nextMonday.getDate()} ${nextMonday.toLocaleDateString('es-ES',{month:'long'})}`;
+            const bannerLabel = document.getElementById('weekendBannerLabel');
+            if (bannerLabel) bannerLabel.textContent = label;
+            banner.style.display = 'block';
+        } else {
+            banner.style.display = 'none';
+        }
     }
 
     updateWeekDisplay() {
         if (!this.currentWeek) return;
-
         const weekDisplay = document.getElementById('currentWeekDisplay');
-        if (weekDisplay) {
-            const monday = this.currentWeek;
-            const sunday = new Date(monday);
-            sunday.setDate(sunday.getDate() + 6);
-            
-            const options = { day: 'numeric', month: 'long' };
-            const mondayStr = monday.toLocaleDateString('es-ES', options);
-            const sundayStr = sunday.toLocaleDateString('es-ES', options);
-            
-            weekDisplay.textContent = `${mondayStr} - ${sundayStr}`;
+        if (!weekDisplay) return;
+
+        const monday = new Date(this.currentWeek);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+
+        const thisMonday = this.getMonday(new Date());
+        const nextMonday = new Date(thisMonday);
+        nextMonday.setDate(thisMonday.getDate() + 7);
+
+        const isThis = monday.toDateString() === thisMonday.toDateString();
+        const isNext = monday.toDateString() === nextMonday.toDateString();
+
+        const rangeOpts = { day: 'numeric', month: 'short' };
+        const monStr = monday.toLocaleDateString('es-ES', rangeOpts);
+        const sunStr = sunday.toLocaleDateString('es-ES', rangeOpts);
+        const range = `${monStr} – ${sunStr}`;
+
+        if (isThis) {
+            weekDisplay.innerHTML = `<strong>Esta semana</strong> · ${range}`;
+        } else if (isNext) {
+            weekDisplay.innerHTML = `<strong style="color:#4cd7f6">Próxima semana</strong> · ${range}`;
+        } else {
+            weekDisplay.textContent = range;
         }
     }
 

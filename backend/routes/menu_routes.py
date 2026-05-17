@@ -553,6 +553,164 @@ def generate_day():
         return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
 
 
+@menu_bp.route('/shopping-list', methods=['GET'])
+def get_shopping_list_by_week():
+    """
+    Genera lista de compra desde menu_data JSON.
+    Query params:
+      week=current|next|both  (default: current)
+      format=json|txt         (default: json)
+    """
+    from datetime import date, timedelta
+
+    def _next_monday():
+        today = date.today()
+        days = (7 - today.weekday()) % 7
+        return today + timedelta(days=days if days else 7)
+
+    def _current_monday():
+        today = date.today()
+        return today - timedelta(days=today.weekday())
+
+    week_param = request.args.get('week', 'current')
+    fmt = request.args.get('format', 'json')
+
+    weeks = []
+    if week_param in ('current', 'both'):
+        weeks.append(('current', _current_monday()))
+    if week_param in ('next', 'both'):
+        weeks.append(('next', _next_monday()))
+
+    menus = {}
+    for label, monday in weeks:
+        m = menu_service.get_weekly_menu(monday)
+        if m:
+            menus[label] = m
+
+    if not menus:
+        return jsonify({'success': False, 'message': 'No hay menú para las semanas solicitadas'}), 200
+
+    # Extract + group ingredients from all requested menus
+    def _extract_ingredients(menu_dict):
+        raw = menu_dict.get('menu_data') or {}
+        if isinstance(raw, str):
+            import json as _json
+            raw = _json.loads(raw)
+        items = []
+        for tipo in ('menu_adultos', 'menu_ninos'):
+            for day_data in (raw.get(tipo) or {}).values():
+                if not isinstance(day_data, dict):
+                    continue
+                for meal_data in day_data.values():
+                    if not isinstance(meal_data, dict):
+                        continue
+                    for ing in meal_data.get('ingredientes') or []:
+                        if ing and isinstance(ing, str):
+                            items.append(ing.strip())
+        return items
+
+    CATEGORIAS = {
+        'Verduras & Frutas': ['calabacín','tomate','lechuga','espinaca','pimiento','cebolla','ajo',
+                               'zanahoria','brócoli','pepino','aguacate','limón','naranja','manzana',
+                               'plátano','fresa','uva','patata','boniato','champiñón','apio',
+                               'rúcula','albahaca','perejil','cilantro','jengibre','puerro','alcachofa'],
+        'Proteínas':          ['pollo','pechuga','muslo','carne','ternera','cerdo','salmón','atún',
+                               'bacalao','merluza','gambas','langostino','huevo','huevos','tofu',
+                               'lenteja','garbanzo','alubia','judía','filete','bistec','sardina'],
+        'Lácteos':            ['leche','queso','yogur','mantequilla','nata','mozzarella','feta',
+                               'parmesano','ricotta','crema','kéfir','requesón'],
+        'Despensa':           ['pasta','arroz','aceite','harina','azúcar','sal','pimienta','especias',
+                               'vinagre','salsa','tomate frito','caldo','pan','galleta','avena',
+                               'almendra','nuez','semilla','lentejas','garbanzos','alubias','maíz'],
+    }
+
+    def _categorize(ingredient):
+        low = ingredient.lower()
+        for cat, keywords in CATEGORIAS.items():
+            if any(k in low for k in keywords):
+                return cat
+        return 'Otros'
+
+    all_raw = []
+    for menu_dict in menus.values():
+        all_raw.extend(_extract_ingredients(menu_dict))
+
+    # Deduplicate (case-insensitive key)
+    seen = {}
+    for ing in all_raw:
+        key = ing.lower().strip()
+        if key not in seen:
+            seen[key] = ing
+
+    grouped = {}
+    for key, ing in seen.items():
+        cat = _categorize(ing)
+        grouped.setdefault(cat, []).append(ing)
+
+    # Order categories
+    cat_order = ['Verduras & Frutas', 'Proteínas', 'Lácteos', 'Despensa', 'Otros']
+    ordered = {c: sorted(grouped[c]) for c in cat_order if c in grouped}
+
+    # Build week label
+    week_labels = []
+    if 'current' in menus:
+        mon = _current_monday()
+        sun = mon + timedelta(days=6)
+        week_labels.append(f"{mon.day}–{sun.day} {_mes(mon.month)}")
+    if 'next' in menus:
+        mon = _next_monday()
+        sun = mon + timedelta(days=6)
+        week_labels.append(f"{mon.day}–{sun.day} {_mes(mon.month)}")
+
+    title = 'LISTA DE COMPRA COMBINADA' if week_param == 'both' else 'LISTA DE COMPRA'
+    subtitle = ' + '.join(week_labels)
+
+    result = {
+        'success': True,
+        'data': {
+            'title': title,
+            'subtitle': subtitle,
+            'weeks_included': list(menus.keys()),
+            'categories': ordered,
+            'total_items': sum(len(v) for v in ordered.values()),
+        }
+    }
+
+    if fmt == 'txt':
+        lines = [title, f'Semana: {subtitle}', '─' * 40, '']
+        for cat, items in ordered.items():
+            lines.append(cat.upper())
+            for item in items:
+                lines.append(f'  □ {item}')
+            lines.append('')
+        lines.append('─' * 40)
+        lines.append('Generado por JAXO Command Center')
+        txt = '\n'.join(lines)
+        from flask import Response
+        return Response(txt, mimetype='text/plain',
+                        headers={'Content-Disposition': f'attachment; filename="lista-compra.txt"'})
+
+    return jsonify(result)
+
+
+def _mes(n):
+    return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][n-1]
+
+
+@menu_bp.route('/next-week', methods=['GET'])
+def get_next_week_menu():
+    """Returns menu for next Monday's week, or 404 if not yet generated."""
+    from datetime import date, timedelta
+    today = date.today()
+    days = (7 - today.weekday()) % 7
+    next_monday = today + timedelta(days=days if days else 7)
+    menu = menu_service.get_weekly_menu(next_monday)
+    if menu:
+        return jsonify({'success': True, 'data': menu, 'week_start': next_monday.isoformat()})
+    return jsonify({'success': False, 'message': 'No hay menú para la próxima semana',
+                    'week_start': next_monday.isoformat()}), 200
+
+
 @menu_bp.route('/tv-debug', methods=['GET'])
 def tv_debug():
     """Diagnostic: shows what menu data available for TV display."""
