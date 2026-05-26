@@ -28,10 +28,12 @@ def get_week_calendar():
             print(f"[debug] today={today}, week_start={week_start}")
         week_end = week_start + timedelta(days=6)
 
-        # 1. Google imported events
+        # 1. Google imported events — overlap: event starts before end-of-week AND ends after start-of-week
+        start_of_week_dt = datetime.combine(week_start, datetime.min.time())
+        end_of_week_dt = datetime.combine(week_end + timedelta(days=1), datetime.min.time())
         google_events_raw = GoogleImportedEvent.query.filter(
-            GoogleImportedEvent.start_datetime >= datetime.combine(week_start, datetime.min.time()),
-            GoogleImportedEvent.end_datetime <= datetime.combine(week_end, datetime.max.time())
+            GoogleImportedEvent.start_datetime < end_of_week_dt,
+            GoogleImportedEvent.end_datetime > start_of_week_dt
         ).all()
         google_events = []
         for e in google_events_raw:

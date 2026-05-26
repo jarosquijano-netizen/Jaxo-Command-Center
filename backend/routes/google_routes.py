@@ -218,17 +218,22 @@ def import_events():
             if not start_dt_str or not end_dt_str:
                 continue
 
-            start_dt = datetime.fromisoformat(start_dt_str.replace('Z', '+00:00'))
-            end_dt = datetime.fromisoformat(end_dt_str.replace('Z', '+00:00'))
-            google_updated = datetime.fromisoformat(google_updated_str.replace('Z', '+00:00')) if google_updated_str else None
+            from datetime import timezone as _tz
 
-            # Convertir a naive datetime para evitar problemas de comparación
-            if start_dt.tzinfo is not None:
-                start_dt = start_dt.replace(tzinfo=None)
-            if end_dt.tzinfo is not None:
-                end_dt = end_dt.replace(tzinfo=None)
-            if google_updated and google_updated.tzinfo is not None:
-                google_updated = google_updated.replace(tzinfo=None)
+            def _parse_dt(s):
+                if not s:
+                    return None
+                if len(s) == 10:
+                    # All-day: "YYYY-MM-DD" — treat as UTC midnight
+                    return datetime.strptime(s, '%Y-%m-%d')
+                dt = datetime.fromisoformat(s.replace('Z', '+00:00'))
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone(_tz.utc).replace(tzinfo=None)
+                return dt
+
+            start_dt = _parse_dt(start_dt_str)
+            end_dt = _parse_dt(end_dt_str)
+            google_updated = _parse_dt(google_updated_str) if google_updated_str else None
 
             existing = GoogleImportedEvent.query.filter_by(calendar_id=calendar_id, event_id=event_id).first()
             if existing:

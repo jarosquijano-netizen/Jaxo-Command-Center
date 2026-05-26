@@ -3,6 +3,7 @@ Servicio de IA para generación de menús usando Claude API
 """
 
 import anthropic
+import copy
 import json
 import logging
 from typing import Dict, List, Optional
@@ -1483,7 +1484,7 @@ Si regeneras solo una comida:
     def _merge_menu_changes(self, original_menu: Dict, updated_data: Dict, 
                           dia: str, comida: Optional[str], tipo: str) -> Dict:
         """Integra los cambios regenerados en el menú original"""
-        result = original_menu.copy()
+        result = copy.deepcopy(original_menu)
         
         if tipo == "ambos":
             # Actualizar ambos menús
