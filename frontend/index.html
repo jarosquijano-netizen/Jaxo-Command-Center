@@ -1535,7 +1535,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/dashboard.js?v=20260516"></script>
+    <script src="js/dashboard.js?v=20260526a"></script>
     <script src="js/api.js?v=20260516"></script>
     <script src="js/navigation.js?v=20260516"></script>
     <script src="js/family.js?v=20260516"></script>
@@ -1594,7 +1594,11 @@
                         e.target.closest('.nav-link').classList.add('active');
                         
                         // Cargar datos específicos de la sección
-                        if (target === 'menu' && menuManager) {
+                        if (target === 'dashboard' && dashboardManager) {
+                            setTimeout(() => {
+                                dashboardManager.loadAll();
+                            }, 100);
+                        } else if (target === 'menu' && menuManager) {
                             setTimeout(() => {
                                 menuManager.loadCurrentWeekMenu();
                             }, 100);

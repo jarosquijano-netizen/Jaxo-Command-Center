@@ -667,18 +667,55 @@ def delete_task(task_id):
 
 @cleaning_bp.route('/schedule', methods=['GET'])
 def get_schedule():
-    """Obtener plan semanal"""
+    """Obtener plan semanal (auto-genera si la semana actual está vacía)"""
     try:
         week_start = request.args.get('week_start')
+        today = date.today()
+        current_lunes = today - timedelta(days=today.weekday())
+
         if week_start:
             fecha_lunes = datetime.strptime(week_start, '%Y-%m-%d').date()
         else:
-            # Obtener lunes de la semana actual
-            today = date.today()
-            fecha_lunes = today - timedelta(days=today.weekday())
-        
+            fecha_lunes = current_lunes
+
         schedule = CleaningSchedule.query.filter_by(semana_inicio=fecha_lunes).all()
-        
+
+        # Auto-generate for current week when no schedule exists yet
+        if not schedule and fecha_lunes == current_lunes:
+            try:
+                schedule_data = generar_semana(fecha_lunes)
+                for item in schedule_data:
+                    task = CleaningTask.query.filter_by(
+                        nombre=item['task_nombre'], area=item['area']
+                    ).first()
+                    if not task:
+                        task = CleaningTask(
+                            nombre=item['task_nombre'],
+                            area=item['area'],
+                            duracion_minutos=item['duracion_minutos'],
+                            frecuencia='diaria',
+                            activa=True
+                        )
+                        db.session.add(task)
+                        db.session.flush()
+                    db.session.add(CleaningSchedule(
+                        task_id=task.id,
+                        task_nombre=item['task_nombre'],
+                        member_id=item['member_id'],
+                        member_nombre=item['member_nombre'],
+                        fecha_programada=item['fecha_programada'],
+                        semana_inicio=item['semana_inicio'],
+                        area=item['area'],
+                        duracion_minutos=item['duracion_minutos'],
+                        completada=item['completada']
+                    ))
+                db.session.commit()
+                schedule = CleaningSchedule.query.filter_by(semana_inicio=fecha_lunes).all()
+            except Exception as gen_err:
+                db.session.rollback()
+                import logging
+                logging.getLogger(__name__).warning(f'Auto-generate cleaning schedule failed: {gen_err}')
+
         return jsonify({
             'success': True,
             'data': [item.to_dict() for item in schedule],

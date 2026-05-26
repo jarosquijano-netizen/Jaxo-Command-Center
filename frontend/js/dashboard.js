@@ -125,7 +125,8 @@ class DashboardManager {
         // Chip 3 — Limpieza
         const cleanEl = document.getElementById('chip-cleaning-value');
         if (cleanEl && Array.isArray(cleaningData)) {
-            const todayStr  = new Date().toISOString().split('T')[0];
+            const _td = new Date();
+            const todayStr = `${_td.getFullYear()}-${String(_td.getMonth()+1).padStart(2,'0')}-${String(_td.getDate()).padStart(2,'0')}`;
             const todayTask = cleaningData.filter(t => t.fecha_programada?.startsWith(todayStr));
             const done      = todayTask.filter(t => t.completada).length;
             cleanEl.textContent = `${done}/${todayTask.length}`;
@@ -268,7 +269,8 @@ class DashboardManager {
         const container = document.getElementById('db-tasks-content');
         if (!container) return;
 
-        const todayStr  = new Date().toISOString().split('T')[0];
+        const _now2 = new Date();
+        const todayStr  = `${_now2.getFullYear()}-${String(_now2.getMonth()+1).padStart(2,'0')}-${String(_now2.getDate()).padStart(2,'0')}`;
         const tasks     = Array.isArray(cleaningData)
             ? cleaningData.filter(t => t.fecha_programada?.startsWith(todayStr))
             : [];

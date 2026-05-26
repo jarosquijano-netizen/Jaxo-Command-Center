@@ -1293,8 +1293,8 @@
                 }
 
                 const today = new Date();
-                const todayStr = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-                
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
                 console.log('[tv] Fecha actual (YYYY-MM-DD):', todayStr);
                 
                 // Filtrar tareas para hoy usando fecha_programada

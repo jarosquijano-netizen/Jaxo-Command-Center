@@ -135,11 +135,48 @@ def tv_view():
         logger.warning(f'[tv] menu: {e}')
 
     # ------------------------------------------------------------------
-    # Today's cleaning tasks
+    # Today's cleaning tasks (auto-generate current week if empty)
     # ------------------------------------------------------------------
     tasks = []
     try:
-        from models.cleaning import CleaningSchedule
+        from models.cleaning import CleaningSchedule, CleaningTask
+        from extensions import db
+
+        # Check if current week has any schedule
+        current_lunes = today_date - timedelta(days=today_date.weekday())
+        week_count = CleaningSchedule.query.filter_by(semana_inicio=current_lunes).count()
+        if week_count == 0:
+            try:
+                from routes.cleaning_routes import generar_semana
+                schedule_data = generar_semana(current_lunes)
+                for item in schedule_data:
+                    task = CleaningTask.query.filter_by(
+                        nombre=item['task_nombre'], area=item['area']
+                    ).first()
+                    if not task:
+                        task = CleaningTask(
+                            nombre=item['task_nombre'], area=item['area'],
+                            duracion_minutos=item['duracion_minutos'],
+                            frecuencia='diaria', activa=True
+                        )
+                        db.session.add(task)
+                        db.session.flush()
+                    db.session.add(CleaningSchedule(
+                        task_id=task.id,
+                        task_nombre=item['task_nombre'],
+                        member_id=item['member_id'],
+                        member_nombre=item['member_nombre'],
+                        fecha_programada=item['fecha_programada'],
+                        semana_inicio=item['semana_inicio'],
+                        area=item['area'],
+                        duracion_minutos=item['duracion_minutos'],
+                        completada=item['completada']
+                    ))
+                db.session.commit()
+            except Exception as gen_err:
+                db.session.rollback()
+                logger.warning(f'[tv] auto-generate tasks: {gen_err}')
+
         rows = (
             CleaningSchedule.query
             .filter_by(fecha_programada=today_date)
