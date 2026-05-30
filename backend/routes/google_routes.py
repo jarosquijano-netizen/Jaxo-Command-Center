@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify
 from datetime import datetime, date, timedelta
 
@@ -7,15 +8,43 @@ from models.cleaning import CleaningSchedule
 from models.google_calendar import GoogleEventMapping
 from models.google_imported_event import GoogleImportedEvent
 from services.google_calendar_service import google_calendar_service
+from config import Config
 
 
 google_bp = Blueprint('google', __name__)
 
 
+def _ensure_token_file():
+    """Restore OAuth token file from DB if the container lost it (new deploy)."""
+    token_path = str(Config.GOOGLE_TOKEN_PATH)
+    if os.path.exists(token_path):
+        return
+    settings = Settings.query.first()
+    if settings and settings.google_token:
+        os.makedirs(os.path.dirname(token_path), exist_ok=True)
+        with open(token_path, 'w', encoding='utf-8') as f:
+            f.write(settings.google_token)
+
+
+def _persist_token_to_db():
+    """After auth/refresh, save the token file contents back to DB for durability."""
+    token_path = str(Config.GOOGLE_TOKEN_PATH)
+    if not os.path.exists(token_path):
+        return
+    with open(token_path, 'r', encoding='utf-8') as f:
+        token_json = f.read()
+    settings = Settings.query.first()
+    if settings:
+        settings.google_token = token_json
+        db.session.commit()
+
+
 @google_bp.route('/auth/status', methods=['GET'])
 def auth_status():
     try:
+        _ensure_token_file()
         status = google_calendar_service.get_connection_status()
+        _persist_token_to_db()  # persist any auto-refresh that happened
         settings = Settings.query.first()
         status['has_credentials_json'] = bool(settings and settings.google_credentials)
         return jsonify({
@@ -103,6 +132,7 @@ def auth_callback():
             authorization_response=authorization_response,
             state=None,
         )
+        _persist_token_to_db()  # save token to DB immediately so it survives redeploys
 
         return (
             '<html><body style="font-family: Arial; padding: 16px;">'
@@ -140,7 +170,9 @@ def auth_disconnect():
 @google_bp.route('/calendars', methods=['GET'])
 def list_calendars():
     try:
+        _ensure_token_file()
         calendars = google_calendar_service.list_calendars()
+        _persist_token_to_db()
         return jsonify({
             'success': True,
             'data': calendars
@@ -155,6 +187,7 @@ def list_calendars():
 @google_bp.route('/events', methods=['GET'])
 def list_events():
     try:
+        _ensure_token_file()
         calendar_id = request.args.get('calendar_id', 'primary')
         from_str = request.args.get('from')
         to_str = request.args.get('to')
@@ -186,6 +219,7 @@ def list_events():
 @google_bp.route('/import', methods=['POST'])
 def import_events():
     try:
+        _ensure_token_file()
         payload = request.get_json() or {}
         calendar_id = payload.get('calendar_id', 'primary')
         from_str = payload.get('from')
@@ -264,6 +298,7 @@ def import_events():
                 created += 1
 
         db.session.commit()
+        _persist_token_to_db()  # persist any token refresh that happened during import
         return jsonify({
             'success': True,
             'data': {

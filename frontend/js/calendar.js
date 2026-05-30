@@ -41,7 +41,8 @@ class CalendarManager {
                 return;
             }
             const data = response.data;
-            this.currentWeek = new Date(data.week_start);
+            // Append T12:00:00 to avoid UTC midnight → previous-day shift in UTC+ zones
+            this.currentWeek = new Date(data.week_start + 'T12:00:00');
             this.events = data.events || [];
             this.renderWeek();
             this.updateWeekDisplay();
@@ -55,7 +56,8 @@ class CalendarManager {
         if (!this.currentWeek) return;
         const newWeek = new Date(this.currentWeek);
         newWeek.setDate(newWeek.getDate() + direction * 7);
-        this.loadCurrentWeek(newWeek.toISOString().split('T')[0]);
+        const iso = `${newWeek.getFullYear()}-${String(newWeek.getMonth()+1).padStart(2,'0')}-${String(newWeek.getDate()).padStart(2,'0')}`;
+        this.loadCurrentWeek(iso);
     }
 
     goToToday() { this.loadCurrentWeek(); }
@@ -218,10 +220,9 @@ class CalendarManager {
             }
 
             if (syncBtn) syncBtn.innerHTML = '<span class="material-symbols-outlined">sync</span> Sincronizando...';
-            const weekStart = this.currentWeek ? this.currentWeek.toISOString().split('T')[0] : null;
-            const weekEnd = this.currentWeek
-                ? new Date(this.currentWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                : null;
+            const _toLocalISO = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : null;
+            const weekStart = _toLocalISO(this.currentWeek);
+            const weekEnd = this.currentWeek ? _toLocalISO(new Date(this.currentWeek.getTime() + 6 * 24 * 60 * 60 * 1000)) : null;
 
             const importResp = await api.post('/api/google/import', { from: weekStart, to: weekEnd });
             if (importResp.success) {

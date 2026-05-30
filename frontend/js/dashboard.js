@@ -79,7 +79,8 @@ class DashboardManager {
 
     async fetchCalendar(monday) {
         try {
-            const start = monday.toISOString().split('T')[0];
+            const d = monday;
+            const start = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             const r = await api.get(`/api/calendar/week?week=${start}`);
             return r.success ? r.data : { events: [] };
         } catch { return { events: [] }; }

@@ -36,6 +36,7 @@ class Settings(db.Model):
     # API Keys
     anthropic_api_key = db.Column(db.String(500))
     google_credentials = db.Column(db.Text)
+    google_token = db.Column(db.Text)  # OAuth token JSON — persisted across deploys
     
     # Configuración de la Casa
     house_config = db.Column(db.Text, default='{}')  # JSON object

@@ -124,6 +124,20 @@ def create_app(config_name='default'):
                 print("Tablas de base de datos creadas/verificadas")
         except Exception as e:
             print(f"WARNING:  Error creando tablas: {e}")
+
+        # Incremental migrations — add new columns to existing tables
+        try:
+            from sqlalchemy import inspect as _inspect, text as _text
+            inspector = _inspect(db.engine)
+            if 'settings' in inspector.get_table_names():
+                existing_cols = [c['name'] for c in inspector.get_columns('settings')]
+                if 'google_token' not in existing_cols:
+                    db.session.execute(_text('ALTER TABLE settings ADD COLUMN google_token TEXT'))
+                    db.session.commit()
+                    print("Migración: columna google_token añadida a settings")
+        except Exception as mig_err:
+            db.session.rollback()
+            print(f"WARNING:  Migración settings: {mig_err}")
     
     return app
 
