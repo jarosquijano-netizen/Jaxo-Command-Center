@@ -804,7 +804,7 @@
                 this.tvRecognition = null;
                 this.tvIsRecording = false;
                 this.tvVoiceTranscript = '';
-                this.apiBase = 'http://localhost:9000/api';
+                this.apiBase = '/api';
                 this.init();
             }
             
@@ -1351,17 +1351,18 @@
                 if (!calendarGrid) return;
 
                 const events = calendarData.events || [];
-                const today = new Date();
-                
-                const currentWeek = new Date(today);
-                const dayOfWeek = today.getDay();
-                const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-                const monday = new Date(today.setDate(diff));
-                
+
+                // Build local-date strings without UTC shift
+                const _localISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const now = new Date();
+                const todayISO = _localISO(now);
+                const dow = now.getDay(); // 0=Sun … 6=Sat
+                const mondayOffset = dow === 0 ? -6 : 1 - dow;
+                const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+
                 const weekDisplay = document.getElementById('calendarWeekDisplay');
                 if (weekDisplay) {
-                    const sunday = new Date(monday);
-                    sunday.setDate(sunday.getDate() + 6);
+                    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
                     const startStr = monday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
                     const endStr = sunday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
                     weekDisplay.textContent = `${startStr} - ${endStr}`;
@@ -1370,48 +1371,44 @@
                 calendarGrid.innerHTML = '';
 
                 const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                const dayKeys = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 
                 for (let i = 0; i < 7; i++) {
-                    const currentDay = new Date(monday);
-                    currentDay.setDate(monday.getDate() + i);
-                    const dayKey = dayKeys[i];
-                    const dayDate = currentDay.toISOString().split('T')[0];
-                    
+                    const day = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+                    const dayISO = _localISO(day);
+                    const isToday = dayISO === todayISO;
+
                     const dayColumn = document.createElement('div');
                     dayColumn.className = 'calendar-day-column';
-                    
+
                     const dayHeader = document.createElement('div');
                     dayHeader.className = 'calendar-day-header';
-                    const isToday = dayDate === today.toISOString().split('T')[0];
-                    dayHeader.innerHTML = `
-                        ${dayNames[i]}
-                        ${isToday ? ' ·' : ''}
-                    `;
+                    dayHeader.innerHTML = `${dayNames[i]}${isToday ? ' ·' : ''}`;
                     dayColumn.appendChild(dayHeader);
-                    
+
                     const dayEvents = events.filter(event => {
-                        const matchesDay = event.start && event.start.startsWith(dayDate);
-                        const matchesFilter = this.currentCalendarFilter === 'all' || 
+                        if (!event.start) return false;
+                        // event.start is UTC ISO like "2026-05-30T08:00:00Z"; compare by local date
+                        const evDate = new Date(event.start);
+                        const matchesDay = _localISO(evDate) === dayISO;
+                        const matchesFilter = this.currentCalendarFilter === 'all' ||
                                           this.getEventType(event) === this.currentCalendarFilter;
                         return matchesDay && matchesFilter;
                     });
-                    
+
                     dayEvents.forEach(event => {
                         const eventItem = document.createElement('div');
                         eventItem.className = `calendar-event-item ${this.getEventType(event)}`;
-                        
-                        const startTime = event.start ? event.start.split('T')[1].substring(0, 5) : '';
+                        // Display local time
+                        const evDate = new Date(event.start);
+                        const startTime = `${String(evDate.getHours()).padStart(2,'0')}:${String(evDate.getMinutes()).padStart(2,'0')}`;
                         const eventIcon = this.getEventIcon(event);
-                        
                         eventItem.innerHTML = `
                             <div style="font-size: 0.8rem; color: var(--text-muted);">${startTime}</div>
                             <div><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">${eventIcon}</span> ${event.title}</div>
                         `;
-                        
                         dayColumn.appendChild(eventItem);
                     });
-                    
+
                     calendarGrid.appendChild(dayColumn);
                 }
 

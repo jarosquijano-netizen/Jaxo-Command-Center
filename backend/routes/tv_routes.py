@@ -102,6 +102,13 @@ def _diff_class(dificultad):
 
 @tv_bp.route('/tv')
 def tv_view():
+    # Ensure OAuth token file is present (may be missing after container restart)
+    try:
+        from routes.google_routes import _ensure_token_file
+        _ensure_token_file()
+    except Exception:
+        pass
+
     now = datetime.now()
     today_date = date.today()
     tomorrow_date = today_date + timedelta(days=1)
