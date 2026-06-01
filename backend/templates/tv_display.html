@@ -74,7 +74,26 @@
   {%- endif -%}
 {%- endmacro -%}
 
-{%- macro meal_card(label, meal, featured=false, badge='', badge_color='cyan') -%}
+{%- macro star_rating(comida_key, tipo_menu, existing_rating) -%}
+  {%- if menu_id and comida_key -%}
+  <div class="meal-stars pt-1.5 border-t border-white/10" data-menu="{{ menu_id }}" data-dia="{{ today_key }}" data-comida="{{ comida_key }}" data-tipo="{{ tipo_menu }}">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#475569;">Valorar</span>
+      <div class="star-row" style="display:flex;gap:2px;">
+        {%- for i in [1,2,3,4,5] -%}
+          <button class="star-btn{% if i <= existing_rating %} star-on{% endif %}"
+                  data-v="{{ i }}"
+                  style="background:none;border:none;cursor:pointer;padding:2px;font-size:16px;line-height:1;color:{% if i <= existing_rating %}#fbbf24{% else %}#334155{% endif %};transition:color .15s;"
+                  onclick="tvRateMeal(this)">★</button>
+        {%- endfor -%}
+      </div>
+      <span class="star-ok" style="font-size:10px;color:#22d3ee;font-weight:700;display:none;">✓</span>
+    </div>
+  </div>
+  {%- endif -%}
+{%- endmacro -%}
+
+{%- macro meal_card(label, meal, featured=false, badge='', badge_color='cyan', comida_key='', tipo_menu='adultos', existing_rating=0) -%}
   {%- if featured and meal -%}
     <div class="glass-card {% if badge_color == 'pink' %}glass-card-pink{% else %}glass-card-active{% endif %} p-3 flex flex-col gap-1.5 relative">
       {%- if badge -%}
@@ -116,6 +135,7 @@
           </ol>
         </div>
       {%- endif -%}
+      {{ star_rating(comida_key, tipo_menu, existing_rating) }}
     </div>
   {%- else -%}
     <div class="glass-card p-3 flex flex-col gap-1">
@@ -147,6 +167,7 @@
             </ol>
           </div>
         {%- endif -%}
+        {{ star_rating(comida_key, tipo_menu, existing_rating) }}
       {%- else -%}
         <p class="text-sm text-slate-500 italic">Sin menú hoy</p>
       {%- endif -%}
@@ -190,10 +211,10 @@
       <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#fff;">Adultos</h2>
     </div>
     <div class="col-scroll" style="display:flex;flex-direction:column;gap:8px;flex:1;">
-      {%- if meals_adultos.desayuno %}{{ meal_card('Desayuno', meals_adultos.desayuno) }}{% endif %}
-      {%- if meals_adultos.comida %}{{ meal_card('Comida', meals_adultos.comida, featured=true, badge='Recomendado', badge_color='cyan') }}{% endif %}
-      {%- if meals_adultos.merienda %}{{ meal_card('Merienda', meals_adultos.merienda) }}{% endif %}
-      {%- if meals_adultos.cena %}{{ meal_card('Cena', meals_adultos.cena) }}{% endif %}
+      {%- if meals_adultos.desayuno %}{{ meal_card('Desayuno', meals_adultos.desayuno, comida_key='desayuno', tipo_menu='adultos', existing_rating=today_ratings.get('adultos_desayuno',0)) }}{% endif %}
+      {%- if meals_adultos.comida %}{{ meal_card('Comida', meals_adultos.comida, featured=true, badge='Recomendado', badge_color='cyan', comida_key='comida', tipo_menu='adultos', existing_rating=today_ratings.get('adultos_comida',0)) }}{% endif %}
+      {%- if meals_adultos.merienda %}{{ meal_card('Merienda', meals_adultos.merienda, comida_key='merienda', tipo_menu='adultos', existing_rating=today_ratings.get('adultos_merienda',0)) }}{% endif %}
+      {%- if meals_adultos.cena %}{{ meal_card('Cena', meals_adultos.cena, comida_key='cena', tipo_menu='adultos', existing_rating=today_ratings.get('adultos_cena',0)) }}{% endif %}
       {%- if not (meals_adultos.desayuno or meals_adultos.comida or meals_adultos.merienda or meals_adultos.cena) %}
         <p style="color:#475569;font-style:italic;font-size:13px;">Sin menú hoy</p>
       {%- endif %}
@@ -209,10 +230,10 @@
       <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#fff;">Niñas</h2>
     </div>
     <div class="col-scroll" style="display:flex;flex-direction:column;gap:8px;flex:1;">
-      {%- if meals_ninos.desayuno %}{{ meal_card('Desayuno', meals_ninos.desayuno) }}{% endif %}
-      {%- if meals_ninos.comida %}{{ meal_card('Comida', meals_ninos.comida, featured=true, badge='Favorito', badge_color='pink') }}{% endif %}
-      {%- if meals_ninos.merienda %}{{ meal_card('Merienda', meals_ninos.merienda) }}{% endif %}
-      {%- if meals_ninos.cena %}{{ meal_card('Cena', meals_ninos.cena) }}{% endif %}
+      {%- if meals_ninos.desayuno %}{{ meal_card('Desayuno', meals_ninos.desayuno, comida_key='desayuno', tipo_menu='ninos', existing_rating=today_ratings.get('ninos_desayuno',0)) }}{% endif %}
+      {%- if meals_ninos.comida %}{{ meal_card('Comida', meals_ninos.comida, featured=true, badge='Favorito', badge_color='pink', comida_key='comida', tipo_menu='ninos', existing_rating=today_ratings.get('ninos_comida',0)) }}{% endif %}
+      {%- if meals_ninos.merienda %}{{ meal_card('Merienda', meals_ninos.merienda, comida_key='merienda', tipo_menu='ninos', existing_rating=today_ratings.get('ninos_merienda',0)) }}{% endif %}
+      {%- if meals_ninos.cena %}{{ meal_card('Cena', meals_ninos.cena, comida_key='cena', tipo_menu='ninos', existing_rating=today_ratings.get('ninos_cena',0)) }}{% endif %}
       {%- if not (meals_ninos.desayuno or meals_ninos.comida or meals_ninos.merienda or meals_ninos.cena) %}
         <p style="color:#475569;font-style:italic;font-size:13px;">Sin menú hoy</p>
       {%- endif %}
@@ -311,6 +332,54 @@
   updateClock();
   setInterval(updateClock, 1000);
   setTimeout(() => location.reload(), 5 * 60 * 1000);
+
+  async function tvRateMeal(starBtn) {
+    const row = starBtn.closest('.meal-stars');
+    if (!row) return;
+    const menuId = parseInt(row.dataset.menu);
+    const dia    = row.dataset.dia;
+    const comida = row.dataset.comida;
+    const tipo   = row.dataset.tipo;
+    const value  = parseInt(starBtn.dataset.v);
+
+    // Optimistic UI
+    const stars = row.querySelectorAll('.star-btn');
+    stars.forEach(s => {
+      const v = parseInt(s.dataset.v);
+      s.style.color = v <= value ? '#fbbf24' : '#334155';
+      s.classList.toggle('star-on', v <= value);
+    });
+
+    try {
+      const resp = await fetch('/api/menu/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ menu_id: menuId, dia, comida, tipo_menu: tipo, rating: value })
+      });
+      const ok = starBtn.closest('.meal-stars').querySelector('.star-ok');
+      if (ok) {
+        ok.style.display = 'inline';
+        setTimeout(() => { ok.style.display = 'none'; }, 2000);
+      }
+    } catch (e) {
+      console.error('[tv] rating error', e);
+    }
+  }
+
+  // Star hover effect
+  document.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('mouseover', () => {
+      const v = parseInt(btn.dataset.v);
+      btn.closest('.star-row')?.querySelectorAll('.star-btn').forEach(s => {
+        s.style.color = parseInt(s.dataset.v) <= v ? '#fbbf24' : '#334155';
+      });
+    });
+    btn.addEventListener('mouseout', () => {
+      btn.closest('.star-row')?.querySelectorAll('.star-btn').forEach(s => {
+        s.style.color = s.classList.contains('star-on') ? '#fbbf24' : '#334155';
+      });
+    });
+  });
 </script>
 </body>
 </html>

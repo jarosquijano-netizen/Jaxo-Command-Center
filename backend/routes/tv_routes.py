@@ -294,6 +294,21 @@ def tv_view():
     except Exception as e:
         logger.warning(f'[tv] weather: {e}')
 
+    # ------------------------------------------------------------------
+    # Menu rating data
+    # ------------------------------------------------------------------
+    menu_id = None
+    today_ratings = {}
+    try:
+        from models.menu import MenuRating
+        if menu_dict:
+            menu_id = menu_dict.get('id')
+        if menu_id:
+            for r in MenuRating.query.filter_by(menu_id=menu_id, dia=today_key).all():
+                today_ratings[f"{r.tipo_menu}_{r.comida}"] = r.rating
+    except Exception as e:
+        logger.warning(f'[tv] ratings: {e}')
+
     return render_template(
         'tv_display.html',
         date_str=date_str,
@@ -306,4 +321,7 @@ def tv_view():
         weather=weather,
         last_refresh=now.strftime('%H:%M'),
         diff_class=_diff_class,
+        menu_id=menu_id or 0,
+        today_key=today_key,
+        today_ratings=today_ratings,
     )

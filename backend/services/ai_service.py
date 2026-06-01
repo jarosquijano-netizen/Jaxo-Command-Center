@@ -154,14 +154,30 @@ class AIService:
             pref = f"- {n['nombre']} ({n['edad']} años): {n.get('come_solo', 'Con ayuda')}, Alergias: {', '.join(n.get('alergias', [])) or 'Ninguna'}"
             preferencias_ninos.append(pref)
         
-        # Ratings históricos
+        # Ratings históricos — siempre se usan si existen
         ratings_context = ""
-        if historical_ratings and considerar_calificaciones:
-            ratings_list = []
-            for r in historical_ratings[-5:]:
-                rating_str = f"{r['rating']}/5 - {r.get('comentario', '')}"
-                ratings_list.append(rating_str)
-            ratings_context = f"\nRATINGS ANTERIORES: {ratings_list}\n"
+        if historical_ratings:
+            liked, disliked = [], []
+            for r in historical_ratings:
+                plato = r.get('plato', '').strip()
+                if not plato:
+                    continue
+                stars = '★' * r['rating'] + '☆' * (5 - r['rating'])
+                entry = f"  {stars} {plato}"
+                if r.get('comentario'):
+                    entry += f" — {r['comentario']}"
+                if r['rating'] >= 4:
+                    liked.append(entry)
+                elif r['rating'] <= 2:
+                    disliked.append(entry)
+            if liked or disliked:
+                ratings_context = "\n## VALORACIONES DE LA FAMILIA:\n"
+                if liked:
+                    ratings_context += "FAVORITOS (4-5★ — repetir ocasionalmente si hay tiempo entre semanas):\n"
+                    ratings_context += "\n".join(liked[:15]) + "\n"
+                if disliked:
+                    ratings_context += "NO GUSTARON (≤2★ — NO incluir):\n"
+                    ratings_context += "\n".join(disliked[:10]) + "\n"
         
         # Preferencias especiales (limpiar caracteres problemáticos)
         preferencias_usuario = ""

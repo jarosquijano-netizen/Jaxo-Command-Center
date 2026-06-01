@@ -457,12 +457,25 @@ class MenuService:
             logger.warning(f"Error obteniendo platos anteriores: {e}")
             return []
 
-    def _get_historical_ratings(self, limit: int = 20) -> List[Dict]:
-        """Obtiene ratings históricos para aprendizaje"""
+    def _get_historical_ratings(self, limit: int = 30) -> List[Dict]:
+        """Obtiene ratings históricos enriquecidos con el nombre del plato."""
         try:
             ratings = MenuRating.query.order_by(MenuRating.created_at.desc()).limit(limit).all()
-            return [rating.to_dict() for rating in ratings]
-            
+            result = []
+            for r in ratings:
+                d = r.to_dict()
+                try:
+                    menu = WeeklyMenu.query.get(r.menu_id)
+                    if menu:
+                        md = json.loads(menu.menu_data) if isinstance(menu.menu_data, str) else menu.menu_data
+                        section = f"menu_{r.tipo_menu}"
+                        meal = (md.get(section) or {}).get(r.dia, {}).get(r.comida, {})
+                        if isinstance(meal, dict):
+                            d['plato'] = meal.get('plato') or meal.get('nombre', '')
+                except Exception:
+                    pass
+                result.append(d)
+            return result
         except Exception as e:
             logger.error(f"Error obteniendo ratings históricos: {str(e)}")
             return []
