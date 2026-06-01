@@ -55,11 +55,15 @@ class MenuService:
             
             # Obtener ratings históricos para aprendizaje
             historical_ratings = self._get_historical_ratings()
-            
+
+            # Obtener platos de semanas anteriores para evitar repetición
+            previous_dishes = self._get_previous_dishes(week_start, weeks=3)
+
             # Generar menú con IA
             logger.info(f"Generando menú para la semana {week_start}")
             menu_data = self.ai_service.generate_weekly_menu(
-                family_members, settings, house_config, historical_ratings
+                family_members, settings, house_config, historical_ratings,
+                week_start=week_start, previous_dishes=previous_dishes
             )
             
             # Guardar en base de datos
@@ -420,6 +424,39 @@ class MenuService:
             'total_ninos': len([m for m in family_members if m['tipo'] == 'niño'])
         }
     
+    def _get_previous_dishes(self, current_week_start: date, weeks: int = 3) -> List[str]:
+        """Returns list of dish names from the previous N weeks to avoid repetition."""
+        try:
+            cutoff = current_week_start - timedelta(weeks=weeks)
+            prev_menus = (
+                WeeklyMenu.query
+                .filter(WeeklyMenu.semana_inicio >= cutoff,
+                        WeeklyMenu.semana_inicio < current_week_start)
+                .order_by(WeeklyMenu.semana_inicio.desc())
+                .all()
+            )
+            dishes = []
+            for m in prev_menus:
+                try:
+                    data = json.loads(m.menu_data) if isinstance(m.menu_data, str) else m.menu_data
+                    for section in ('menu_adultos', 'menu_ninos'):
+                        for day_meals in (data.get(section) or {}).values():
+                            if not isinstance(day_meals, dict):
+                                continue
+                            for meal in day_meals.values():
+                                if isinstance(meal, dict):
+                                    name = meal.get('plato') or meal.get('nombre') or meal.get('name')
+                                    if name:
+                                        dishes.append(name)
+                except Exception:
+                    continue
+            # Deduplicate preserving order
+            seen = set()
+            return [d for d in dishes if not (d in seen or seen.add(d))]
+        except Exception as e:
+            logger.warning(f"Error obteniendo platos anteriores: {e}")
+            return []
+
     def _get_historical_ratings(self, limit: int = 20) -> List[Dict]:
         """Obtiene ratings históricos para aprendizaje"""
         try:

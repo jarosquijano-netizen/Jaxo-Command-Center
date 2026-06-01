@@ -144,31 +144,26 @@ class DashboardManager {
 
     // ─── Menú de Hoy Panel ────────────────────────────────────────────────
 
-    getTodayMenu(menuData) {
-        if (!menuData?.menu_data) return {};
+    getTodayMenuBoth(menuData) {
+        if (!menuData?.menu_data) return { adultos: {}, ninos: {} };
         try {
-            const parsed   = typeof menuData.menu_data === 'string'
+            const parsed  = typeof menuData.menu_data === 'string'
                 ? JSON.parse(menuData.menu_data) : menuData.menu_data;
-            const dayKeys  = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
-            const today    = dayKeys[new Date().getDay()];
-            return parsed.menu_adultos?.[today] || parsed.menu_ninos?.[today] || {};
-        } catch { return {}; }
+            const dayKeys = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
+            const today   = dayKeys[new Date().getDay()];
+            return {
+                adultos: parsed.menu_adultos?.[today] || {},
+                ninos:   parsed.menu_ninos?.[today]   || {},
+            };
+        } catch { return { adultos: {}, ninos: {} }; }
     }
 
-    renderMenuPanel(menuData) {
-        const container = document.getElementById('db-menu-content');
-        if (!container) return;
-
-        const dayMenu = this.getTodayMenu(menuData);
-        const meals   = Object.entries(dayMenu);
-
-        if (!meals.length) {
-            container.innerHTML = '<p class="db-menu-empty">Sin menú para hoy</p>';
-            return;
-        }
+    _buildMenuSectionHtml(dayMenu) {
+        const meals = Object.entries(dayMenu);
+        if (!meals.length) return '<p class="db-menu-empty">Sin menú para hoy</p>';
 
         const mealLabels = {
-            desayuno: 'Desayuno', almuerzo: 'Almuerzo', comida: 'Almuerzo',
+            desayuno: 'Desayuno', almuerzo: 'Almuerzo', comida: 'Comida',
             merienda: 'Merienda', cena: 'Cena'
         };
         const mealIcons = {
@@ -176,8 +171,7 @@ class DashboardManager {
             merienda: 'nutrition', cena: 'egg_alt'
         };
 
-        // Hero card = first meal (almuerzo or comida preferred)
-        const heroKey = ['almuerzo','comida','cena','desayuno','merienda']
+        const heroKey = ['comida','almuerzo','cena','desayuno','merienda']
             .find(k => dayMenu[k]) || meals[0][0];
         const heroData = dayMenu[heroKey] || {};
 
@@ -186,20 +180,17 @@ class DashboardManager {
                 ? heroData.preparacion.slice(0, 2).join('. ')
                 : heroData.preparacion.split('.').slice(0, 2).join('.') + '.')
             : (heroData.descripcion || '');
+
         const heroHtml = `
             <div class="db-menu-hero">
                 <p class="db-menu-hero-meal">${mealLabels[heroKey] || heroKey}</p>
-                <p class="db-menu-hero-name">${heroData.plato || '—'}</p>
+                <p class="db-menu-hero-name">${heroData.plato || heroData.nombre || '—'}</p>
                 ${desc ? `<p class="db-menu-hero-desc">${desc}</p>` : ''}
                 <div class="db-menu-hero-tags">
-                    ${heroKey === 'almuerzo' || heroKey === 'comida'
-                        ? '<span class="db-menu-tag">Almuerzo Familiar</span>' : ''}
-                    ${heroData.dificultad
-                        ? `<span class="db-menu-tag">${heroData.dificultad}</span>` : ''}
+                    ${heroData.dificultad ? `<span class="db-menu-tag">${heroData.dificultad}</span>` : ''}
                 </div>
             </div>`;
 
-        // Secondary rows: remaining meals
         const secondaryHtml = meals
             .filter(([k]) => k !== heroKey)
             .slice(0, 3)
@@ -210,11 +201,67 @@ class DashboardManager {
                     </span>
                     <div>
                         <p class="db-menu-row-label">${mealLabels[k] || k}</p>
-                        <p class="db-menu-row-name">${v?.plato || '—'}</p>
+                        <p class="db-menu-row-name">${v?.plato || v?.nombre || '—'}</p>
                     </div>
                 </div>`).join('');
 
-        container.innerHTML = heroHtml + secondaryHtml;
+        return heroHtml + secondaryHtml;
+    }
+
+    renderMenuPanel(menuData) {
+        const container = document.getElementById('db-menu-content');
+        if (!container) return;
+
+        const { adultos, ninos } = this.getTodayMenuBoth(menuData);
+        const hasAdultos = Object.keys(adultos).length > 0;
+        const hasNinos   = Object.keys(ninos).length > 0;
+
+        if (!hasAdultos && !hasNinos) {
+            container.innerHTML = '<p class="db-menu-empty">Sin menú para hoy</p>';
+            return;
+        }
+
+        // Build tabs only when both exist
+        const showTabs = hasAdultos && hasNinos;
+        const tabsHtml = showTabs ? `
+            <div class="db-menu-tabs" style="display:flex;gap:6px;margin-bottom:10px;">
+                <button class="db-menu-tab active" data-tab="adultos"
+                    style="flex:1;padding:5px;border-radius:8px;border:none;cursor:pointer;
+                           font-size:0.75rem;font-weight:600;background:rgba(173,198,255,0.15);color:#adc6ff;">
+                    👨‍👩 Adultos
+                </button>
+                <button class="db-menu-tab" data-tab="ninos"
+                    style="flex:1;padding:5px;border-radius:8px;border:none;cursor:pointer;
+                           font-size:0.75rem;font-weight:600;background:rgba(255,255,255,0.05);color:#94a3b8;">
+                    👧 Niños
+                </button>
+            </div>` : '';
+
+        const adultosHtml = this._buildMenuSectionHtml(adultos);
+        const ninosHtml   = hasNinos ? this._buildMenuSectionHtml(ninos) : '';
+
+        container.innerHTML = tabsHtml +
+            `<div class="db-menu-pane" data-pane="adultos">${adultosHtml}</div>` +
+            (showTabs ? `<div class="db-menu-pane" data-pane="ninos" style="display:none">${ninosHtml}</div>` : '');
+
+        // Tab switching
+        if (showTabs) {
+            container.querySelectorAll('.db-menu-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    container.querySelectorAll('.db-menu-tab').forEach(b => {
+                        b.classList.remove('active');
+                        b.style.background = 'rgba(255,255,255,0.05)';
+                        b.style.color = '#94a3b8';
+                    });
+                    btn.classList.add('active');
+                    btn.style.background = 'rgba(173,198,255,0.15)';
+                    btn.style.color = '#adc6ff';
+                    container.querySelectorAll('.db-menu-pane').forEach(p => {
+                        p.style.display = p.dataset.pane === btn.dataset.tab ? '' : 'none';
+                    });
+                });
+            });
+        }
     }
 
     // ─── Lista de Compras Panel ───────────────────────────────────────────

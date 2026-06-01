@@ -31,8 +31,9 @@ class AIService:
             self.client = None
             self.model = None
     
-    def generate_weekly_menu(self, family_members: List[Dict], settings: Dict, 
-                             house_config: Dict, historical_ratings: Optional[List[Dict]] = None) -> Dict:
+    def generate_weekly_menu(self, family_members: List[Dict], settings: Dict,
+                             house_config: Dict, historical_ratings: Optional[List[Dict]] = None,
+                             week_start=None, previous_dishes: Optional[List[str]] = None) -> Dict:
         """
         Genera un menú semanal completo usando Claude AI
         
@@ -46,7 +47,8 @@ class AIService:
             Dict con el menú generado
         """
         try:
-            prompt = self._build_menu_prompt(family_members, settings, house_config, historical_ratings)
+            prompt = self._build_menu_prompt(family_members, settings, house_config, historical_ratings,
+                                              week_start=week_start, previous_dishes=previous_dishes)
             
             logger.info("Enviando prompt a Claude...")
             logger.info(f"Prompt length: {len(prompt)} caracteres")
@@ -120,8 +122,9 @@ class AIService:
             logger.error(f"Error regenerando menú del día {dia}: {str(e)}")
             raise
     
-    def _build_menu_prompt(self, family_members: List[Dict], settings: Dict, 
-                         house_config: Dict, historical_ratings: Optional[List[Dict]] = None) -> str:
+    def _build_menu_prompt(self, family_members: List[Dict], settings: Dict,
+                         house_config: Dict, historical_ratings: Optional[List[Dict]] = None,
+                         week_start=None, previous_dishes: Optional[List[str]] = None) -> str:
         """
         Construye el prompt para Claude basado en los perfiles familiares y filtros
         """
@@ -167,12 +170,27 @@ class AIService:
             preferencias_limpias = preferencias_especiales.encode('ascii', 'ignore').decode('ascii')
             preferencias_usuario = f"\nPREFERENCIAS ESPECIALES: {preferencias_limpias}\n"
         
+        # Week identifier for variety
+        import datetime as _dt
+        week_label = week_start.isoformat() if week_start else _dt.date.today().isoformat()
+
+        # Anti-repetition block
+        no_repetir_block = ""
+        if previous_dishes:
+            lista = "\n".join(f"  - {d}" for d in previous_dishes[:60])
+            no_repetir_block = f"""
+## PLATOS YA COCINADOS RECIENTEMENTE — NO REPETIR NINGUNO:
+{lista}
+
+"""
+
         prompt = f"""
-Eres nutricionista experto. Genera menú para familia en Barcelona.
+Eres nutricionista experto. Genera el menú de la semana {week_label} para una familia en Barcelona.
+Cada semana DEBE ser diferente a las anteriores. Usa ingredientes, técnicas y cocinas variadas.
 
 ## FILTROS:
 - Días: {', '.join(dias_menu)}
-- Comidas: {', '.join(comidas)}  
+- Comidas: {', '.join(comidas)}
 - Presupuesto: {presupuesto}€
 - Supermercado: {supermercado}
 {preferencias_usuario}
@@ -180,17 +198,18 @@ Eres nutricionista experto. Genera menú para familia en Barcelona.
 ## FAMILIA:
 ADULTOS: {chr(10).join(preferencias_adultos) if preferencias_adultos else 'No adultos'}
 NIÑOS: {chr(10).join(preferencias_ninos) if preferencias_ninos else 'No niños'}
-{ratings_context}
-
+{ratings_context}{no_repetir_block}
 ## RESTRICCIONES (CRÍTICO - NUNCA INCLUIR):
 {self._get_all_allergies(family_members)}
 
 ## INSTRUCCIONES:
 1. SOLO generar comidas: {', '.join(comidas)}
 2. SOLO para días: {', '.join(dias_menu)}
-3. Dos menús: adultos y niños adaptados
-4. Generar lista_compra con precio_estimado realista por ingrediente (precios de {supermercado} en España) y coste_estimado_semana total
-5. Responder SOLO con JSON válido, sin texto adicional
+3. Dos menús: adultos y niños adaptados (menú niños siempre adaptado a su edad, no una copia del adulto)
+4. VARIEDAD OBLIGATORIA: ningún plato puede repetirse dentro de la semana ni coincidir con los de semanas anteriores listados arriba
+5. Alternar proteínas: pollo, ternera, cerdo, pescado, legumbres, huevos — no más de 2 días seguidos la misma proteína
+6. Generar lista_compra con precio_estimado realista por ingrediente (precios de {supermercado} en España) y coste_estimado_semana total
+7. Responder SOLO con JSON válido, sin texto adicional
 
 IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
 - plato, descripcion, tiempo_prep, calorias, dificultad, alergenos (array), ingredientes (array de strings, máx 8 items), preparacion (array de strings, máx 5 pasos breves)
