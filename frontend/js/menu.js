@@ -228,14 +228,23 @@ class MenuManager {
         if (!grid) return;
         const days     = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
         const dayNames = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+        const months   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        const todayKey = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date().getDay()];
+        const monday   = this.currentWeek ? new Date(this.currentWeek) : this.getMonday(new Date());
         grid.innerHTML = '';
         days.forEach((day, i) => {
+            const dayDate = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+            const dateLabel = `${dayDate.getDate()} ${months[dayDate.getMonth()]}`;
+            const isToday = day === todayKey;
             const col = document.createElement('div');
             col.className = 'mn-day';
             col.dataset.day = day;
             col.innerHTML = `
-                <h2 class="mn-day-name" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
-                    <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;">${dayNames[i]}</span>
+                <h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
+                    <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;display:flex;flex-direction:column;gap:1px;">
+                        <span>${dayNames[i]}</span>
+                        <span style="font-size:10px;font-weight:500;opacity:0.5;letter-spacing:0;">${dateLabel}</span>
+                    </span>
                     <span style="display:flex;align-items:center;gap:4px;">
                         <button class="mn-regen-btn" data-day="${day}" title="Generar día" tabindex="-1">
                             <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
@@ -269,7 +278,9 @@ class MenuManager {
 
         const days     = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
         const dayNames = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+        const months   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
         const todayKey = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date().getDay()];
+        const monday   = this.currentWeek ? new Date(this.currentWeek) : this.getMonday(new Date());
         const availableMeals = this.getAvailableMeals(parsed);
 
         grid.innerHTML = '';
@@ -305,6 +316,8 @@ class MenuManager {
         );
 
         days.forEach((day, i) => {
+            const dayDate  = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+            const dateLabel = `${dayDate.getDate()} ${months[dayDate.getMonth()]}`;
             const col = document.createElement('div');
             col.className = 'mn-day' + (collapsed.has(day) ? ' mn-day--collapsed' : '');
             col.dataset.day = day;
@@ -312,7 +325,10 @@ class MenuManager {
             const isToday = day === todayKey;
             col.innerHTML = `
                 <h2 class="mn-day-name${isToday ? ' mn-day-name--today' : ''}" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
-                    <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;">${dayNames[i]}</span>
+                    <span onclick="menuManager.toggleDay(this.closest('h2'))" style="flex:1;display:flex;flex-direction:column;gap:1px;">
+                        <span>${dayNames[i]}</span>
+                        <span style="font-size:10px;font-weight:500;opacity:0.5;letter-spacing:0;">${dateLabel}</span>
+                    </span>
                     <span style="display:flex;align-items:center;gap:4px;">
                         <button class="mn-regen-btn" data-day="${day}" title="Generar día" tabindex="-1">
                             <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
