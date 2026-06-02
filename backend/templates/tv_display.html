@@ -282,28 +282,32 @@
         </svg>
         <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#fff;">Tareas de Hoy</h2>
       </div>
-      <span style="font-size:12px;font-weight:600;color:#475569;font-family:monospace;">{{ completed_count }}/{{ tasks|length }}</span>
+      <span data-task-counter style="font-size:12px;font-weight:600;color:#475569;font-family:monospace;">{{ completed_count }}/{{ tasks|length }}</span>
     </div>
     <div class="col-scroll" style="display:flex;flex-direction:column;gap:6px;flex:1;">
       {%- if tasks -%}
         {%- for task in tasks -%}
           {%- if task.completada -%}
-            <div class="glass-card" style="padding:8px 10px;display:flex;align-items:center;justify-content:space-between;opacity:0.55;">
+            <div class="glass-card task-card" data-task-id="{{ task.id }}" data-done="1" onclick="tvToggleTask(this)" style="padding:8px 10px;display:flex;align-items:center;justify-content:space-between;opacity:0.55;cursor:pointer;transition:opacity 0.2s;">
               <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:22px;height:22px;border-radius:50%;border:2px solid #2dd4bf;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                  <svg style="width:12px;height:12px;color:#2dd4bf;" fill="currentColor" viewBox="0 0 20 20">
+                <div class="task-circle" style="width:22px;height:22px;border-radius:50%;border:2px solid #2dd4bf;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg class="task-check" style="width:12px;height:12px;color:#2dd4bf;" fill="currentColor" viewBox="0 0 20 20">
                     <path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"/>
                   </svg>
                 </div>
-                <span style="font-size:13px;color:#fff;text-decoration:line-through;color:#94a3b8;">{{ task.nombre }}</span>
+                <span class="task-label" style="font-size:13px;color:#94a3b8;text-decoration:line-through;">{{ task.nombre }}</span>
               </div>
               {{ avatar(task.member) }}
             </div>
           {%- else -%}
-            <div class="glass-card" style="padding:8px 10px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);">
+            <div class="glass-card task-card" data-task-id="{{ task.id }}" data-done="0" onclick="tvToggleTask(this)" style="padding:8px 10px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);cursor:pointer;transition:opacity 0.2s;">
               <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:22px;height:22px;border-radius:50%;border:2px solid #334155;flex-shrink:0;"></div>
-                <span style="font-size:13px;color:#fff;">{{ task.nombre }}</span>
+                <div class="task-circle" style="width:22px;height:22px;border-radius:50%;border:2px solid #334155;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg class="task-check" style="width:12px;height:12px;color:#2dd4bf;display:none;" fill="currentColor" viewBox="0 0 20 20">
+                    <path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"/>
+                  </svg>
+                </div>
+                <span class="task-label" style="font-size:13px;color:#fff;">{{ task.nombre }}</span>
               </div>
               {{ avatar(task.member) }}
             </div>
@@ -363,6 +367,48 @@
       }
     } catch (e) {
       console.error('[tv] rating error', e);
+    }
+  }
+
+  async function tvToggleTask(card) {
+    const taskId = card.dataset.taskId;
+    const done = card.dataset.done === '1';
+    const newDone = !done;
+
+    // Optimistic UI update
+    const circle = card.querySelector('.task-circle');
+    const check  = card.querySelector('.task-check');
+    const label  = card.querySelector('.task-label');
+    if (newDone) {
+      card.dataset.done = '1';
+      card.style.opacity = '0.55';
+      circle.style.borderColor = '#2dd4bf';
+      check.style.display = 'block';
+      label.style.textDecoration = 'line-through';
+      label.style.color = '#94a3b8';
+    } else {
+      card.dataset.done = '0';
+      card.style.opacity = '1';
+      circle.style.borderColor = '#334155';
+      check.style.display = 'none';
+      label.style.textDecoration = 'none';
+      label.style.color = '#fff';
+    }
+
+    // Update counter
+    const all = document.querySelectorAll('.task-card');
+    const doneCount = Array.from(all).filter(c => c.dataset.done === '1').length;
+    const counter = document.querySelector('[data-task-counter]');
+    if (counter) counter.textContent = doneCount + '/' + all.length;
+
+    try {
+      await fetch(`/api/cleaning/schedule/${taskId}/complete`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: newDone })
+      });
+    } catch (e) {
+      console.error('[tv] task toggle error', e);
     }
   }
 

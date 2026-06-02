@@ -191,7 +191,7 @@ def tv_view():
             .all()
         )
         tasks = [
-            {'nombre': r.task_nombre, 'member': r.member_nombre, 'completada': r.completada}
+            {'id': r.id, 'nombre': r.task_nombre, 'member': r.member_nombre, 'completada': r.completada}
             for r in rows
         ]
     except Exception as e:
