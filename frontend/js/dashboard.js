@@ -102,8 +102,8 @@ class DashboardManager {
         // Chip 1 — Menú
         const menuEl = document.getElementById('chip-menu-value');
         if (menuEl) {
-            const dayMenu = this.getTodayMenu(menuData);
-            const first   = Object.values(dayMenu)[0];
+            const { adultos } = this.getTodayMenuBoth(menuData);
+            const first = Object.values(adultos)[0];
             menuEl.textContent = first?.plato
                 ? first.plato.split(' ').slice(0, 3).join(' ')
                 : 'Sin menú';
