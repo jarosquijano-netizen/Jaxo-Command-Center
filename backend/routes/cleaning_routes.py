@@ -797,9 +797,13 @@ def complete_task(schedule_id):
     """Marcar tarea como completada"""
     try:
         schedule = CleaningSchedule.query.get_or_404(schedule_id)
-        data = request.get_json()
-        
-        schedule.completada = data.get('completed', True)
+        data = request.get_json() or {}
+
+        completed = data.get('completed', True)
+        if not isinstance(completed, bool):
+            return jsonify({'success': False, 'message': 'completed debe ser true o false'}), 400
+
+        schedule.completada = completed
         if schedule.completada:
             schedule.completada_at = datetime.utcnow()
             schedule.completada_por = data.get('completed_by')

@@ -8,21 +8,21 @@ import os
 if os.getenv('FLASK_ENV') == 'development':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from config import get_config
-from extensions import db
+from extensions import db, limiter
 import logging
 
 def create_app(config_name='default'):
     """Factory para crear la aplicación Flask"""
-    
+
     app = Flask(__name__)
-    
+
     # Cargar configuración
     config_class = get_config()
     app.config.from_object(config_class)
-    
+
     # Inicializar extensiones
     db.init_app(app)
     cors_origins = app.config['CORS_ORIGINS']
@@ -31,13 +31,59 @@ def create_app(config_name='default'):
     else:
         origins_list = cors_origins.split(',') if isinstance(cors_origins, str) else cors_origins
         CORS(app, origins=origins_list)
-    
+
+    # Rate limiting
+    if limiter is not None:
+        limiter.init_app(app)
+        limiter._default_limits = ["300 per hour", "60 per minute"]
+    else:
+        logging.getLogger(__name__).warning("flask-limiter not installed — rate limiting disabled")
+
     # Configurar logging
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    
+
+    # ── Optional PIN auth ────────────────────────────────────────────────
+    _app_pin = os.getenv('APP_PIN', '').strip()
+
+    @app.before_request
+    def check_pin():
+        """If APP_PIN is set, require it for all /api/* routes."""
+        if not _app_pin:
+            return  # auth disabled — no APP_PIN configured
+        if not request.path.startswith('/api/'):
+            return  # only protect API routes; frontend/TV pages are fine
+        # Accept PIN via Authorization header ("Bearer <pin>") or X-App-Pin header
+        auth_header = request.headers.get('Authorization', '')
+        pin_header  = request.headers.get('X-App-Pin', '')
+        provided = ''
+        if auth_header.startswith('Bearer '):
+            provided = auth_header[7:].strip()
+        elif pin_header:
+            provided = pin_header.strip()
+        if provided != _app_pin:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    # ── Security headers ─────────────────────────────────────────────────
+    @app.after_request
+    def set_security_headers(response):
+        # Prevent MIME-type sniffing
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        # Allow same-origin framing only (TV iframe is same-origin)
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        # Don't send referrer to cross-origin destinations
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # Disable browser features we don't need
+        response.headers['Permissions-Policy'] = 'geolocation=(), payment=()'
+        # Don't cache HTML (already handled below, but reinforce for JSON too)
+        if response.content_type and 'text/html' in response.content_type:
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        return response
+
     # Registrar blueprints
     from routes.family_routes import family_bp
     from routes.menu_routes import menu_bp
@@ -60,20 +106,11 @@ def create_app(config_name='default'):
     app.register_blueprint(google_bp, url_prefix='/api/google')
     app.register_blueprint(tv_bp)          # /tv — no prefix, route defined in blueprint
     # app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-    
+
     # Health check endpoint
     @app.route('/health')
     def health_check():
         return jsonify({'status': 'ok', 'message': 'Family Command Center is running', 'version': '1.0.0'})
-
-    # No-cache for HTML pages so browsers always get fresh JS version strings
-    @app.after_request
-    def no_cache_html(response):
-        if response.content_type and 'text/html' in response.content_type:
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '0'
-        return response
 
     # Main frontend route
     @app.route('/')
@@ -82,7 +119,7 @@ def create_app(config_name='default'):
         import os
         frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
         return send_from_directory(frontend_path, 'index.html')
-    
+
     # Static files route
     @app.route('/<path:filename>')
     def static_files(filename):
@@ -90,28 +127,20 @@ def create_app(config_name='default'):
         import os
         frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
         return send_from_directory(frontend_path, filename)
-    
-    # TV View — handled by tv_bp blueprint (renders templates/tv_display.html with live data)
-    
+
     # Error handlers
     @app.errorhandler(404)
     def not_found(error):
-        """Handler para 404 Not Found"""
-        return jsonify({
-            'success': False,
-            'error': 'Endpoint no encontrado',
-            'code': 404
-        }), 404
-    
+        return jsonify({'success': False, 'error': 'Endpoint no encontrado', 'code': 404}), 404
+
+    @app.errorhandler(429)
+    def rate_limited(error):
+        return jsonify({'success': False, 'error': 'Demasiadas peticiones. Intenta más tarde.', 'code': 429}), 429
+
     @app.errorhandler(500)
     def internal_error(error):
-        """Handler para 500 Internal Server Error"""
-        return jsonify({
-            'success': False,
-            'error': 'Error interno del servidor',
-            'code': 500
-        }), 500
-    
+        return jsonify({'success': False, 'error': 'Error interno del servidor', 'code': 500}), 500
+
     with app.app_context():
         try:
             if os.getenv('RESET_DB', 'false').lower() == 'true':
@@ -138,7 +167,15 @@ def create_app(config_name='default'):
         except Exception as mig_err:
             db.session.rollback()
             print(f"WARNING:  Migración settings: {mig_err}")
-    
+
+        # Warn about insecure defaults
+        if os.getenv('SECRET_KEY', '') in ('', 'dev-secret-key-change-in-production'):
+            print("WARNING:  SECRET_KEY is using the insecure default — set SECRET_KEY in Railway env vars")
+        if _app_pin:
+            print("Security: APP_PIN auth enabled for /api/* routes")
+        else:
+            print("Security: APP_PIN not set — API routes are unauthenticated")
+
     return app
 
 
@@ -148,27 +185,9 @@ app = create_app()
 
 if __name__ == '__main__':
     app = create_app()
-    
-    # Validar configuración
-    try:
-        from config import Config
-        # Config.validate()  # Descomentar cuando tengas las API keys
-        print("Configuración validada")
-    except ValueError as e:
-        print(f"WARNING:  Advertencia: {e}")
-        print("Configura el archivo .env con las credenciales necesarias")
-    
-    # Ejecutar servidor
-    print(f"""
-    ╔════════════════════════════════════════════╗
-    ║   Family Command Center                ║
-    ║   Servidor corriendo en:                  ║
-    ║   http://localhost:{app.config['PORT']}                      ║
-    ╚════════════════════════════════════════════╝
-    """)
-    
     app.run(
         host=app.config['HOST'],
         port=app.config['PORT'],
         debug=app.config['DEBUG']
     )
+

@@ -5,11 +5,17 @@ Rutas API para gestión de menús
 from flask import Blueprint, request, jsonify
 from datetime import datetime, date, timedelta
 from services.menu_service import menu_service
+from extensions import limiter
 import logging
 
 logger = logging.getLogger(__name__)
 
 menu_bp = Blueprint('menu', __name__)
+
+# Valid field values for input validation
+_VALID_DIAS    = {'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'}
+_VALID_COMIDAS = {'desayuno', 'comida', 'merienda', 'cena'}
+_VALID_TIPOS   = {'adultos', 'ninos'}
 
 
 @menu_bp.route('/week/<string:week_start_str>', methods=['GET'])
@@ -77,6 +83,7 @@ def get_weekly_menu():
 
 
 @menu_bp.route('/generate', methods=['POST'])
+@(limiter.limit("6 per hour") if limiter else (lambda f: f))
 def generate_menu():
     """
     Genera un nuevo menú semanal
@@ -185,6 +192,7 @@ def get_latest_menu():
 
 
 @menu_bp.route('/regenerate-day', methods=['POST'])
+@(limiter.limit("10 per hour") if limiter else (lambda f: f))
 def regenerate_day():
     """
     Regenera un día específico o comida específica
@@ -280,19 +288,31 @@ def rate_menu():
                 'message': 'Se requieren datos en el body'
             }), 400
         
-        menu_id = data.get('menu_id')
-        dia = data.get('dia')
-        comida = data.get('comida')
-        tipo_menu = data.get('tipo_menu')
-        rating = data.get('rating')
-        comentario = data.get('comentario')
-        rated_by = data.get('rated_by')
-        
+        menu_id    = data.get('menu_id')
+        dia        = data.get('dia')
+        comida     = data.get('comida')
+        tipo_menu  = data.get('tipo_menu')
+        rating     = data.get('rating')
+        comentario = data.get('comentario', '')
+        rated_by   = data.get('rated_by')
+
+        # Required fields
         if not all([menu_id, dia, comida, tipo_menu, rating is not None]):
-            return jsonify({
-                'success': False,
-                'message': 'Se requieren menu_id, dia, comida, tipo_menu y rating'
-            }), 400
+            return jsonify({'success': False, 'message': 'Se requieren menu_id, dia, comida, tipo_menu y rating'}), 400
+
+        # Type + range validation
+        if not isinstance(menu_id, int) or menu_id < 1:
+            return jsonify({'success': False, 'message': 'menu_id inválido'}), 400
+        if dia not in _VALID_DIAS:
+            return jsonify({'success': False, 'message': f'dia debe ser uno de: {", ".join(sorted(_VALID_DIAS))}'}), 400
+        if comida not in _VALID_COMIDAS:
+            return jsonify({'success': False, 'message': f'comida debe ser uno de: {", ".join(sorted(_VALID_COMIDAS))}'}), 400
+        if tipo_menu not in _VALID_TIPOS:
+            return jsonify({'success': False, 'message': 'tipo_menu debe ser "adultos" o "ninos"'}), 400
+        if not isinstance(rating, int) or not (1 <= rating <= 5):
+            return jsonify({'success': False, 'message': 'rating debe ser un entero entre 1 y 5'}), 400
+        if comentario and len(str(comentario)) > 500:
+            return jsonify({'success': False, 'message': 'comentario no puede superar 500 caracteres'}), 400
         
         result = menu_service.rate_menu_item(
             menu_id, dia, comida, tipo_menu, rating, comentario, rated_by
@@ -497,6 +517,7 @@ def delete_menu(menu_id):
 
 
 @menu_bp.route('/generate-day', methods=['POST'])
+@(limiter.limit("10 per hour") if limiter else (lambda f: f))
 def generate_day():
     """
     Genera el menú de un día específico con preferencias opcionales.
