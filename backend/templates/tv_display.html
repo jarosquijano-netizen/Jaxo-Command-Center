@@ -326,6 +326,14 @@
 </div>
 
 <script>
+  // Include APP_PIN on all fetch calls if stored (mirrors api.js behaviour)
+  function _apiHeaders() {
+    const pin = sessionStorage.getItem('app_pin') || localStorage.getItem('app_pin') || '';
+    const h = { 'Content-Type': 'application/json' };
+    if (pin) h['X-App-Pin'] = pin;
+    return h;
+  }
+
   function updateClock() {
     const now = new Date();
     const h = String(now.getHours()).padStart(2,'0');
@@ -357,7 +365,7 @@
     try {
       const resp = await fetch('/api/menu/rate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _apiHeaders(),
         body: JSON.stringify({ menu_id: menuId, dia, comida, tipo_menu: tipo, rating: value })
       });
       const ok = starBtn.closest('.meal-stars').querySelector('.star-ok');
@@ -411,7 +419,7 @@
     try {
       await fetch('/api/cleaning/schedule/' + taskId + '/complete', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _apiHeaders(),
         body: JSON.stringify({ completed: newDone })
       });
     } catch (e) {

@@ -18,14 +18,14 @@ class APIClient {
      */
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
-        
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        };
 
-        const config = { ...defaultOptions, ...options };
+        const headers = { 'Content-Type': 'application/json' };
+        // If APP_PIN is active, include it on every API request
+        const pin = sessionStorage.getItem('app_pin') || localStorage.getItem('app_pin');
+        if (pin) headers['X-App-Pin'] = pin;
+
+        const defaultOptions = { headers };
+        const config = { ...defaultOptions, ...options, headers: { ...headers, ...(options.headers || {}) } };
 
         try {
             const response = await fetch(url, config);
