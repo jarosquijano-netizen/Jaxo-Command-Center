@@ -14,6 +14,28 @@ logger = logging.getLogger(__name__)
 
 MERCADONA_URL = "https://tienda.mercadona.es"
 
+# Flags de lanzamiento de Chromium probados en Railway (via /diag).
+# --disable-http2 evita ERR_HTTP2_PROTOCOL_ERROR intermitente con Mercadona.
+# NO añadir --single-process ni --disable-features=VizDisplayCompositor (crashean).
+CHROMIUM_ARGS = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-software-rasterizer",
+    "--no-zygote",
+    "--disable-extensions",
+    "--memory-pressure-off",
+    "--disable-http2",
+]
+
+# User-agent realista y actual (coincide con Chromium 130 que trae nix)
+REALISTIC_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/130.0.0.0 Safari/537.36"
+)
+
 
 class MercadonaService:
 
@@ -79,28 +101,15 @@ class MercadonaService:
                 chromium_sandbox=False,
                 timeout=90000,
                 env=launch_env,
-                # MISMO set de flags que /diag, que se probó y carga Mercadona OK.
-                # NO añadir --disable-features=VizDisplayCompositor (crashea Chromium 130)
-                # ni --single-process ("Target page/browser closed").
-                args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                    "--disable-software-rasterizer",
-                    "--no-zygote",
-                    "--disable-extensions",
-                    "--memory-pressure-off",
-                ],
+                args=CHROMIUM_ARGS,
             )
             context = await browser.new_context(
-                viewport={"width": 1280, "height": 900},
-                user_agent=(
-                    "Mozilla/5.0 (X11; Linux x86_64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0.0.0 Safari/537.36"
-                ),
+                viewport={"width": 1366, "height": 900},
+                user_agent=REALISTIC_UA,
                 locale="es-ES",
+                extra_http_headers={
+                    "Accept-Language": "es-ES,es;q=0.9",
+                },
             )
             page = await context.new_page()
 
@@ -151,10 +160,23 @@ class MercadonaService:
             "added_detail": added,
         }
 
+    async def _goto_with_retry(self, page, url, attempts=3):
+        """Navega con reintentos (ERR_HTTP2_PROTOCOL_ERROR y demás son intermitentes)."""
+        last_err = None
+        for n in range(1, attempts + 1):
+            try:
+                await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                return
+            except Exception as e:
+                last_err = e
+                logger.warning(f"[mercadona] goto intento {n}/{attempts} falló: {str(e)[:120]}")
+                await page.wait_for_timeout(2500 * n)
+        raise last_err
+
     async def _set_postal_code(self, page):
         """Navigate to Mercadona and set the postal code."""
         from playwright.async_api import TimeoutError as PWTimeout
-        await page.goto(MERCADONA_URL, wait_until="domcontentloaded", timeout=30000)
+        await self._goto_with_retry(page, MERCADONA_URL)
         await page.wait_for_timeout(2000)
 
         # Accept cookies if present
@@ -330,19 +352,20 @@ class MercadonaService:
                     chromium_sandbox=False,
                     timeout=90000,
                     env=launch_env,
-                    args=[
-                        "--no-sandbox", "--disable-setuid-sandbox",
-                        "--disable-dev-shm-usage", "--disable-gpu",
-                        "--disable-software-rasterizer", "--no-zygote",
-                        "--disable-extensions", "--memory-pressure-off",
-                    ],
+                    args=CHROMIUM_ARGS,
                 )
                 try:
                     result["version"] = browser.version
                 except Exception:
                     pass
-                page = await browser.new_page()
-                await page.goto(url, timeout=45000, wait_until="domcontentloaded")
+                context = await browser.new_context(
+                    viewport={"width": 1366, "height": 900},
+                    user_agent=REALISTIC_UA,
+                    locale="es-ES",
+                    extra_http_headers={"Accept-Language": "es-ES,es;q=0.9"},
+                )
+                page = await context.new_page()
+                await self._goto_with_retry(page, url, attempts=3)
                 await page.wait_for_timeout(2000)
                 result["ok"] = True
                 result["final_url"] = page.url
