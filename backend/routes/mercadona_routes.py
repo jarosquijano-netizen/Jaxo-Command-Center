@@ -180,9 +180,10 @@ def job_status(job_id: str):
 
 @mercadona_bp.route("/diag", methods=["GET"])
 def diag():
-    """Diagnóstico: lanza Chromium (about:blank) y devuelve su stderr real."""
+    """Diagnóstico: lanza Chromium y navega a ?url= (about:blank por defecto)."""
     from services.mercadona_service import mercadona_service
-    return jsonify(mercadona_service.diagnose())
+    url = request.args.get("url", "about:blank")
+    return jsonify(mercadona_service.diagnose(url))
 
 
 @mercadona_bp.route("/search", methods=["POST"])

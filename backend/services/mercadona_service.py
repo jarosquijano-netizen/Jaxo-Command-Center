@@ -303,14 +303,14 @@ class MercadonaService:
 
     # ── Helpers ───────────────────────────────────────────────────────────
 
-    def diagnose(self) -> Dict:
-        """Lanza Chromium con about:blank capturando su stderr real. Para depurar el crash."""
+    def diagnose(self, url: str = "about:blank") -> Dict:
+        """Lanza Chromium navegando a `url`, capturando su stderr real. Para depurar el crash."""
         try:
-            return asyncio.run(self._diagnose_async())
+            return asyncio.run(self._diagnose_async(url))
         except Exception as e:
             return {"ok": False, "error": f"wrapper: {e}"}
 
-    async def _diagnose_async(self) -> Dict:
+    async def _diagnose_async(self, url: str = "about:blank") -> Dict:
         import tempfile
         from playwright.async_api import async_playwright
 
@@ -345,9 +345,14 @@ class MercadonaService:
                 except Exception:
                     pass
                 page = await browser.new_page()
-                await page.goto("about:blank", timeout=15000)
-                await page.wait_for_timeout(500)
+                await page.goto(url, timeout=45000, wait_until="domcontentloaded")
+                await page.wait_for_timeout(2000)
                 result["ok"] = True
+                result["final_url"] = page.url
+                try:
+                    result["title"] = await page.title()
+                except Exception:
+                    pass
                 await browser.close()
         except Exception as e:
             result["ok"] = False
