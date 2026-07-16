@@ -61,20 +61,40 @@ class MercadonaService:
 
         added, not_found, errors = [], [], []
 
+        # HOME escribible: Chromium necesita escribir su perfil/crashpad o
+        # crashea al arrancar. En Railway el HOME por defecto puede no serlo.
+        launch_env = dict(os.environ)
+        launch_env["HOME"] = "/tmp"
+        # DEBUG=pw:browser hace que Playwright vuelque el stdout/stderr de
+        # Chromium al log del proceso (visible en Railway) → causa real del crash.
+        launch_env.setdefault("DEBUG", "pw:browser")
+
+        chromium_bin = self._chromium_path()
+        logger.info(f"[mercadona] lanzando Chromium: {chromium_bin}")
+
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(
                 headless=True,
+                executable_path=chromium_bin,
+                chromium_sandbox=False,
+                timeout=90000,
+                env=launch_env,
                 args=[
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-gpu",
                     "--disable-software-rasterizer",
-                    "--disable-features=VizDisplayCompositor",
-                    # NO usar --single-process: causa "Target page/browser closed"
-                    # (crash instantáneo de Chromium en contenedores).
+                    "--no-zygote",
+                    "--disable-extensions",
+                    "--disable-background-networking",
+                    "--disable-renderer-backgrounding",
+                    "--disable-background-timer-throttling",
+                    "--disable-backgrounding-occluded-windows",
+                    "--memory-pressure-off",
+                    "--disable-features=VizDisplayCompositor,TranslateUI",
+                    # NO usar --single-process: causa "Target page/browser closed".
                 ],
-                executable_path=self._chromium_path(),
             )
             context = await browser.new_context(
                 viewport={"width": 1280, "height": 900},
@@ -285,15 +305,19 @@ class MercadonaService:
 
     def _chromium_path(self) -> Optional[str]:
         """Resolve the Chromium executable path across environments."""
+        import shutil
         candidates = [
             os.getenv("CHROMIUM_PATH"),               # explicit env override
+            shutil.which("chromium"),                  # nix pone chromium en PATH
+            shutil.which("chromium-browser"),
             "/usr/bin/chromium",                       # nixpacks nix install
             "/usr/bin/chromium-browser",               # Ubuntu/Debian
             "/usr/bin/google-chrome",                  # Chrome
             "/nix/var/nix/profiles/default/bin/chromium",
+            "/root/.nix-profile/bin/chromium",
         ]
         for p in candidates:
-            if p and os.path.isfile(p):
+            if p and (os.path.isfile(p) or os.path.islink(p)):
                 return p
         return None  # let Playwright use its own bundled binary
 
