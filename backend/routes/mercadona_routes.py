@@ -25,8 +25,33 @@ def _run_job(job_id: str, items: list):
     try:
         result = mercadona_service.sync_cart(items)
         _jobs[job_id].update({"status": "done", "result": result, "finished_at": datetime.utcnow().isoformat()})
+        # Persist successfully added items for pantry-awareness in future menus
+        if result.get("success") and result.get("added_detail"):
+            _save_purchase_history(result["added_detail"], job_id)
     except Exception as e:
         _jobs[job_id].update({"status": "error", "result": {"success": False, "error": str(e)}, "finished_at": datetime.utcnow().isoformat()})
+
+
+def _save_purchase_history(added_items: list, job_id: str):
+    """Saves purchased items to DB so the AI can avoid re-buying non-perishables."""
+    try:
+        from app import app
+        from extensions import db
+        from models.shopping import PurchaseHistory
+        with app.app_context():
+            for item in added_items:
+                if isinstance(item, dict):
+                    name = item.get("query") or item.get("nombre") or item.get("producto") or ""
+                    qty  = item.get("cantidad") or item.get("quantity") or ""
+                else:
+                    name, qty = str(item), ""
+                if not name:
+                    continue
+                db.session.add(PurchaseHistory(item_name=name, quantity=qty, job_id=job_id))
+            db.session.commit()
+            logger.info(f"[mercadona] saved {len(added_items)} items to purchase_history")
+    except Exception as e:
+        logger.warning(f"[mercadona] could not save purchase history: {e}")
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────

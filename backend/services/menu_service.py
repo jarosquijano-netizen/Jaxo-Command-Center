@@ -59,11 +59,15 @@ class MenuService:
             # Obtener platos de semanas anteriores para evitar repetición
             previous_dishes = self._get_previous_dishes(week_start, weeks=3)
 
+            # Obtener compras recientes (para que la IA no re-compre lo que ya hay en casa)
+            recent_purchases = self._get_recent_purchases(days=21)
+
             # Generar menú con IA
             logger.info(f"Generando menú para la semana {week_start}")
             menu_data = self.ai_service.generate_weekly_menu(
                 family_members, settings, house_config, historical_ratings,
-                week_start=week_start, previous_dishes=previous_dishes
+                week_start=week_start, previous_dishes=previous_dishes,
+                recent_purchases=recent_purchases,
             )
             
             # Guardar en base de datos
@@ -455,6 +459,25 @@ class MenuService:
             return [d for d in dishes if not (d in seen or seen.add(d))]
         except Exception as e:
             logger.warning(f"Error obteniendo platos anteriores: {e}")
+            return []
+
+    def _get_recent_purchases(self, days: int = 21) -> List[Dict]:
+        """
+        Returns items purchased via Mercadona in the last `days` days.
+        Used to tell the AI what's likely still in the pantry.
+        """
+        try:
+            from models.shopping import PurchaseHistory
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            rows = (
+                PurchaseHistory.query
+                .filter(PurchaseHistory.purchased_at >= cutoff)
+                .order_by(PurchaseHistory.purchased_at.desc())
+                .all()
+            )
+            return [r.to_dict() for r in rows]
+        except Exception as e:
+            logger.warning(f"Error obteniendo historial de compras: {e}")
             return []
 
     def _get_historical_ratings(self, limit: int = 30) -> List[Dict]:

@@ -144,6 +144,8 @@ def create_app(config_name='default'):
         return jsonify({'success': False, 'error': 'Error interno del servidor', 'code': 500}), 500
 
     with app.app_context():
+        # Ensure all models are imported so SQLAlchemy creates their tables
+        from models import shopping  # noqa: F401 – registers PurchaseHistory with metadata
         try:
             if os.getenv('RESET_DB', 'false').lower() == 'true':
                 print("WARNING:  RESET_DB=true — dropping and recreating all tables...")
