@@ -27,9 +27,6 @@ CHROMIUM_ARGS = [
     "--disable-extensions",
     "--memory-pressure-off",
     "--disable-http2",
-    # Limitar memoria: la SPA de Mercadona es pesada y el contenedor tiene RAM
-    # limitada; sin esto el renderer se queda sin memoria (OOM → "browser closed").
-    "--js-flags=--max-old-space-size=384",
     "--disable-accelerated-2d-canvas",
     "--disable-webgl",
 ]
@@ -351,11 +348,37 @@ class MercadonaService:
         except Exception as e:
             return {"ok": False, "error": f"wrapper: {e}"}
 
+    def _mem_info(self) -> Dict:
+        """Límite y uso de memoria del contenedor (cgroup) + /proc/meminfo."""
+        info: Dict = {}
+        try:
+            for path in ("/sys/fs/cgroup/memory.max",
+                         "/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+                if os.path.isfile(path):
+                    info["cgroup_limit"] = open(path).read().strip()
+                    break
+            for path in ("/sys/fs/cgroup/memory.current",
+                         "/sys/fs/cgroup/memory/memory.usage_in_bytes"):
+                if os.path.isfile(path):
+                    info["cgroup_usage"] = open(path).read().strip()
+                    break
+            with open("/proc/meminfo") as f:
+                mi = {}
+                for line in f:
+                    k, _, v = line.partition(":")
+                    mi[k.strip()] = v.strip()
+            info["MemTotal"] = mi.get("MemTotal")
+            info["MemAvailable"] = mi.get("MemAvailable")
+        except Exception as e:
+            info["error"] = str(e)
+        return info
+
     async def _diagnose_async(self, url: str = "about:blank") -> Dict:
         import tempfile
         from playwright.async_api import async_playwright
 
-        result: Dict = {"chromium_path": self._chromium_path()}
+        result: Dict = {"chromium_path": self._chromium_path(), "mem": self._mem_info()}
+        crash_events = []
 
         # Capturar fd 2 (stderr) a un fichero temporal para leer la salida de Chromium
         saved_fd = os.dup(2)
@@ -386,8 +409,10 @@ class MercadonaService:
                     locale="es-ES",
                     extra_http_headers={"Accept-Language": "es-ES,es;q=0.9"},
                 )
+                browser.on("disconnected", lambda: crash_events.append("browser disconnected"))
                 await self._block_heavy_resources(context)
                 page = await context.new_page()
+                page.on("crash", lambda p: crash_events.append("page crashed"))
                 await self._goto_with_retry(page, url, attempts=3)
                 await page.wait_for_timeout(2000)
                 result["ok"] = True
@@ -401,6 +426,8 @@ class MercadonaService:
             result["ok"] = False
             result["error"] = str(e)
         finally:
+            result["crash_events"] = crash_events
+            result["mem_after"] = self._mem_info()
             os.dup2(saved_fd, 2)
             os.close(saved_fd)
             try:
