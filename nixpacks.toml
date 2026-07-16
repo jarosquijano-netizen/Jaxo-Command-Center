@@ -36,10 +36,10 @@ nixPkgs = [
 cmds = [
   "python -m venv --copies /opt/venv",
   ". /opt/venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt",
-  # Chromium propio de Playwright (más estable que el de nix para webs reales).
-  # Se instala en la ruta por defecto (~/.cache/ms-playwright), donde el driver
-  # lo busca en runtime. Sin PLAYWRIGHT_BROWSERS_PATH para evitar desajustes.
-  ". /opt/venv/bin/activate && python -m playwright install chromium",
+  # Chromium propio de Playwright + sus dependencias de sistema (vía apt).
+  # --with-deps instala las libs Ubuntu que el build de Playwright necesita
+  # (las de nix no están en las rutas estándar que espera).
+  ". /opt/venv/bin/activate && python -m playwright install --with-deps chromium",
 ]
 
 # El comando de arranque real viene de railway.toml.
