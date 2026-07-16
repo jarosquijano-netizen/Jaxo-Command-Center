@@ -388,12 +388,9 @@ class SettingsManager {
             const select = document.getElementById('google_calendar_id');
             const calendarId = select?.value || 'primary';
 
-            const today = new Date();
-            const monday = new Date(today);
-            const day = monday.getDay();
-            const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
-            const weekStart = new Date(monday.setDate(diff)).toISOString().split('T')[0];
-            const sunday = new Date(monday.setDate(diff + 6)).toISOString().split('T')[0];
+            const monday = DateUtils.currentMonday();
+            const weekStart = DateUtils.localISO(monday);
+            const sunday = DateUtils.localISO(DateUtils.weekEnd(monday));
 
             const resp = await api.post('/api/google/import', {
                 calendar_id: calendarId,
@@ -414,12 +411,9 @@ class SettingsManager {
 
     async viewImportedEvents() {
         try {
-            const today = new Date();
-            const monday = new Date(today);
-            const day = monday.getDay();
-            const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
-            const weekStart = new Date(monday.setDate(diff)).toISOString().split('T')[0];
-            const sunday = new Date(monday.setDate(diff + 6)).toISOString().split('T')[0];
+            const monday = DateUtils.currentMonday();
+            const weekStart = DateUtils.localISO(monday);
+            const sunday = DateUtils.localISO(DateUtils.weekEnd(monday));
 
             const resp = await api.get(`/api/google/imported?from=${weekStart}&to=${sunday}`);
             if (!resp.success) {

@@ -77,10 +77,13 @@ def start_sync():
 
     Body (optional):
     {
-        "items": [{"nombre": "Tomates", "cantidad": "1 kg"}, ...]
-        // if omitted, loads from current week's menu automatically
+        "items": [{"nombre": "Tomates", "cantidad": "1 kg"}, ...],
+        "week_start": "2026-07-20",  // semana a sincronizar (por defecto la actual)
+        "extra_items": [...]
+        // si items se omite, carga la lista del menú de la semana indicada
     }
     """
+    from datetime import datetime as _dt
     from services.mercadona_service import mercadona_service
     from services.menu_service import menu_service
 
@@ -97,13 +100,20 @@ def start_sync():
     data = request.get_json() or {}
     items = data.get("items")
     extra_items = data.get("extra_items", [])
+    week_start_str = data.get("week_start")
 
-    # Auto-load from current week's menu if no items provided
+    # Parsear la semana solicitada (o usar la actual)
+    week_start = None
+    if week_start_str:
+        try:
+            week_start = _dt.strptime(week_start_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"success": False, "error": "week_start inválida (usa YYYY-MM-DD)"}), 400
+
+    # Auto-load from the requested week's menu if no items provided
     if not items:
         try:
-            menu = menu_service.get_weekly_menu()
-            if not menu:
-                menu = menu_service.get_latest_menu()
+            menu = menu_service.get_weekly_menu(week_start)  # None = semana actual
             if not menu:
                 items = []  # no menu, just use extras below
             else:

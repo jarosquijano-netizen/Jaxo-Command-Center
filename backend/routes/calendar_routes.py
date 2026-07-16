@@ -22,10 +22,9 @@ def get_week_calendar():
                     'message': 'Formato de semana inválido. Use YYYY-MM-DD (lunes)'
                 }), 400
         else:
-            # SIEMPRE usar la semana actual, independientemente de si hay menú guardado
-            today = date.today()
-            week_start = today - timedelta(days=today.weekday())
-            print(f"[debug] today={today}, week_start={week_start}")
+            # SIEMPRE usar la semana actual (lunes, hora España)
+            from utils.dates import current_week_start
+            week_start = current_week_start()
         week_end = week_start + timedelta(days=6)
 
         # 1. Google imported events — overlap: event starts before end-of-week AND ends after start-of-week

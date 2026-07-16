@@ -70,27 +70,10 @@ class ShoppingManager {
     async loadShoppingList(targetWeek = null) {
         try {
             this.setLoading(true);
-            
-            let weekStart = targetWeek;
-            if (!weekStart) {
-                // Por defecto, buscar el menú más reciente
-                const result = await api.get('/api/menu/latest');
 
-                if (result.success && result.data) {
-                    const menuData = result.data;
-                    this.currentShoppingList = menuData.lista_compra;
-                    this.currentWeek = menuData.semana_inicio;
-                    
-                    this.renderShoppingList();
-                    this.updateWeekDisplay();
-                    this.updateStats();
-                } else {
-                    this.showEmptyState();
-                }
-            } else {
-                // Buscar menú para una semana específica
-                await this.loadShoppingListForWeek(weekStart);
-            }
+            // Por defecto SIEMPRE la semana de calendario actual (no el último menú).
+            const weekStart = targetWeek || DateUtils.localISO(DateUtils.currentMonday());
+            await this.loadShoppingListForWeek(weekStart);
         } catch (error) {
             console.error('Error cargando lista de compras:', error);
             this.showError('Error cargando lista de compras');
@@ -100,14 +83,15 @@ class ShoppingManager {
     }
 
     async loadShoppingListForWeek(weekStart) {
+        // Anclar SIEMPRE a la semana solicitada (aunque no haya menú)
+        this.currentWeek = weekStart;
+        this.updateWeekDisplay();
         try {
             const result = await api.get(`/api/menu/week/${weekStart}`);
-            
+
             if (result.success && result.data) {
                 const menuData = result.data;
                 this.currentShoppingList = menuData.lista_compra;
-                this.currentWeek = menuData.semana_inicio;
-                
                 this.renderShoppingList();
                 this.updateWeekDisplay();
                 this.updateStats();
@@ -122,28 +106,23 @@ class ShoppingManager {
 
     navigateWeek(direction) {
         if (!this.currentWeek) {
-            // Si no hay semana actual, ir a la semana actual
             this.navigateToToday();
             return;
         }
 
-        const currentWeekDate = new Date(this.currentWeek);
+        const currentWeekDate = DateUtils.parseWeek(this.currentWeek);
         currentWeekDate.setDate(currentWeekDate.getDate() + (direction * 7));
-        
-        const weekStart = this.getMonday(currentWeekDate);
-        this.loadShoppingList(weekStart.toISOString().split('T')[0]);
+
+        const weekStart = DateUtils.getMonday(currentWeekDate);
+        this.loadShoppingList(DateUtils.localISO(weekStart));
     }
 
     navigateToToday() {
-        const today = new Date();
-        const monday = this.getMonday(today);
-        this.loadShoppingList(monday.toISOString().split('T')[0]);
+        this.loadShoppingList(DateUtils.localISO(DateUtils.currentMonday()));
     }
 
     getMonday(date) {
-        const day = date.getDay();
-        const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
-        return new Date(date.setDate(diff));
+        return DateUtils.getMonday(date);
     }
 
     renderShoppingList() {
@@ -242,15 +221,18 @@ class ShoppingManager {
     updateWeekDisplay() {
         const weekDisplay = document.getElementById('shoppingWeekDisplay');
         if (weekDisplay && this.currentWeek) {
-            const weekStart = new Date(this.currentWeek);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            
+            const weekStart = DateUtils.parseWeek(this.currentWeek);
+            const weekEnd = DateUtils.weekEnd(weekStart);
+
             const options = { day: 'numeric', month: 'long', year: 'numeric' };
             const startStr = weekStart.toLocaleDateString('es-ES', options);
             const endStr = weekEnd.toLocaleDateString('es-ES', options);
-            
-            weekDisplay.textContent = `${startStr} - ${endStr}`;
+
+            let label = `${startStr} - ${endStr}`;
+            if (DateUtils.isCurrentWeek(this.currentWeek)) {
+                label = 'Esta semana · ' + label;
+            }
+            weekDisplay.textContent = label;
         }
     }
 
@@ -542,23 +524,30 @@ class ShoppingManager {
     showEmptyState() {
         const content = document.getElementById('shoppingListContent');
         if (content) {
-            content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay lista de compras disponible. Genera un menú primero.</p>';
+            content.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay lista de compras del menú. Genera un menú primero o añade artículos en Extras.</p>';
         }
+        // Los extras (bebidas, limpieza…) siguen disponibles aunque no haya menú
+        this.currentShoppingList = null;
+        this._renderExtrasSection();
+        this.updateStats();
     }
 
-    showEmptyStateForWeek(weekStart) {
+    showEmptyStateForWeek(weekStartStr) {
         const content = document.getElementById('shoppingListContent');
         if (content) {
-            const weekStart = new Date(weekStart);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            
+            const ws = DateUtils.parseWeek(weekStartStr);
+            const we = DateUtils.weekEnd(ws);
+
             const options = { day: 'numeric', month: 'long', year: 'numeric' };
-            const startStr = weekStart.toLocaleDateString('es-ES', options);
-            const endStr = weekEnd.toLocaleDateString('es-ES', options);
-            
-            content.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">No hay lista de compras para la semana del ${startStr} - ${endStr}</p>`;
+            const startStr = ws.toLocaleDateString('es-ES', options);
+            const endStr = we.toLocaleDateString('es-ES', options);
+
+            content.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">No hay lista de compras del menú para la semana del ${startStr} - ${endStr}. Añade artículos en Extras o genera el menú.</p>`;
         }
+        // Los extras siguen disponibles
+        this.currentShoppingList = null;
+        this._renderExtrasSection();
+        this.updateStats();
     }
 
     showError(message) {
@@ -622,7 +611,13 @@ class ShoppingManager {
             .filter(e => !e.done)
             .map(e => ({ nombre: e.name, cantidad: e.qty || '' }));
 
-        const bodyPayload = extraItems.length ? { extra_items: extraItems } : {};
+        // Sincronizar la semana que se está viendo (importante: el domingo
+        // planificas la compra de la semana que viene).
+        const bodyPayload = {};
+        if (this.currentWeek) {
+            bodyPayload.week_start = DateUtils.localISO(DateUtils.getMonday(DateUtils.parseWeek(this.currentWeek)));
+        }
+        if (extraItems.length) bodyPayload.extra_items = extraItems;
 
         try {
             const res = await fetch('/api/mercadona/sync', {

@@ -1564,6 +1564,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="js/dateutils.js?v=20260716"></script>
     <script src="js/dashboard.js?v=20260601a"></script>
     <script src="js/api.js?v=20260516"></script>
     <script src="js/navigation.js?v=20260516"></script>
@@ -1581,12 +1582,21 @@
         
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[init] Iniciando Family Command Center Dashboard...');
-            
+
             // Initialize Lucide icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
                 console.log('[ok] Iconos Lucide inicializados');
             }
+
+            // Red de seguridad: si es domingo y no hay menú para la próxima semana,
+            // el backend lo auto-genera. Fire-and-forget (no bloquea la carga).
+            try {
+                const pin = sessionStorage.getItem('app_pin') || localStorage.getItem('app_pin') || '';
+                const h = {};
+                if (pin) h['X-App-Pin'] = pin;
+                fetch('/api/menu/auto-check', { method: 'POST', headers: h }).catch(() => {});
+            } catch (_) {}
             
             // Wait for all managers to be ready
             setTimeout(() => {

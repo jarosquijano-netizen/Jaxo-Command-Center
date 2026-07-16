@@ -70,9 +70,10 @@ class DashboardManager {
     }
 
     async fetchMenu() {
+        // SOLO el menú de la semana actual — no caer a /latest, que mostraría
+        // "el plato de hoy" tomado de otra semana (desincronización).
         try {
-            let r = await api.get('/api/menu/current');
-            if (!r.success || !r.data) r = await api.get('/api/menu/latest');
+            const r = await api.get('/api/menu/current');
             return r.success ? r.data : null;
         } catch { return null; }
     }

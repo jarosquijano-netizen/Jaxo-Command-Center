@@ -200,8 +200,8 @@ class AIService:
             pref_extra = f"\nINSTRUCCIONES EXTRA DEL USUARIO: {clean}\n"
 
         # ── Identificador de semana + anti-repetición ─────────────────────
-        import datetime as _dt
-        week_label = week_start.isoformat() if week_start else _dt.date.today().isoformat()
+        from utils.dates import today_local
+        week_label = week_start.isoformat() if week_start else today_local().isoformat()
 
         no_repetir_block = ""
         if previous_dishes:

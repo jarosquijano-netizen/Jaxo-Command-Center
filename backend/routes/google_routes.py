@@ -193,8 +193,8 @@ def list_events():
         to_str = request.args.get('to')
 
         if not from_str or not to_str:
-            today = date.today()
-            monday = today - timedelta(days=today.weekday())
+            from utils.dates import current_week_start
+            monday = current_week_start()
             sunday = monday + timedelta(days=6)
             from_date = monday
             to_date = sunday
@@ -226,8 +226,8 @@ def import_events():
         to_str = payload.get('to')
 
         if not from_str or not to_str:
-            today = date.today()
-            monday = today - timedelta(days=today.weekday())
+            from utils.dates import current_week_start
+            monday = current_week_start()
             sunday = monday + timedelta(days=6)
             from_date = monday
             to_date = sunday
@@ -324,8 +324,8 @@ def get_imported_events():
         from_str = request.args.get('from')
         to_str = request.args.get('to')
         if not from_str or not to_str:
-            today = date.today()
-            monday = today - timedelta(days=today.weekday())
+            from utils.dates import current_week_start
+            monday = current_week_start()
             sunday = monday + timedelta(days=6)
             from_date = monday
             to_date = sunday
@@ -360,8 +360,8 @@ def sync_cleaning():
         if week_start_str:
             week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
         else:
-            today = date.today()
-            week_start = today - timedelta(days=today.weekday())
+            from utils.dates import current_week_start
+            week_start = current_week_start()
 
         schedule_items = CleaningSchedule.query.filter_by(semana_inicio=week_start).all()
 
