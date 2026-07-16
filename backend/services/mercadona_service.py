@@ -79,6 +79,9 @@ class MercadonaService:
                 chromium_sandbox=False,
                 timeout=90000,
                 env=launch_env,
+                # MISMO set de flags que /diag, que se probó y carga Mercadona OK.
+                # NO añadir --disable-features=VizDisplayCompositor (crashea Chromium 130)
+                # ni --single-process ("Target page/browser closed").
                 args=[
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
@@ -87,13 +90,7 @@ class MercadonaService:
                     "--disable-software-rasterizer",
                     "--no-zygote",
                     "--disable-extensions",
-                    "--disable-background-networking",
-                    "--disable-renderer-backgrounding",
-                    "--disable-background-timer-throttling",
-                    "--disable-backgrounding-occluded-windows",
                     "--memory-pressure-off",
-                    "--disable-features=VizDisplayCompositor,TranslateUI",
-                    # NO usar --single-process: causa "Target page/browser closed".
                 ],
             )
             context = await browser.new_context(
