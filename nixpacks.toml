@@ -38,7 +38,8 @@ cmds = [
   ". /opt/venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt",
   # Chromium propio de Playwright (más estable que el de nix para webs reales).
   # Se instala en /opt/pw-browsers (fijado también en runtime vía railway.toml).
-  "PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers . /opt/venv/bin/activate && python -m playwright install chromium",
+  # El env var va justo antes de `python` para que aplique al install, no al source.
+  ". /opt/venv/bin/activate && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python -m playwright install chromium",
 ]
 
 # El comando de arranque real viene de railway.toml.

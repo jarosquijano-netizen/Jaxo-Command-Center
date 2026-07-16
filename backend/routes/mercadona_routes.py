@@ -184,7 +184,7 @@ def diag():
     Toggles: ?block=0 ?http2=1 ?zygote=1 para aislar la causa del crash."""
     from services.mercadona_service import mercadona_service
     url = request.args.get("url", "about:blank")
-    opts = {k: request.args.get(k) for k in ("block", "http2", "zygote", "gpu") if request.args.get(k) is not None}
+    opts = {k: request.args.get(k) for k in ("block", "http2", "zygote", "gpu", "bundled") if request.args.get(k) is not None}
     return jsonify(mercadona_service.diagnose(url, opts))
 
 
