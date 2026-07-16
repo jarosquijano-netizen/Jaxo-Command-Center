@@ -27,6 +27,22 @@ class ShoppingManager {
             });
         }
 
+        // Botón de sincronizar con Mercadona
+        const mercadonaBtn = document.getElementById('syncMercadonaBtn');
+        if (mercadonaBtn) {
+            mercadonaBtn.addEventListener('click', () => {
+                this.startMercadonaSync();
+            });
+        }
+
+        // Cerrar modal Mercadona
+        const closeBtn = document.getElementById('closeMercadonaBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                document.getElementById('mercadonaModal').style.display = 'none';
+            });
+        }
+
         // Navegación semanal
         const prevWeekBtn = document.getElementById('prevWeekShopping');
         if (prevWeekBtn) {
@@ -442,6 +458,184 @@ class ShoppingManager {
         const content = document.getElementById('shoppingListContent');
         if (content) {
             content.innerHTML = `<p style="text-align: center; color: var(--error-color);">${message}</p>`;
+        }
+    }
+
+    // ── Mercadona integration ──────────────────────────────────────────────
+
+    _apiHeaders() {
+        const pin = sessionStorage.getItem('app_pin') || localStorage.getItem('app_pin') || '';
+        const h = { 'Content-Type': 'application/json' };
+        if (pin) h['X-App-Pin'] = pin;
+        return h;
+    }
+
+    _mercadonaLog(msg) {
+        const log = document.getElementById('mercadonaLog');
+        if (!log) return;
+        const line = document.createElement('div');
+        line.textContent = msg;
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    _mercadonaSetProgress(pct) {
+        const bar = document.getElementById('mercadonaProgressBar');
+        const txt = document.getElementById('mercadonaProgressText');
+        if (bar) bar.style.width = pct + '%';
+        if (txt) txt.textContent = Math.round(pct) + '%';
+    }
+
+    async startMercadonaSync() {
+        // First check credentials are configured
+        try {
+            const statusRes = await fetch('/api/mercadona/status', { headers: this._apiHeaders() });
+            const statusData = await statusRes.json();
+            if (!statusData.configured) {
+                alert('Mercadona no está configurado. Añade MERCADONA_EMAIL, MERCADONA_PASSWORD y MERCADONA_POSTAL_CODE en Railway → Variables.');
+                return;
+            }
+        } catch (e) {
+            alert('No se pudo conectar con el servidor. Intenta de nuevo.');
+            return;
+        }
+
+        // Open modal and reset state
+        const modal = document.getElementById('mercadonaModal');
+        document.getElementById('mercadonaStatus').textContent = 'Iniciando sincronización...';
+        document.getElementById('mercadonaLog').innerHTML = '<div>Conectando con Mercadona...</div>';
+        document.getElementById('mercadonaSummary').style.display = 'none';
+        document.getElementById('closeMercadonaBtn').style.display = 'none';
+        document.getElementById('syncMercadonaBtn').disabled = true;
+        this._mercadonaSetProgress(0);
+        modal.style.display = 'flex';
+
+        try {
+            const res = await fetch('/api/mercadona/sync', {
+                method: 'POST',
+                headers: this._apiHeaders(),
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                this._mercadonaLog('Error: ' + (data.error || 'Error desconocido'));
+                document.getElementById('mercadonaStatus').textContent = 'Error al iniciar';
+                document.getElementById('closeMercadonaBtn').style.display = '';
+                document.getElementById('syncMercadonaBtn').disabled = false;
+                return;
+            }
+
+            this._mercadonaLog(`Job iniciado: ${data.job_id} (${data.total_items} productos)`);
+            document.getElementById('mercadonaStatus').textContent = `Procesando ${data.total_items} productos...`;
+            this._pollMercadonaJob(data.job_id, data.total_items);
+
+        } catch (e) {
+            this._mercadonaLog('Error de red: ' + e.message);
+            document.getElementById('mercadonaStatus').textContent = 'Error de conexión';
+            document.getElementById('closeMercadonaBtn').style.display = '';
+            document.getElementById('syncMercadonaBtn').disabled = false;
+        }
+    }
+
+    async _pollMercadonaJob(jobId, totalItems) {
+        const pollInterval = 3000;
+        let lastStatus = '';
+
+        const poll = async () => {
+            try {
+                const res = await fetch(`/api/mercadona/job/${jobId}`, { headers: this._apiHeaders() });
+                const job = await res.json();
+
+                if (!job.success) {
+                    this._mercadonaLog('Error consultando job: ' + (job.error || ''));
+                    document.getElementById('closeMercadonaBtn').style.display = '';
+                    document.getElementById('syncMercadonaBtn').disabled = false;
+                    return;
+                }
+
+                const status = job.status;
+
+                if (status !== lastStatus) {
+                    lastStatus = status;
+                    const labels = { pending: 'En espera...', running: 'Ejecutando navegador...', done: 'Completado', error: 'Error' };
+                    document.getElementById('mercadonaStatus').textContent = labels[status] || status;
+                }
+
+                // Update progress from result if available
+                if (job.result) {
+                    const r = job.result;
+                    const added = (r.added || []).length;
+                    const notFound = (r.not_found || []).length;
+                    const errors = (r.errors || []).length;
+                    const processed = added + notFound + errors;
+                    if (totalItems > 0) {
+                        this._mercadonaSetProgress(Math.min(100, (processed / totalItems) * 100));
+                    }
+                }
+
+                if (status === 'running') {
+                    this._mercadonaSetProgress(30 + Math.random() * 5);
+                } else if (status === 'pending') {
+                    this._mercadonaSetProgress(5);
+                }
+
+                if (status === 'done' || status === 'error') {
+                    this._mercadonaSetProgress(100);
+                    this._showMercadonaResult(job.result, status);
+                    document.getElementById('closeMercadonaBtn').style.display = '';
+                    document.getElementById('syncMercadonaBtn').disabled = false;
+                    return;
+                }
+
+                // Continue polling
+                setTimeout(poll, pollInterval);
+
+            } catch (e) {
+                this._mercadonaLog('Error de red al consultar: ' + e.message);
+                setTimeout(poll, pollInterval * 2);
+            }
+        };
+
+        setTimeout(poll, pollInterval);
+    }
+
+    _showMercadonaResult(result, status) {
+        if (!result) return;
+
+        const added = result.added || [];
+        const notFound = result.not_found || [];
+        const errors = result.errors || [];
+
+        if (status === 'error' && result.error) {
+            this._mercadonaLog('Error: ' + result.error);
+        } else {
+            if (added.length) this._mercadonaLog(`✓ Añadidos: ${added.join(', ')}`);
+            if (notFound.length) this._mercadonaLog(`? No encontrados: ${notFound.join(', ')}`);
+            if (errors.length) this._mercadonaLog(`✗ Con error: ${errors.join(', ')}`);
+        }
+
+        const summary = document.getElementById('mercadonaSummary');
+        const title = document.getElementById('mercadonaSummaryTitle');
+        const detail = document.getElementById('mercadonaSummaryDetail');
+
+        summary.style.display = '';
+
+        if (status === 'done') {
+            title.textContent = `✓ ${added.length} productos añadidos al carrito`;
+            const parts = [];
+            if (notFound.length) parts.push(`${notFound.length} no encontrados`);
+            if (errors.length) parts.push(`${errors.length} con error`);
+            detail.textContent = parts.length ? parts.join(' · ') : 'Todo añadido correctamente';
+            summary.style.background = '#0f2a1a';
+            summary.style.borderColor = '#16a34a';
+            title.style.color = '#4ade80';
+        } else {
+            title.textContent = '✗ Error en la sincronización';
+            detail.textContent = result.error || 'Revisa los logs arriba';
+            summary.style.background = '#2a0f0f';
+            summary.style.borderColor = '#dc2626';
+            title.style.color = '#f87171';
         }
     }
 }

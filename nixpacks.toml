@@ -1,0 +1,29 @@
+[phases.setup]
+nixPkgs = [
+  "chromium",
+  "nss",
+  "nspr",
+  "cups",
+  "dbus",
+  "libdrm",
+  "libxkbcommon",
+  "pango",
+  "cairo",
+  "glib",
+  "gtk3",
+  "alsa-lib",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXrandr",
+  "xorg.libxcb",
+]
+
+[phases.install]
+cmds = [
+  "pip install -r requirements.txt",
+]
+
+# start command comes from railway.toml
