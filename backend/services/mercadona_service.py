@@ -95,8 +95,14 @@ class MercadonaService:
 
                 # 3. Process each item
                 for item in items:
-                    name = item.get("nombre", "")
-                    qty  = item.get("cantidad", "")
+                    if isinstance(item, str):
+                        name, qty = item, ""
+                    else:
+                        name = item.get("nombre") or item.get("name") or item.get("producto") or item.get("item") or ""
+                        qty  = item.get("cantidad") or item.get("quantity") or item.get("qty") or ""
+                    name = str(name).strip()
+                    if not name:
+                        continue
                     query = f"{name} {qty}".strip()
                     try:
                         result = await self._add_item_to_cart(page, query, name)
@@ -115,13 +121,14 @@ class MercadonaService:
         return {
             "success": True,
             "summary": {
-                "añadidos": len(added),
-                "no_encontrados": len(not_found),
-                "errores": len(errors),
+                "added": len(added),
+                "not_found": len(not_found),
+                "errors": len(errors),
             },
-            "añadidos": added,
-            "no_encontrados": not_found,
-            "errores": errors,
+            "added": [a["query"] if isinstance(a, dict) else a for a in added],
+            "not_found": not_found,
+            "errors": errors,
+            "added_detail": added,
         }
 
     async def _set_postal_code(self, page):

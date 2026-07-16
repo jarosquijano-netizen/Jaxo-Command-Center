@@ -71,6 +71,7 @@ def start_sync():
 
     data = request.get_json() or {}
     items = data.get("items")
+    extra_items = data.get("extra_items", [])
 
     # Auto-load from current week's menu if no items provided
     if not items:
@@ -79,22 +80,39 @@ def start_sync():
             if not menu:
                 menu = menu_service.get_latest_menu()
             if not menu:
-                return jsonify({"success": False, "error": "No hay menú disponible."}), 400
+                items = []  # no menu, just use extras below
+            else:
+                menu_data = menu.get("menu_data", {})
+                if isinstance(menu_data, str):
+                    menu_data = json.loads(menu_data)
 
-            menu_data = menu.get("menu_data", {})
-            if isinstance(menu_data, str):
-                menu_data = json.loads(menu_data)
-
-            items = menu_data.get("lista_compra", {}).get("items", [])
-            if not items:
-                return jsonify({"success": False, "error": "La lista de la compra está vacía. Genera el menú primero."}), 400
+                lista = menu_data.get("lista_compra", {})
+                # lista may be a dict with category keys or have an "items" list
+                if isinstance(lista, dict) and "items" not in lista:
+                    # flatten all category items
+                    flat = []
+                    for cat_items in lista.values():
+                        if isinstance(cat_items, list):
+                            flat.extend(cat_items)
+                        elif isinstance(cat_items, dict):
+                            flat.extend(cat_items.get("items", []))
+                    items = flat
+                else:
+                    items = lista.get("items", []) if isinstance(lista, dict) else []
         except Exception as e:
             logger.error(f"[mercadona] error loading menu: {e}")
             return jsonify({"success": False, "error": f"Error cargando menú: {str(e)}"}), 500
 
-    # Validate item count (max 50 to avoid very long sessions)
-    if len(items) > 50:
-        items = items[:50]
+    # Merge extras (bebidas, limpieza, etc. added manually by user)
+    if extra_items:
+        items = list(items) + [e for e in extra_items if isinstance(e, (str, dict))]
+
+    if not items:
+        return jsonify({"success": False, "error": "No hay artículos en la lista. Genera el menú o añade extras primero."}), 400
+
+    # Validate item count (max 60 to avoid very long sessions)
+    if len(items) > 60:
+        items = items[:60]
 
     job_id = str(uuid.uuid4())[:8]
     _jobs[job_id] = {

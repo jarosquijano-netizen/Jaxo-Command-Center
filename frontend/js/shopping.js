@@ -2,6 +2,7 @@ class ShoppingManager {
     constructor() {
         this.currentShoppingList = null;
         this.currentWeek = null;
+        this._extraKey = 'shopping_extras_v1';
         this.init();
     }
 
@@ -208,12 +209,16 @@ class ShoppingManager {
             content.appendChild(categorySection);
         });
 
-        // Añadir event listeners a los checkboxes
+        // Añadir event listeners a los checkboxes del menú
         content.querySelectorAll('.shopping-item input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', () => {
                 this.updateStats();
             });
         });
+
+        // Renderizar sección de extras al final
+        this._renderExtrasSection();
+        this.updateStats();
     }
 
     formatCategoryName(category) {
@@ -261,6 +266,108 @@ class ShoppingManager {
         
         totalItemsEl.textContent = total;
         completedItemsEl.textContent = completed;
+    }
+
+    // ── Extras (custom items not from menu) ────────────────────────────────
+
+    _loadExtras() {
+        try {
+            return JSON.parse(localStorage.getItem(this._extraKey) || '[]');
+        } catch { return []; }
+    }
+
+    _saveExtras(extras) {
+        localStorage.setItem(this._extraKey, JSON.stringify(extras));
+    }
+
+    _renderExtrasSection() {
+        const content = document.getElementById('shoppingListContent');
+        if (!content) return;
+
+        const extras = this._loadExtras();
+
+        let section = document.getElementById('extras-section');
+        if (!section) {
+            section = document.createElement('div');
+            section.id = 'extras-section';
+            section.className = 'shopping-category';
+            content.appendChild(section);
+        }
+
+        section.innerHTML = `
+            <div class="category-header" style="border-color:#6366f1;">
+                <h3 style="color:#a5b4fc;">EXTRAS / LISTA LIBRE</h3>
+                <span class="item-count">${extras.length} items</span>
+            </div>
+            <div class="items-list" id="extras-items-list">
+                ${extras.map((item, i) => `
+                <div class="shopping-item" data-extra-index="${i}">
+                    <input type="checkbox" id="extra-${i}" ${item.done ? 'checked' : ''}>
+                    <label for="extra-${i}" style="flex:1;">
+                        <span class="item-name">${this._escapeHtml(item.name)}</span>
+                        ${item.qty ? `<span class="item-quantity">(${this._escapeHtml(item.qty)})</span>` : ''}
+                    </label>
+                    <button data-del="${i}" title="Eliminar" style="background:none;border:none;color:#64748b;cursor:pointer;padding:2px 6px;font-size:16px;line-height:1;">✕</button>
+                </div>`).join('')}
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;padding:0 4px;">
+                <input id="extra-item-name" type="text" placeholder="Añadir artículo..." maxlength="80"
+                    style="flex:1;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none;">
+                <input id="extra-item-qty" type="text" placeholder="Cantidad" maxlength="20"
+                    style="width:90px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px 10px;font-size:14px;outline:none;">
+                <button id="extra-add-btn"
+                    style="background:#4f46e5;border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                    + Añadir
+                </button>
+            </div>
+        `;
+
+        // Add item
+        const addBtn = section.querySelector('#extra-add-btn');
+        const nameInput = section.querySelector('#extra-item-name');
+        const qtyInput = section.querySelector('#extra-item-qty');
+
+        const doAdd = () => {
+            const name = nameInput.value.trim();
+            if (!name) return;
+            const qty = qtyInput.value.trim();
+            const list = this._loadExtras();
+            list.push({ name, qty, done: false });
+            this._saveExtras(list);
+            nameInput.value = '';
+            qtyInput.value = '';
+            this._renderExtrasSection();
+            this.updateStats();
+        };
+
+        addBtn.addEventListener('click', doAdd);
+        nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+
+        // Delete items
+        section.querySelectorAll('[data-del]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.del);
+                const list = this._loadExtras();
+                list.splice(idx, 1);
+                this._saveExtras(list);
+                this._renderExtrasSection();
+                this.updateStats();
+            });
+        });
+
+        // Sync done state with localStorage
+        section.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
+            cb.addEventListener('change', () => {
+                const list = this._loadExtras();
+                if (list[i]) list[i].done = cb.checked;
+                this._saveExtras(list);
+                this.updateStats();
+            });
+        });
+    }
+
+    _escapeHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     exportToPDF() {
@@ -510,11 +617,18 @@ class ShoppingManager {
         this._mercadonaSetProgress(0);
         modal.style.display = 'flex';
 
+        // Build combined items: menu items + unchecked extras
+        const extraItems = this._loadExtras()
+            .filter(e => !e.done)
+            .map(e => ({ nombre: e.name, cantidad: e.qty || '' }));
+
+        const bodyPayload = extraItems.length ? { extra_items: extraItems } : {};
+
         try {
             const res = await fetch('/api/mercadona/sync', {
                 method: 'POST',
                 headers: this._apiHeaders(),
-                body: JSON.stringify({})
+                body: JSON.stringify(bodyPayload)
             });
             const data = await res.json();
 
