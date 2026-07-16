@@ -69,7 +69,10 @@ class MercadonaService:
                     "--disable-setuid-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-gpu",
-                    "--single-process",
+                    "--disable-software-rasterizer",
+                    "--disable-features=VizDisplayCompositor",
+                    # NO usar --single-process: causa "Target page/browser closed"
+                    # (crash instantáneo de Chromium en contenedores).
                 ],
                 executable_path=self._chromium_path(),
             )

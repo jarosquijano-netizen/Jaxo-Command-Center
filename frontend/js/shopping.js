@@ -788,8 +788,11 @@ class ShoppingManager {
         const added = result.added || [];
         const notFound = result.not_found || [];
         const errors = result.errors || [];
+        // El job puede terminar (status 'done') pero con un fallo real dentro
+        // (login, Chromium, etc.). result.success === false → tratarlo como error.
+        const failed = status === 'error' || result.success === false;
 
-        if (status === 'error' && result.error) {
+        if (failed && result.error) {
             this._mercadonaLog('Error: ' + result.error);
         } else {
             if (added.length) this._mercadonaLog(`✓ Añadidos: ${added.join(', ')}`);
@@ -803,7 +806,7 @@ class ShoppingManager {
 
         summary.style.display = '';
 
-        if (status === 'done') {
+        if (!failed) {
             title.textContent = `✓ ${added.length} productos añadidos al carrito`;
             const parts = [];
             if (notFound.length) parts.push(`${notFound.length} no encontrados`);
