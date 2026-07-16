@@ -147,22 +147,44 @@ class ShoppingManager {
 
         content.innerHTML = '';
 
-        // Renderizar cada categoría
-        Object.entries(shoppingList).forEach(([category, items]) => {
+        // Estructura NUEVA: { coste_estimado_semana: N, items: [{nombre, cantidad, categoria/seccion_super, precio_estimado}, ...] }
+        // Estructura VIEJA: { verduras: [...], carniceria: [...], ... }
+        const flatItems = Array.isArray(shoppingList.items) ? shoppingList.items : null;
+
+        // Banner de coste estimado (si existe)
+        const coste = shoppingList.coste_estimado_semana || shoppingList.coste_estimado || null;
+        if (coste) {
+            const banner = document.createElement('div');
+            banner.className = 'shopping-cost-banner';
+            banner.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-bottom:12px;background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.35);border-radius:10px;';
+            banner.innerHTML = `<span style="color:#93c5fd;font-weight:600;">Coste estimado de la semana</span><span style="color:#e2e8f0;font-weight:700;font-size:18px;">~${Number(coste).toFixed(2)}€</span>`;
+            content.appendChild(banner);
+        }
+
+        // Construir grupos { categoria: [items] }
+        let groups = {};
+        if (flatItems) {
+            // Agrupar la lista plana por sección/categoría
+            flatItems.forEach(item => {
+                const cat = (item.seccion_super || item.categoria || item.category || 'otros');
+                const key = String(cat).toLowerCase().trim();
+                (groups[key] = groups[key] || []).push(item);
+            });
+        } else {
+            // Estructura vieja: ya viene agrupada por claves; ignorar claves no-lista
+            Object.entries(shoppingList).forEach(([category, items]) => {
+                if (Array.isArray(items)) groups[category] = items;
+                else if (items && Array.isArray(items.items)) groups[category] = items.items;
+            });
+        }
+
+        // Renderizar cada grupo
+        Object.entries(groups).forEach(([category, categoryItems]) => {
             const categorySection = document.createElement('div');
             categorySection.className = 'shopping-category';
-            
-            // Formatear nombre de categoría
+
             const formattedCategory = this.formatCategoryName(category);
-            
-            // Manejar diferentes formatos de items
-            let categoryItems = [];
-            if (Array.isArray(items)) {
-                categoryItems = items;
-            } else if (items.items && Array.isArray(items.items)) {
-                categoryItems = items.items;
-            }
-            
+
             categorySection.innerHTML = `
                 <div class="category-header">
                     <h3>${formattedCategory}</h3>
@@ -171,12 +193,14 @@ class ShoppingManager {
                 <div class="items-list">
                     ${categoryItems.map((item, index) => {
                         const name = typeof item === 'string' ? item : (item.name || item.nombre || item.item || item.producto || '');
-                        const qty  = item.quantity || item.cantidad || item.qty || '';
-                        const price = item.estimado_eur ? ` ~${item.estimado_eur}€` : '';
+                        const qty  = (typeof item === 'object' && (item.quantity || item.cantidad || item.qty)) || '';
+                        const precioNum = (typeof item === 'object') ? (item.precio_estimado || item.estimado_eur) : null;
+                        const price = precioNum ? ` ~${Number(precioNum).toFixed(2)}€` : '';
+                        const safeCat = String(category).replace(/[^a-z0-9]/gi, '');
                         return `
                         <div class="shopping-item">
-                            <input type="checkbox" id="item-${category}-${index}" ${item.completed ? 'checked' : ''}>
-                            <label for="item-${category}-${index}">
+                            <input type="checkbox" id="item-${safeCat}-${index}" ${item.completed ? 'checked' : ''}>
+                            <label for="item-${safeCat}-${index}">
                                 <span class="item-name">${name}</span>
                                 ${qty ? `<span class="item-quantity">(${qty}${price})</span>` : (price ? `<span class="item-quantity">(${price.trim()})</span>` : '')}
                             </label>
@@ -184,7 +208,7 @@ class ShoppingManager {
                     }).join('')}
                 </div>
             `;
-            
+
             content.appendChild(categorySection);
         });
 
@@ -203,18 +227,26 @@ class ShoppingManager {
     formatCategoryName(category) {
         const categoryNames = {
             'verduras': 'VERDURAS',
-            'carniceria': 'CARNICERIA',
-            'pescaderia': 'PESCADERIA',
-            'huevos_lacteos': 'HUEVOS Y LACTEOS',
-            'despensa': 'DEPENSA',
+            'carniceria': 'CARNICERÍA',
+            'pescaderia': 'PESCADERÍA',
+            'huevos_lacteos': 'HUEVOS Y LÁCTEOS',
+            'despensa': 'DESPENSA',
             'frutas': 'FRUTAS',
             'congelados': 'CONGELADOS',
             'bebidas': 'BEBIDAS',
             'limpieza': 'LIMPIEZA',
             'higiene': 'HIGIENE',
-            'otros': 'OTROS'
+            'otros': 'OTROS',
+            // Secciones del menú nuevo (seccion_super)
+            'frutas y verduras': 'FRUTAS Y VERDURAS',
+            'carnes y pescados': 'CARNES Y PESCADOS',
+            'carne y pescado': 'CARNES Y PESCADOS',
+            'lácteos y huevos': 'LÁCTEOS Y HUEVOS',
+            'lacteos y huevos': 'LÁCTEOS Y HUEVOS',
+            'pan y cereales': 'PAN Y CEREALES',
+            'panadería': 'PANADERÍA',
         };
-        
+
         return categoryNames[category.toLowerCase()] || category.toUpperCase();
     }
 
