@@ -178,6 +178,13 @@ def job_status(job_id: str):
     return jsonify({"success": True, "job_id": job_id, **job})
 
 
+@mercadona_bp.route("/diag", methods=["GET"])
+def diag():
+    """Diagnóstico: lanza Chromium (about:blank) y devuelve su stderr real."""
+    from services.mercadona_service import mercadona_service
+    return jsonify(mercadona_service.diagnose())
+
+
 @mercadona_bp.route("/search", methods=["POST"])
 @(limiter.limit("20 per hour") if limiter else (lambda f: f))
 def search():

@@ -303,6 +303,69 @@ class MercadonaService:
 
     # ── Helpers ───────────────────────────────────────────────────────────
 
+    def diagnose(self) -> Dict:
+        """Lanza Chromium con about:blank capturando su stderr real. Para depurar el crash."""
+        try:
+            return asyncio.run(self._diagnose_async())
+        except Exception as e:
+            return {"ok": False, "error": f"wrapper: {e}"}
+
+    async def _diagnose_async(self) -> Dict:
+        import tempfile
+        from playwright.async_api import async_playwright
+
+        result: Dict = {"chromium_path": self._chromium_path()}
+
+        # Capturar fd 2 (stderr) a un fichero temporal para leer la salida de Chromium
+        saved_fd = os.dup(2)
+        tmp = tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".log")
+        os.dup2(tmp.fileno(), 2)
+
+        launch_env = dict(os.environ)
+        launch_env["HOME"] = "/tmp"
+        launch_env["DEBUG"] = "pw:browser"
+
+        try:
+            async with async_playwright() as pw:
+                browser = await pw.chromium.launch(
+                    headless=True,
+                    executable_path=self._chromium_path(),
+                    chromium_sandbox=False,
+                    timeout=90000,
+                    env=launch_env,
+                    args=[
+                        "--no-sandbox", "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage", "--disable-gpu",
+                        "--disable-software-rasterizer", "--no-zygote",
+                        "--disable-extensions", "--memory-pressure-off",
+                    ],
+                )
+                try:
+                    result["version"] = browser.version
+                except Exception:
+                    pass
+                page = await browser.new_page()
+                await page.goto("about:blank", timeout=15000)
+                await page.wait_for_timeout(500)
+                result["ok"] = True
+                await browser.close()
+        except Exception as e:
+            result["ok"] = False
+            result["error"] = str(e)
+        finally:
+            os.dup2(saved_fd, 2)
+            os.close(saved_fd)
+            try:
+                tmp.flush(); tmp.seek(0)
+                data = tmp.read()
+                tmp.close()
+                os.unlink(tmp.name)
+            except Exception:
+                data = ""
+            # Últimos 4000 chars del stderr de Chromium
+            result["chromium_stderr"] = data[-4000:] if data else "(vacío)"
+        return result
+
     def _chromium_path(self) -> Optional[str]:
         """Resolve the Chromium executable path across environments."""
         import shutil
