@@ -56,7 +56,7 @@ class AIService:
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=8000,
-                temperature=0.7,
+                temperature=0.9,
                 messages=[
                     {
                         "role": "user", 
@@ -131,30 +131,44 @@ class AIService:
         
         # Obtener filtros específicos
         dias_menu = settings.get('dias_menu', ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'])
-        comidas = settings.get('comidas_por_dia', ['cena'])  # Por defecto solo cena
+        comidas = settings.get('comidas_por_dia', ['cena'])
         presupuesto = settings.get('presupuesto_semanal', 200)
         supermercado = settings.get('supermercado_preferido', 'Mercadona')
         preferencias_especiales = settings.get('preferencias_especiales', '')
-        incluir_lista_compra = settings.get('incluir_lista_compra', True)
-        considerar_calificaciones = settings.get('considerar_calificaciones_anteriores', False)
-        
+
         # Separar adultos y niños
         adultos = [m for m in family_members if m['tipo'] == 'adulto']
-        ninos = [m for m in family_members if m['tipo'] == 'nino']
-        
-        # Construir preferencias simplificadas
-        preferencias_adultos = []
-        for a in adultos:
-            if a.get('rol_hogar') == 'familia':
-                pref = f"- {a['nombre']} ({a['edad']} años): {a.get('estilo_alimentacion', 'Mediterráneo')}, Alergias: {', '.join(a.get('alergias', [])) or 'Ninguna'}"
-                preferencias_adultos.append(pref)
-        
-        preferencias_ninos = []
-        for n in ninos:
-            pref = f"- {n['nombre']} ({n['edad']} años): {n.get('come_solo', 'Con ayuda')}, Alergias: {', '.join(n.get('alergias', [])) or 'Ninguna'}"
-            preferencias_ninos.append(pref)
-        
-        # Ratings históricos — siempre se usan si existen
+        ninos  = [m for m in family_members if m['tipo'] == 'nino']
+
+        # ── Perfiles detallados ──────────────────────────────────────────
+        def _perfil_adulto(a):
+            cocinas = ', '.join(a.get('cocinas_favoritas', [])) or 'española, latina, mediterránea'
+            favoritos = ', '.join(a.get('ingredientes_favoritos', [])) or 'variado'
+            no_gustan = ', '.join(a.get('ingredientes_no_gustan', [])) or 'ninguno'
+            alergias  = ', '.join(a.get('alergias', []) + a.get('intolerancias', [])) or 'ninguna'
+            return (
+                f"  • {a['nombre']} ({a['edad']} años) — estilo: {a.get('estilo_alimentacion','mediterráneo')}, "
+                f"cocinas: {cocinas}, picante: {a.get('nivel_picante','medio')}, "
+                f"favoritos: {favoritos}, no le gusta: {no_gustan}, "
+                f"alergias/intolerancias: {alergias}, nivel cocina: {a.get('nivel_cocina','intermedio')}, "
+                f"tiempo máx: {a.get('tiempo_max_cocinar', 45)} min"
+            )
+
+        def _perfil_nino(n):
+            favoritos = ', '.join(n.get('ingredientes_favoritos', [])) or 'pasta, arroz'
+            rechaza   = ', '.join(n.get('ingredientes_no_gustan', [])) or 'ninguno'
+            verduras  = ', '.join(n.get('verduras_aceptadas', [])) or 'zanahoria, tomate'
+            alergias  = ', '.join(n.get('alergias', []) + n.get('intolerancias', [])) or 'ninguna'
+            return (
+                f"  • {n['nombre']} ({n['edad']} años) — come solo: {n.get('come_solo','sí')}, "
+                f"exigencia: {n.get('nivel_exigencia','media')}, acepta nuevo: {n.get('acepta_comida_nueva','a veces')}, "
+                f"favoritos: {favoritos}, RECHAZA: {rechaza}, verduras: {verduras}, alergias: {alergias}"
+            )
+
+        perfiles_adultos = "\n".join(_perfil_adulto(a) for a in adultos if a.get('rol_hogar') == 'familia') or "  (sin adultos)"
+        perfiles_ninos   = "\n".join(_perfil_nino(n) for n in ninos) or "  (sin niños)"
+
+        # ── Ratings históricos ────────────────────────────────────────────
         ratings_context = ""
         if historical_ratings:
             liked, disliked = [], []
@@ -162,114 +176,126 @@ class AIService:
                 plato = r.get('plato', '').strip()
                 if not plato:
                     continue
-                stars = '★' * r['rating'] + '☆' * (5 - r['rating'])
-                entry = f"  {stars} {plato}"
+                entry = f"    {plato}"
                 if r.get('comentario'):
-                    entry += f" — {r['comentario']}"
+                    entry += f" ({r['comentario']})"
                 if r['rating'] >= 4:
                     liked.append(entry)
                 elif r['rating'] <= 2:
                     disliked.append(entry)
             if liked or disliked:
-                ratings_context = "\n## VALORACIONES DE LA FAMILIA:\n"
+                ratings_context = "\n## FEEDBACK DE LA FAMILIA:\n"
                 if liked:
-                    ratings_context += "FAVORITOS (4-5★ — repetir ocasionalmente si hay tiempo entre semanas):\n"
-                    ratings_context += "\n".join(liked[:15]) + "\n"
+                    ratings_context += f"Les encantó (4-5★) — repetir cada 3-4 semanas:\n" + "\n".join(liked[:15]) + "\n"
                 if disliked:
-                    ratings_context += "NO GUSTARON (≤2★ — NO incluir):\n"
-                    ratings_context += "\n".join(disliked[:10]) + "\n"
-        
-        # Preferencias especiales (limpiar caracteres problemáticos)
-        preferencias_usuario = ""
+                    ratings_context += f"NO gustó (1-2★) — NO incluir nunca:\n" + "\n".join(disliked[:10]) + "\n"
+
+        # ── Preferencias especiales ───────────────────────────────────────
+        pref_extra = ""
         if preferencias_especiales:
-            # Limpiar caracteres que puedan causar problemas de encoding
-            preferencias_limpias = preferencias_especiales.encode('ascii', 'ignore').decode('ascii')
-            preferencias_usuario = f"\nPREFERENCIAS ESPECIALES: {preferencias_limpias}\n"
-        
-        # Week identifier for variety
+            clean = preferencias_especiales.encode('utf-8', 'ignore').decode('utf-8')
+            pref_extra = f"\nINSTRUCCIONES EXTRA DEL USUARIO: {clean}\n"
+
+        # ── Identificador de semana + anti-repetición ─────────────────────
         import datetime as _dt
         week_label = week_start.isoformat() if week_start else _dt.date.today().isoformat()
 
-        # Anti-repetition block
         no_repetir_block = ""
         if previous_dishes:
             lista = "\n".join(f"  - {d}" for d in previous_dishes[:60])
-            no_repetir_block = f"""
-## PLATOS YA COCINADOS RECIENTEMENTE — NO REPETIR NINGUNO:
-{lista}
+            no_repetir_block = f"\n## PLATOS YA COCINADOS — NO REPETIR NINGUNO DE ESTOS:\n{lista}\n"
 
+        # ── Pool de inspiración latina/mediterránea ───────────────────────
+        inspiracion = """
+## TENDENCIA CULINARIA — USA ESTOS ESTILOS Y PLATOS (rótalo cada semana):
+Cocina española casera: lentejas estofadas, garbanzos con espinacas, cocido (lunes), tortilla española,
+  pisto manchego, croquetas caseras, merluza en salsa verde, bacalao al pil-pil, albóndigas en salsa,
+  pollo al ajillo, gazpacho, salmorejo, fideuà, arroz al horno, espinacas a la catalana.
+Cocina latina: arroz con pollo (estilo latino), sopa de frijoles negros, tostadas de aguacate y huevo,
+  arroz con leche (postre), empanadas de atún o pollo, picadillo cubano, sopa de tomate con cilantro,
+  pollo en salsa de tomate y comino, arepas de maíz (niños), tacos de pollo suave, ensalada de aguacate.
+Mediterránea / italiana: pasta al pesto, risotto de setas, pizza casera integral, moussaka de berenjenas,
+  ensalada griega, hummus con verduras, ratatouille, pasta carbonara, lasaña de verduras.
+Internacional sencilla: curry de garbanzos suave, salmón teriyaki, pollo tikka masala suave,
+  wraps de pollo y aguacate, Buddha bowl de quinoa.
+Regla de rotación: cada semana usa al menos 2 platos de cada bloque (española, latina, mediterránea).
 """
 
-        prompt = f"""
-Eres nutricionista experto. Genera el menú de la semana {week_label} para una familia en Barcelona.
-Cada semana DEBE ser diferente a las anteriores. Usa ingredientes, técnicas y cocinas variadas.
-
-## FILTROS:
-- Días: {', '.join(dias_menu)}
-- Comidas: {', '.join(comidas)}
-- Presupuesto: {presupuesto}€
-- Supermercado: {supermercado}
-{preferencias_usuario}
+        prompt = f"""Eres chef y nutricionista especializado en cocina familiar española y latina.
+Genera el menú de la semana {week_label} para una familia en Barcelona con tendencia latina y mediterránea.
+Sé CREATIVO y VARIADO — cada semana debe sentirse diferente y apetecible.
 
 ## FAMILIA:
-ADULTOS: {chr(10).join(preferencias_adultos) if preferencias_adultos else 'No adultos'}
-NIÑOS: {chr(10).join(preferencias_ninos) if preferencias_ninos else 'No niños'}
-{ratings_context}{no_repetir_block}
-## RESTRICCIONES (CRÍTICO - NUNCA INCLUIR):
+ADULTOS:
+{perfiles_adultos}
+NIÑOS:
+{perfiles_ninos}
+
+## PARÁMETROS:
+- Días: {', '.join(dias_menu)}
+- Comidas a planificar: {', '.join(comidas)}
+- Presupuesto semanal: {presupuesto}€ (precios de {supermercado} en España 2025)
+- Supermercado: {supermercado}
+{pref_extra}
+{inspiracion}
+{ratings_context}
+{no_repetir_block}
+## ALERGIAS Y RESTRICCIONES (CRÍTICO — NUNCA INCLUIR):
 {self._get_all_allergies(family_members)}
 
-## INSTRUCCIONES:
-1. SOLO generar comidas: {', '.join(comidas)}
-2. SOLO para días: {', '.join(dias_menu)}
-3. Dos menús: adultos y niños adaptados (menú niños siempre adaptado a su edad, no una copia del adulto)
-4. VARIEDAD OBLIGATORIA: ningún plato puede repetirse dentro de la semana ni coincidir con los de semanas anteriores listados arriba
-5. Alternar proteínas: pollo, ternera, cerdo, pescado, legumbres, huevos — no más de 2 días seguidos la misma proteína
-6. Generar lista_compra con precio_estimado realista por ingrediente (precios de {supermercado} en España) y coste_estimado_semana total
-7. Responder SOLO con JSON válido, sin texto adicional
+## REGLAS OBLIGATORIAS:
+1. Generar SOLO los días {', '.join(dias_menu)} y SOLO las comidas {', '.join(comidas)}.
+2. SIEMPRE dos versiones: menu_adultos y menu_ninos. El menú de niños es adaptado (texturas suaves,
+   sin especias fuertes, raciones menores) — NUNCA una copia literal del adulto.
+3. VARIEDAD TOTAL: cero repeticiones dentro de la semana. Cero coincidencias con la lista "NO REPETIR".
+4. Rotar proteínas: máx 2 días seguidos la misma (pollo, ternera, cerdo, pescado, legumbres, huevos, tofu).
+5. Al menos 2 platos vegetarianos/legumbres por semana en adultos.
+6. Tiempo de preparación realista para días de trabajo (máx 45 min lunes-viernes, hasta 90 min fin de semana).
+7. lista_compra: ingredientes agregados de TODA la semana, con cantidades exactas y precios de {supermercado}.
+   Organizada por secciones: Frutas y Verduras, Carnes y Pescados, Lácteos y Huevos, Despensa, Pan y Cereales, Congelados.
+8. Responder ÚNICAMENTE con JSON válido, sin texto fuera del JSON.
 
-IMPORTANTE: Cada comida debe incluir EXACTAMENTE estos campos (no más):
-- plato, descripcion, tiempo_prep, calorias, dificultad, alergenos (array), ingredientes (array de strings, máx 8 items), preparacion (array de strings, máx 5 pasos breves)
-
-## FORMATO JSON (respeta esta estructura exacta para TODOS los días):
+## FORMATO JSON (estructura exacta — TODOS los días y comidas):
 {{
   "menu_adultos": {{
     "{dias_menu[0] if dias_menu else 'lunes'}": {{
       "{comidas[0] if comidas else 'cena'}": {{
-        "plato": "Nombre del plato",
-        "descripcion": "Descripción breve en 1-2 frases",
+        "plato": "Nombre apetecible del plato",
+        "descripcion": "1-2 frases que hagan apetecer el plato",
         "tiempo_prep": 30,
-        "calorias": 350,
-        "dificultad": "Media",
+        "calorias": 420,
+        "dificultad": "Fácil",
         "alergenos": [],
-        "ingredientes": ["Ingrediente 1 con cantidad", "Ingrediente 2 con cantidad"],
-        "preparacion": ["Paso 1 breve", "Paso 2 breve", "Paso 3 breve"]
+        "ingredientes": ["500g pechuga de pollo", "2 dientes de ajo", "1 limón", "aceite de oliva"],
+        "preparacion": ["Paso 1 concreto", "Paso 2 concreto", "Paso 3 concreto"]
       }}
     }}
   }},
   "menu_ninos": {{
     "{dias_menu[0] if dias_menu else 'lunes'}": {{
       "{comidas[0] if comidas else 'cena'}": {{
-        "plato": "Versión niños",
-        "descripcion": "Descripción adaptada",
+        "plato": "Versión niños (misma base, adaptada)",
+        "descripcion": "Descripción adaptada y atractiva para niños",
         "tiempo_prep": 20,
-        "calorias": 250,
+        "calorias": 280,
         "dificultad": "Fácil",
         "alergenos": [],
-        "ingredientes": ["Ingrediente 1 con cantidad", "Ingrediente 2 con cantidad"],
-        "preparacion": ["Paso 1 breve", "Paso 2 breve"]
+        "ingredientes": ["300g pechuga de pollo", "1 diente de ajo suave", "pasta o arroz de acompañamiento"],
+        "preparacion": ["Paso 1", "Paso 2"]
       }}
     }}
   }},
   "lista_compra": {{
     "coste_estimado_semana": 95.50,
     "items": [
-      {{"nombre": "Tomates (1 kg)", "categoria": "Verduras & Frutas", "precio_estimado": 2.40}},
-      {{"nombre": "Pechuga de pollo (500 g)", "categoria": "Proteínas", "precio_estimado": 5.20}},
-      {{"nombre": "Pasta (500 g)", "categoria": "Despensa", "precio_estimado": 1.30}}
+      {{"nombre": "Tomates pera", "cantidad": "1 kg", "categoria": "Frutas y Verduras", "precio_estimado": 1.80, "seccion_super": "Frutas y Verduras"}},
+      {{"nombre": "Pechuga de pollo", "cantidad": "800 g", "categoria": "Carnes y Pescados", "precio_estimado": 6.50, "seccion_super": "Carnes y Pescados"}},
+      {{"nombre": "Pasta macarrones", "cantidad": "500 g", "categoria": "Pan y Cereales", "precio_estimado": 0.99, "seccion_super": "Despensa"}},
+      {{"nombre": "Leche entera", "cantidad": "1 l", "categoria": "Lácteos y Huevos", "precio_estimado": 0.89, "seccion_super": "Lácteos y Huevos"}}
     ]
   }},
-  "consejos_semana": [],
-  "consideraciones_aplicadas": []
+  "consejos_semana": ["Tip práctico de preparación o conservación"],
+  "consideraciones_aplicadas": ["Resumen de qué restricciones/preferencias se han respetado"]
 }}
 """
         
