@@ -27,6 +27,11 @@ CHROMIUM_ARGS = [
     "--disable-extensions",
     "--memory-pressure-off",
     "--disable-http2",
+    # Limitar memoria: la SPA de Mercadona es pesada y el contenedor tiene RAM
+    # limitada; sin esto el renderer se queda sin memoria (OOM → "browser closed").
+    "--js-flags=--max-old-space-size=384",
+    "--disable-accelerated-2d-canvas",
+    "--disable-webgl",
 ]
 
 # User-agent realista y actual (coincide con Chromium 130 que trae nix)
@@ -111,6 +116,7 @@ class MercadonaService:
                     "Accept-Language": "es-ES,es;q=0.9",
                 },
             )
+            await self._block_heavy_resources(context)
             page = await context.new_page()
 
             try:
@@ -159,6 +165,22 @@ class MercadonaService:
             "errors": errors,
             "added_detail": added,
         }
+
+    async def _block_heavy_resources(self, context):
+        """Aborta imágenes/vídeo/fuentes para reducir memoria (evita OOM del renderer).
+        Mantiene CSS/JS para que la SPA funcione y los selectores existan."""
+        async def _route(route):
+            try:
+                if route.request.resource_type in ("image", "media", "font"):
+                    await route.abort()
+                else:
+                    await route.continue_()
+            except Exception:
+                try:
+                    await route.continue_()
+                except Exception:
+                    pass
+        await context.route("**/*", _route)
 
     async def _goto_with_retry(self, page, url, attempts=3):
         """Navega con reintentos (ERR_HTTP2_PROTOCOL_ERROR y demás son intermitentes)."""
@@ -364,6 +386,7 @@ class MercadonaService:
                     locale="es-ES",
                     extra_http_headers={"Accept-Language": "es-ES,es;q=0.9"},
                 )
+                await self._block_heavy_resources(context)
                 page = await context.new_page()
                 await self._goto_with_retry(page, url, attempts=3)
                 await page.wait_for_timeout(2000)
