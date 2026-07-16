@@ -1,5 +1,7 @@
 [build]
-builder = "NIXPACKS"
+# Dockerfile con la imagen oficial de Playwright (Chromium + deps ya listos).
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 # 1 worker (varios hilos): el job store de Mercadona vive en memoria del proceso;
