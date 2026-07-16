@@ -133,10 +133,12 @@ def generate_menu():
             return jsonify(result), status_code
             
     except Exception as e:
-        logger.error(f"Error en generate_menu: {str(e)}")
+        logger.error(f"Error en generate_menu: {str(e)}", exc_info=True)
+        # Surface the real error (e.g. modelo inválido, API key, rate limit)
+        # para poder diagnosticar desde el frontend.
         return jsonify({
             'success': False,
-            'message': 'Error interno del servidor'
+            'message': f'Error generando menú: {str(e)[:300]}'
         }), 500
 
 
