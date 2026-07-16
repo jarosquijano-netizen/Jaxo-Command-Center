@@ -1,46 +1,45 @@
-# Nixpacks config — Python app + Chromium (para Playwright/Mercadona)
+# Nixpacks: Python app + Playwright (Chromium propio, más estable que el de nix).
 #
-# IMPORTANTE: al declarar [phases.setup].nixPkgs se REEMPLAZAN los paquetes que
-# nixpacks añade por defecto, así que hay que incluir python + pip explícitamente
-# y crear el venv en /opt/venv (nixpacks ya añade /opt/venv/bin al PATH vía
-# .profile). Si no se crea el venv → "pip: command not found".
+# - nixPkgs: solo lo necesario para construir/ejecutar Python.
+# - aptPkgs: las librerías de sistema que el Chromium de Playwright (build Ubuntu)
+#   necesita. El Chromium de nix crasheaba en webs reales; el de Playwright + estas
+#   libs es el camino estándar y estable.
 
 [phases.setup]
-nixPkgs = [
-  "python312",
-  "python312Packages.pip",
-  "gcc",
-  # Chromium + dependencias de sistema para Playwright headless
-  "chromium",
-  "nss",
-  "nspr",
-  "cups",
-  "dbus",
-  "libdrm",
-  "libxkbcommon",
-  "pango",
-  "cairo",
-  "glib",
-  "gtk3",
-  "alsa-lib",
-  "xorg.libX11",
-  "xorg.libXcomposite",
-  "xorg.libXdamage",
-  "xorg.libXext",
-  "xorg.libXfixes",
-  "xorg.libXrandr",
-  "xorg.libxcb",
+nixPkgs = ["python312", "python312Packages.pip", "gcc"]
+aptPkgs = [
+  "libglib2.0-0",
+  "libnss3",
+  "libnspr4",
+  "libdbus-1-3",
+  "libatk1.0-0",
+  "libatk-bridge2.0-0",
+  "libcups2",
+  "libdrm2",
+  "libatspi2.0-0",
+  "libx11-6",
+  "libxcomposite1",
+  "libxdamage1",
+  "libxext6",
+  "libxfixes3",
+  "libxrandr2",
+  "libgbm1",
+  "libxcb1",
+  "libxkbcommon0",
+  "libpango-1.0-0",
+  "libcairo2",
+  "libasound2",
+  "libfontconfig1",
+  "fonts-liberation",
 ]
 
 [phases.install]
 cmds = [
   "python -m venv --copies /opt/venv",
   ". /opt/venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt",
-  # Chromium propio de Playwright + sus dependencias de sistema (vía apt).
-  # --with-deps instala las libs Ubuntu que el build de Playwright necesita
-  # (las de nix no están en las rutas estándar que espera).
-  ". /opt/venv/bin/activate && python -m playwright install --with-deps chromium",
+  # Chromium de Playwright en la ruta por defecto (~/.cache/ms-playwright),
+  # que es donde el driver lo busca en runtime. Las libs las da aptPkgs arriba.
+  ". /opt/venv/bin/activate && python -m playwright install chromium",
 ]
 
-# El comando de arranque real viene de railway.toml.
-# gunicorn se encuentra porque /opt/venv/bin está en el PATH.
+# El comando de arranque real viene de railway.toml (/opt/venv/bin en PATH).

@@ -93,8 +93,10 @@ class MercadonaService:
         # Chromium al log del proceso (visible en Railway) → causa real del crash.
         launch_env.setdefault("DEBUG", "pw:browser")
 
-        chromium_bin = self._chromium_path()
-        logger.info(f"[mercadona] lanzando Chromium: {chromium_bin}")
+        # Por defecto usa el Chromium de Playwright (executable_path=None), más
+        # estable. Con USE_NIX_CHROMIUM=1 se puede volver al de nix.
+        chromium_bin = self._chromium_path() if os.getenv("USE_NIX_CHROMIUM") == "1" else None
+        logger.info(f"[mercadona] lanzando Chromium: {chromium_bin or '(bundled Playwright)'}")
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(
