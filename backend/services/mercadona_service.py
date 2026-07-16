@@ -341,10 +341,10 @@ class MercadonaService:
 
     # ── Helpers ───────────────────────────────────────────────────────────
 
-    def diagnose(self, url: str = "about:blank") -> Dict:
+    def diagnose(self, url: str = "about:blank", opts: Optional[Dict] = None) -> Dict:
         """Lanza Chromium navegando a `url`, capturando su stderr real. Para depurar el crash."""
         try:
-            return asyncio.run(self._diagnose_async(url))
+            return asyncio.run(self._diagnose_async(url, opts or {}))
         except Exception as e:
             return {"ok": False, "error": f"wrapper: {e}"}
 
@@ -373,11 +373,29 @@ class MercadonaService:
             info["error"] = str(e)
         return info
 
-    async def _diagnose_async(self, url: str = "about:blank") -> Dict:
+    async def _diagnose_async(self, url: str = "about:blank", opts: Optional[Dict] = None) -> Dict:
         import tempfile
         from playwright.async_api import async_playwright
 
-        result: Dict = {"chromium_path": self._chromium_path(), "mem": self._mem_info()}
+        opts = opts or {}
+        # Toggles para aislar la causa del crash (sin redeploy):
+        #   block=0 → no bloquear recursos ; http2=1 → permitir http2
+        #   zygote=1 → quitar --no-zygote ; gpu=1 → quitar disable-gpu
+        block = opts.get("block", "1") != "0"
+        allow_http2 = opts.get("http2", "0") == "1"
+        keep_zygote = opts.get("zygote", "0") == "1"
+
+        args = [a for a in CHROMIUM_ARGS]
+        if allow_http2 and "--disable-http2" in args:
+            args.remove("--disable-http2")
+        if keep_zygote and "--no-zygote" in args:
+            args.remove("--no-zygote")
+
+        result: Dict = {
+            "chromium_path": self._chromium_path(), "mem": self._mem_info(),
+            "opts": {"block": block, "allow_http2": allow_http2, "keep_zygote": keep_zygote},
+            "args": args,
+        }
         crash_events = []
 
         # Capturar fd 2 (stderr) a un fichero temporal para leer la salida de Chromium
@@ -397,7 +415,7 @@ class MercadonaService:
                     chromium_sandbox=False,
                     timeout=90000,
                     env=launch_env,
-                    args=CHROMIUM_ARGS,
+                    args=args,
                 )
                 try:
                     result["version"] = browser.version
@@ -410,7 +428,8 @@ class MercadonaService:
                     extra_http_headers={"Accept-Language": "es-ES,es;q=0.9"},
                 )
                 browser.on("disconnected", lambda: crash_events.append("browser disconnected"))
-                await self._block_heavy_resources(context)
+                if block:
+                    await self._block_heavy_resources(context)
                 page = await context.new_page()
                 page.on("crash", lambda p: crash_events.append("page crashed"))
                 await self._goto_with_retry(page, url, attempts=3)
