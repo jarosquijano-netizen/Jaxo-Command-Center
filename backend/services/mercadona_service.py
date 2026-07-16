@@ -384,6 +384,7 @@ class MercadonaService:
         block = opts.get("block", "1") != "0"
         allow_http2 = opts.get("http2", "0") == "1"
         keep_zygote = opts.get("zygote", "0") == "1"
+        use_bundled = opts.get("bundled", "0") == "1"  # Chromium de Playwright
 
         args = [a for a in CHROMIUM_ARGS]
         if allow_http2 and "--disable-http2" in args:
@@ -391,9 +392,10 @@ class MercadonaService:
         if keep_zygote and "--no-zygote" in args:
             args.remove("--no-zygote")
 
+        exec_path = None if use_bundled else self._chromium_path()
         result: Dict = {
-            "chromium_path": self._chromium_path(), "mem": self._mem_info(),
-            "opts": {"block": block, "allow_http2": allow_http2, "keep_zygote": keep_zygote},
+            "chromium_path": exec_path or "(bundled Playwright)", "mem": self._mem_info(),
+            "opts": {"block": block, "allow_http2": allow_http2, "keep_zygote": keep_zygote, "bundled": use_bundled},
             "args": args,
         }
         crash_events = []
@@ -411,7 +413,7 @@ class MercadonaService:
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch(
                     headless=True,
-                    executable_path=self._chromium_path(),
+                    executable_path=exec_path,
                     chromium_sandbox=False,
                     timeout=90000,
                     env=launch_env,
