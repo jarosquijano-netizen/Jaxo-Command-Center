@@ -33,7 +33,8 @@ class AIService:
     
     def generate_weekly_menu(self, family_members: List[Dict], settings: Dict,
                              house_config: Dict, historical_ratings: Optional[List[Dict]] = None,
-                             week_start=None, previous_dishes: Optional[List[str]] = None) -> Dict:
+                             week_start=None, previous_dishes: Optional[List[str]] = None,
+                             recent_purchases: Optional[List[Dict]] = None) -> Dict:
         """
         Genera un menú semanal completo usando Claude AI
         
@@ -48,7 +49,8 @@ class AIService:
         """
         try:
             prompt = self._build_menu_prompt(family_members, settings, house_config, historical_ratings,
-                                              week_start=week_start, previous_dishes=previous_dishes)
+                                              week_start=week_start, previous_dishes=previous_dishes,
+                                              recent_purchases=recent_purchases)
             
             logger.info("Enviando prompt a Claude...")
             logger.info(f"Prompt length: {len(prompt)} caracteres")
@@ -124,7 +126,8 @@ class AIService:
     
     def _build_menu_prompt(self, family_members: List[Dict], settings: Dict,
                          house_config: Dict, historical_ratings: Optional[List[Dict]] = None,
-                         week_start=None, previous_dishes: Optional[List[str]] = None) -> str:
+                         week_start=None, previous_dishes: Optional[List[str]] = None,
+                         recent_purchases: Optional[List[Dict]] = None) -> str:
         """
         Construye el prompt para Claude basado en los perfiles familiares y filtros
         """
@@ -197,13 +200,48 @@ class AIService:
             pref_extra = f"\nINSTRUCCIONES EXTRA DEL USUARIO: {clean}\n"
 
         # ── Identificador de semana + anti-repetición ─────────────────────
-        import datetime as _dt
-        week_label = week_start.isoformat() if week_start else _dt.date.today().isoformat()
+        from utils.dates import today_local
+        week_label = week_start.isoformat() if week_start else today_local().isoformat()
 
         no_repetir_block = ""
         if previous_dishes:
             lista = "\n".join(f"  - {d}" for d in previous_dishes[:60])
             no_repetir_block = f"\n## PLATOS YA COCINADOS — NO REPETIR NINGUNO DE ESTOS:\n{lista}\n"
+
+        # ── Despensa — artículos comprados recientemente ─────────────────
+        # Perishable categories that should always be re-bought
+        _PERECEDEROS = {
+            'frutas', 'verduras', 'fruta', 'verdura', 'hortalizas', 'ensalada',
+            'carne', 'carniceria', 'pescado', 'pescaderia', 'marisco',
+            'leche', 'yogur', 'queso fresco', 'nata',
+            'pan', 'panaderia',
+        }
+        pantry_block = ""
+        if recent_purchases:
+            # Split into perishable vs pantry (non-perishable)
+            pantry_items = []
+            for p in recent_purchases:
+                name = (p.get('item_name') or '').strip()
+                cat  = (p.get('category') or '').strip().lower()
+                if not name:
+                    continue
+                # Skip if category is clearly perishable
+                is_perishable = any(k in cat for k in _PERECEDEROS) or any(
+                    k in name.lower() for k in ('fruta', 'verdura', 'ensalada', 'yogur', 'pan fresco')
+                )
+                if not is_perishable:
+                    qty = p.get('quantity', '')
+                    pantry_items.append(f"  - {name}" + (f" ({qty})" if qty else ""))
+            if pantry_items:
+                pantry_block = (
+                    "\n## EN DESPENSA — COMPRADO EN LAS ÚLTIMAS 3 SEMANAS:\n"
+                    + "\n".join(pantry_items[:50])
+                    + "\n"
+                    "REGLA: No incluyas estos artículos en la lista_compra a menos que sean perecederos "
+                    "(frutas, verduras, carne, pescado, lácteos frescos, pan). "
+                    "Productos como ketchup, aceite, pasta, arroz, conservas, bebidas, limpieza etc. "
+                    "que aparezcan arriba NO deben repetirse en la lista_compra.\n"
+                )
 
         # ── Pool de inspiración latina/mediterránea ───────────────────────
         inspiracion = """
@@ -240,6 +278,7 @@ NIÑOS:
 {inspiracion}
 {ratings_context}
 {no_repetir_block}
+{pantry_block}
 ## ALERGIAS Y RESTRICCIONES (CRÍTICO — NUNCA INCLUIR):
 {self._get_all_allergies(family_members)}
 

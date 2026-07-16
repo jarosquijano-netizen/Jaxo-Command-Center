@@ -59,11 +59,15 @@ class MenuService:
             # Obtener platos de semanas anteriores para evitar repetición
             previous_dishes = self._get_previous_dishes(week_start, weeks=3)
 
+            # Obtener compras recientes (para que la IA no re-compre lo que ya hay en casa)
+            recent_purchases = self._get_recent_purchases(days=21)
+
             # Generar menú con IA
             logger.info(f"Generando menú para la semana {week_start}")
             menu_data = self.ai_service.generate_weekly_menu(
                 family_members, settings, house_config, historical_ratings,
-                week_start=week_start, previous_dishes=previous_dishes
+                week_start=week_start, previous_dishes=previous_dishes,
+                recent_purchases=recent_purchases,
             )
             
             # Guardar en base de datos
@@ -165,10 +169,85 @@ class MenuService:
         try:
             menu = WeeklyMenu.query.order_by(WeeklyMenu.created_at.desc()).first()
             return menu.to_dict() if menu else None
-            
+
         except Exception as e:
             logger.error(f"Error obteniendo último menú: {str(e)}")
             return None
+
+    def _menu_has_meal_data(self, menu_dict: Optional[Dict]) -> bool:
+        """True si el menú tiene al menos un plato en adultos o niños."""
+        if not menu_dict:
+            return False
+        md = menu_dict.get('menu_data')
+        if isinstance(md, str):
+            try:
+                md = json.loads(md)
+            except Exception:
+                return False
+        if not isinstance(md, dict):
+            return False
+        for section in ('menu_adultos', 'menu_ninos'):
+            days = md.get(section) or {}
+            for meals in days.values():
+                if isinstance(meals, dict) and any(meals.values()):
+                    return True
+        return False
+
+    # Guarda de auto-generación (evita reintentos repetidos el mismo día)
+    _last_autogen_attempt = None
+
+    def auto_generate_next_week_if_needed(self, force: bool = False) -> Dict:
+        """
+        Auto-genera el menú de la SEMANA QUE VIENE si:
+          - Estamos en la ventana de ~24h antes del lunes (domingo), y
+          - Aún no existe un menú con datos para la próxima semana, y
+          - La IA está configurada.
+
+        Pensado como red de seguridad: el usuario normalmente planifica el
+        sábado/domingo, pero si se le olvida, esto lo genera a tiempo para que
+        la compra llegue el lunes.
+
+        `force=True` ignora la ventana temporal (útil para pruebas/manual).
+        """
+        from utils.dates import today_local, next_week_start
+
+        today = today_local()
+        next_monday = next_week_start()
+
+        # Ventana: domingo (día antes del lunes). force la ignora.
+        in_window = force or (today.weekday() == 6)
+        if not in_window:
+            return {'generated': False, 'reason': 'fuera de ventana (solo domingo)',
+                    'next_week': next_monday.isoformat()}
+
+        # ¿Ya existe menú con datos para la próxima semana?
+        existing = self.get_weekly_menu(next_monday)
+        if self._menu_has_meal_data(existing):
+            return {'generated': False, 'reason': 'ya existe menú para la próxima semana',
+                    'next_week': next_monday.isoformat()}
+
+        # Evitar reintentos repetidos el mismo día si falla
+        if not force and self._last_autogen_attempt == today:
+            return {'generated': False, 'reason': 'ya se intentó hoy',
+                    'next_week': next_monday.isoformat()}
+        self._last_autogen_attempt = today
+
+        # ¿IA configurada?
+        if not getattr(self.ai_service, 'client', None):
+            return {'generated': False, 'reason': 'IA no configurada',
+                    'next_week': next_monday.isoformat()}
+
+        logger.info(f"[autogen] Generando menú de la próxima semana ({next_monday})")
+        try:
+            result = self.generate_weekly_menu(next_monday, {'regenerate': True})
+            ok = bool(result.get('success'))
+            return {'generated': ok,
+                    'reason': 'menú generado automáticamente' if ok else result.get('message', 'error'),
+                    'next_week': next_monday.isoformat()}
+        except Exception as e:
+            logger.error(f"[autogen] error: {e}")
+            return {'generated': False, 'reason': f'error: {e}',
+                    'next_week': next_monday.isoformat()}
     
     def generate_day_menu(self, menu_id: Optional[int], dia: str,
                          comidas: Optional[List[str]], tipo: str,
@@ -457,6 +536,25 @@ class MenuService:
             logger.warning(f"Error obteniendo platos anteriores: {e}")
             return []
 
+    def _get_recent_purchases(self, days: int = 21) -> List[Dict]:
+        """
+        Returns items purchased via Mercadona in the last `days` days.
+        Used to tell the AI what's likely still in the pantry.
+        """
+        try:
+            from models.shopping import PurchaseHistory
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            rows = (
+                PurchaseHistory.query
+                .filter(PurchaseHistory.purchased_at >= cutoff)
+                .order_by(PurchaseHistory.purchased_at.desc())
+                .all()
+            )
+            return [r.to_dict() for r in rows]
+        except Exception as e:
+            logger.warning(f"Error obteniendo historial de compras: {e}")
+            return []
+
     def _get_historical_ratings(self, limit: int = 30) -> List[Dict]:
         """Obtiene ratings históricos enriquecidos con el nombre del plato."""
         try:
@@ -481,10 +579,9 @@ class MenuService:
             return []
     
     def _get_current_week_start(self) -> date:
-        """Obtiene la fecha de inicio de la semana actual (lunes)"""
-        today = date.today()
-        days_since_monday = today.weekday()
-        return today - timedelta(days=days_since_monday)
+        """Obtiene la fecha de inicio de la semana actual (lunes, hora España)."""
+        from utils.dates import current_week_start
+        return current_week_start()
     
     def get_menu_statistics(self, menu_id: int) -> Dict:
         """Obtiene estadísticas de un menú"""

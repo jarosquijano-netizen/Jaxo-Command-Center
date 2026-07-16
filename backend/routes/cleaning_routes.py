@@ -669,9 +669,9 @@ def delete_task(task_id):
 def get_schedule():
     """Obtener plan semanal (auto-genera si la semana actual está vacía)"""
     try:
+        from utils.dates import current_week_start
         week_start = request.args.get('week_start')
-        today = date.today()
-        current_lunes = today - timedelta(days=today.weekday())
+        current_lunes = current_week_start()
 
         if week_start:
             fecha_lunes = datetime.strptime(week_start, '%Y-%m-%d').date()
@@ -738,9 +738,9 @@ def generate_schedule():
         if week_start_str:
             fecha_lunes = datetime.strptime(week_start_str, '%Y-%m-%d').date()
         else:
-            today = date.today()
-            fecha_lunes = today - timedelta(days=today.weekday())
-        
+            from utils.dates import current_week_start
+            fecha_lunes = current_week_start()
+
         # Si regenerar, eliminar asignaciones existentes
         if regenerate:
             CleaningSchedule.query.filter_by(semana_inicio=fecha_lunes).delete()
@@ -874,14 +874,14 @@ def get_stats():
     try:
         period = request.args.get('period', 'week')
         
+        from utils.dates import current_week_start, today_local
         if period == 'week':
             # Estadísticas semana actual
-            today = date.today()
-            fecha_lunes = today - timedelta(days=today.weekday())
+            fecha_lunes = current_week_start()
             schedule = CleaningSchedule.query.filter_by(semana_inicio=fecha_lunes).all()
         elif period == 'month':
             # Estadísticas mes actual
-            today = date.today()
+            today = today_local()
             first_day = today.replace(day=1)
             schedule = CleaningSchedule.query.filter(
                 CleaningSchedule.fecha_programada >= first_day,

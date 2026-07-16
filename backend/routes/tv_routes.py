@@ -109,8 +109,9 @@ def tv_view():
     except Exception:
         pass
 
-    now = datetime.now()
-    today_date = date.today()
+    from utils.dates import now_local, today_local, current_week_start
+    now = now_local()
+    today_date = today_local()
     tomorrow_date = today_date + timedelta(days=1)
 
     date_str = f"{_DAY_NAMES_ES[now.weekday()]} {now.day} de {_MONTH_NAMES_ES[now.month - 1]}"
@@ -124,10 +125,9 @@ def tv_view():
     meals_ninos = {c: None for c in COMIDAS}
     try:
         from services.menu_service import menu_service
+        # SOLO la semana actual — no caer al último menú (mostraría otra semana
+        # indexada por el día de hoy, causando desincronización).
         menu_dict = menu_service.get_weekly_menu()
-        if not menu_dict:
-            logger.info('[tv] no menu for current week, falling back to latest')
-            menu_dict = menu_service.get_latest_menu()
         if menu_dict:
             md = menu_dict.get('menu_data') or {}
             adultos_day = md.get('menu_adultos', {}).get(today_key, {})
@@ -150,7 +150,7 @@ def tv_view():
         from extensions import db
 
         # Check if current week has any schedule
-        current_lunes = today_date - timedelta(days=today_date.weekday())
+        current_lunes = current_week_start()
         week_count = CleaningSchedule.query.filter_by(semana_inicio=current_lunes).count()
         if week_count == 0:
             try:

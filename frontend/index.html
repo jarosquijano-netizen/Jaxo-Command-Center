@@ -430,6 +430,9 @@
                         <button class="btn btn-secondary" id="exportPdfBtn">
                             <span class="material-symbols-outlined">download</span> Exportar PDF
                         </button>
+                        <button class="btn btn-success" id="syncMercadonaBtn" style="background:#16a34a;border-color:#16a34a;">
+                            <span class="material-symbols-outlined">shopping_cart</span> Enviar a Mercadona
+                        </button>
                     </div>
                 </div>
                 
@@ -1526,6 +1529,32 @@
         </div>
     </div>
 
+    <!-- Mercadona Sync Modal -->
+    <div id="mercadonaModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:480px;width:95%;">
+            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;">
+                <div>
+                    <h3 style="margin:0;font-size:17px;color:#4ade80;">🛒 Mercadona — Añadiendo al carrito</h3>
+                    <p id="mercadonaStatus" style="margin:4px 0 0;font-size:13px;color:#94a3b8;">Iniciando...</p>
+                </div>
+                <button id="closeMercadonaBtn" class="close-btn" style="display:none;"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div style="margin:12px 0;">
+                <div style="background:#1e293b;border-radius:8px;height:8px;overflow:hidden;">
+                    <div id="mercadonaProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#16a34a,#4ade80);transition:width .4s ease;"></div>
+                </div>
+                <p id="mercadonaProgressText" style="margin:6px 0 0;font-size:12px;color:#64748b;text-align:right;">0%</p>
+            </div>
+            <div id="mercadonaLog" style="max-height:240px;overflow-y:auto;font-size:12px;color:#94a3b8;background:#0f172a;border-radius:8px;padding:10px;font-family:monospace;line-height:1.6;">
+                <div>Conectando con Mercadona...</div>
+            </div>
+            <div id="mercadonaSummary" style="display:none;margin-top:14px;padding:12px;background:#0f2a1a;border:1px solid #16a34a;border-radius:8px;">
+                <p style="margin:0;font-size:14px;font-weight:600;color:#4ade80;" id="mercadonaSummaryTitle"></p>
+                <p style="margin:4px 0 0;font-size:12px;color:#94a3b8;" id="mercadonaSummaryDetail"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="loading-spinner">
@@ -1535,16 +1564,17 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/dashboard.js?v=20260601a"></script>
+    <script src="js/dateutils.js?v=20260716"></script>
+    <script src="js/dashboard.js?v=20260716"></script>
     <script src="js/api.js?v=20260516"></script>
     <script src="js/navigation.js?v=20260516"></script>
     <script src="js/family.js?v=20260516"></script>
-    <script src="js/menu.js?v=20260601a"></script>
+    <script src="js/menu.js?v=20260716"></script>
     <script src="js/cleaning.js?v=20260523"></script>
     <script src="js/calendar.js?v=20260530a"></script>
-    <script src="js/shopping.js?v=20260520"></script>
+    <script src="js/shopping.js?v=20260716"></script>
     <script src="js/todo.js?v=20260520"></script>
-    <script src="js/settings.js?v=20260516"></script>
+    <script src="js/settings.js?v=20260716"></script>
     <script>
         // ============================================
         // INITIALIZATION
@@ -1552,12 +1582,21 @@
         
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[init] Iniciando Family Command Center Dashboard...');
-            
+
             // Initialize Lucide icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
                 console.log('[ok] Iconos Lucide inicializados');
             }
+
+            // Red de seguridad: si es domingo y no hay menú para la próxima semana,
+            // el backend lo auto-genera. Fire-and-forget (no bloquea la carga).
+            try {
+                const pin = sessionStorage.getItem('app_pin') || localStorage.getItem('app_pin') || '';
+                const h = {};
+                if (pin) h['X-App-Pin'] = pin;
+                fetch('/api/menu/auto-check', { method: 'POST', headers: h }).catch(() => {});
+            } catch (_) {}
             
             // Wait for all managers to be ready
             setTimeout(() => {

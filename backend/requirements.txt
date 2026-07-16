@@ -27,6 +27,9 @@ pytz==2023.3
 # Security
 flask-limiter==3.5.0
 
+# Browser automation (Mercadona integration)
+playwright==1.44.0
+
 # Google Calendar Integration (v2 - 20260515)
 google-auth==2.27.0
 google-auth-oauthlib==1.2.0

@@ -94,6 +94,7 @@ def create_app(config_name='default'):
     from routes.todo_routes import todo_bp
     from routes.google_routes import google_bp
     from routes.tv_routes import tv_bp
+    from routes.mercadona_routes import mercadona_bp
     # from routes.dashboard_routes import dashboard_bp
 
     app.register_blueprint(family_bp, url_prefix='/api/family')
@@ -105,6 +106,7 @@ def create_app(config_name='default'):
     app.register_blueprint(todo_bp, url_prefix='/api/todos')
     app.register_blueprint(google_bp, url_prefix='/api/google')
     app.register_blueprint(tv_bp)          # /tv — no prefix, route defined in blueprint
+    app.register_blueprint(mercadona_bp, url_prefix='/api/mercadona')
     # app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
 
     # Health check endpoint
@@ -142,6 +144,8 @@ def create_app(config_name='default'):
         return jsonify({'success': False, 'error': 'Error interno del servidor', 'code': 500}), 500
 
     with app.app_context():
+        # Ensure all models are imported so SQLAlchemy creates their tables
+        from models import shopping  # noqa: F401 – registers PurchaseHistory with metadata
         try:
             if os.getenv('RESET_DB', 'false').lower() == 'true':
                 print("WARNING:  RESET_DB=true — dropping and recreating all tables...")
@@ -179,8 +183,55 @@ def create_app(config_name='default'):
     return app
 
 
+def _start_menu_autogen_scheduler(flask_app):
+    """
+    Hilo de fondo que revisa periódicamente si hay que auto-generar el menú de
+    la próxima semana (red de seguridad para el domingo). Solo un worker de
+    gunicorn ejecuta el scheduler, usando un file-lock para evitar duplicados.
+    """
+    import threading
+    import time
+
+    # File-lock: solo un proceso gana el lock y corre el scheduler
+    try:
+        import fcntl
+        lock_path = '/tmp/jaxo_autogen.lock'
+        lock_file = open(lock_path, 'w')
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (IOError, OSError):
+            # Otro worker ya tiene el scheduler
+            return
+    except Exception:
+        # Sin fcntl (p. ej. Windows dev) — seguimos; el check idempotente evita duplicados
+        lock_file = None
+
+    def _loop():
+        # Espera inicial para que la app termine de arrancar
+        time.sleep(60)
+        while True:
+            try:
+                with flask_app.app_context():
+                    from services.menu_service import menu_service
+                    res = menu_service.auto_generate_next_week_if_needed()
+                    if res.get('generated'):
+                        logging.getLogger(__name__).info(f"[autogen] {res}")
+            except Exception as e:
+                logging.getLogger(__name__).warning(f"[autogen] scheduler error: {e}")
+            # Revisar cada 6 horas
+            time.sleep(6 * 60 * 60)
+
+    t = threading.Thread(target=_loop, daemon=True)
+    t.start()
+    logging.getLogger(__name__).info("[autogen] scheduler iniciado")
+
+
 # Create app instance for production deployment
 app = create_app()
+
+# Arrancar scheduler de auto-generación de menú (solo si hay IA configurada)
+if os.getenv('MENU_AUTOGEN', 'true').lower() == 'true':
+    _start_menu_autogen_scheduler(app)
 
 
 if __name__ == '__main__':

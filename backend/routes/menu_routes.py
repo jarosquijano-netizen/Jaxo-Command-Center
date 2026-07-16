@@ -114,10 +114,9 @@ def generate_menu():
                     'message': 'Formato de fecha inválido. Use YYYY-MM-DD'
                 }), 400
         else:
-            # Semana actual (lunes)
-            today = date.today()
-            days_since_monday = today.weekday()
-            week_start = today - timedelta(days=days_since_monday)
+            # Semana actual (lunes, hora España)
+            from utils.dates import current_week_start
+            week_start = current_week_start()
         
         # Obtener configuración personalizada
         settings = data.get('settings', {})
@@ -582,16 +581,7 @@ def get_shopping_list_by_week():
       week=current|next|both  (default: current)
       format=json|txt         (default: json)
     """
-    from datetime import date, timedelta
-
-    def _next_monday():
-        today = date.today()
-        days = (7 - today.weekday()) % 7
-        return today + timedelta(days=days if days else 7)
-
-    def _current_monday():
-        today = date.today()
-        return today - timedelta(days=today.weekday())
+    from utils.dates import current_week_start as _current_monday, next_week_start as _next_monday
 
     week_param = request.args.get('week', 'current')
     fmt = request.args.get('format', 'json')
@@ -769,13 +759,40 @@ def _mes(n):
     return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][n-1]
 
 
+_autogen_lock = __import__('threading').Lock()
+
+
+def _run_autogen(force=False):
+    """Ejecuta la auto-generación en background dentro del contexto de la app."""
+    from app import app
+    with app.app_context():
+        with _autogen_lock:
+            try:
+                return menu_service.auto_generate_next_week_if_needed(force=force)
+            except Exception as e:
+                logger.error(f"[autogen] fallo: {e}")
+                return {'generated': False, 'reason': str(e)}
+
+
+@menu_bp.route('/auto-check', methods=['POST', 'GET'])
+def auto_check_menu():
+    """
+    Red de seguridad: si es domingo y no hay menú para la próxima semana,
+    lo genera automáticamente (en background). El frontend lo llama al cargar.
+    Devuelve inmediatamente; la generación ocurre en un hilo aparte.
+    """
+    import threading
+    force = request.args.get('force') == '1'
+    t = threading.Thread(target=_run_autogen, kwargs={'force': force}, daemon=True)
+    t.start()
+    return jsonify({'success': True, 'message': 'Auto-check iniciado'})
+
+
 @menu_bp.route('/next-week', methods=['GET'])
 def get_next_week_menu():
     """Returns menu for next Monday's week, or 404 if not yet generated."""
-    from datetime import date, timedelta
-    today = date.today()
-    days = (7 - today.weekday()) % 7
-    next_monday = today + timedelta(days=days if days else 7)
+    from utils.dates import next_week_start
+    next_monday = next_week_start()
     menu = menu_service.get_weekly_menu(next_monday)
     if menu:
         return jsonify({'success': True, 'data': menu, 'week_start': next_monday.isoformat()})
@@ -786,9 +803,8 @@ def get_next_week_menu():
 @menu_bp.route('/tv-debug', methods=['GET'])
 def tv_debug():
     """Diagnostic: shows what menu data available for TV display."""
-    from datetime import datetime
-    _DAY_KEYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-    today_key = _DAY_KEYS[datetime.now().weekday()]
+    from utils.dates import today_key as _today_key
+    today_key = _today_key()
     weekly = menu_service.get_weekly_menu()
     latest = menu_service.get_latest_menu()
     result = {

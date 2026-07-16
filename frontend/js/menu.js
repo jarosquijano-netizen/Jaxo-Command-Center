@@ -92,7 +92,7 @@ class MenuManager {
         document.getElementById('weekendBannerBtn')?.addEventListener('click', () => {
             const nextMonday = new Date(this.getMonday(new Date()));
             nextMonday.setDate(nextMonday.getDate() + 7);
-            const weekStr = nextMonday.toISOString().split('T')[0];
+            const weekStr = DateUtils.localISO(nextMonday);
             this.loadWeekMenu(weekStr).then(() => this.showGenerateModal());
         });
 
@@ -136,9 +136,12 @@ class MenuManager {
     async loadCurrentWeekMenu() {
         try {
             this.setLoading(true);
-            console.log('[menu] Buscando menú con datos...');
+            // SIEMPRE anclar a la semana de calendario actual al entrar.
+            this.currentWeek = DateUtils.currentMonday();
+            console.log('[menu] Cargando menú de la semana actual:', DateUtils.localISO(this.currentWeek));
 
-            let response = await api.get('/api/menu/current');
+            const weekStr = DateUtils.localISO(this.currentWeek);
+            const response = await api.get(`/api/menu/week/${weekStr}`);
 
             if (response.success && response.data) {
                 const menuData = typeof response.data.menu_data === 'string'
@@ -146,9 +149,8 @@ class MenuManager {
                     : response.data.menu_data;
 
                 if (this.hasAnyMealData(menuData)) {
-                    console.log('[ok] Usando menú actual con datos:', response.data.id);
+                    console.log('[ok] Menú de esta semana con datos:', response.data.id);
                     this.currentMenu = response.data;
-                    this.currentWeek = new Date(response.data.semana_inicio + 'T12:00:00');
                     this.renderMenu();
                     this.updateWeekDisplay();
                     this.checkWeekendBanner();
@@ -156,35 +158,18 @@ class MenuManager {
                 }
             }
 
-            console.log('[menu] Menú actual vacío, buscando último con datos...');
-            const latestResponse = await api.get('/api/menu/latest');
-
-            if (latestResponse.success && latestResponse.data) {
-                const menuData = typeof latestResponse.data.menu_data === 'string'
-                    ? JSON.parse(latestResponse.data.menu_data)
-                    : latestResponse.data.menu_data;
-
-                if (this.hasAnyMealData(menuData)) {
-                    console.log('[ok] Usando último menú con datos:', latestResponse.data.id);
-                    this.currentMenu = latestResponse.data;
-                    this.currentWeek = new Date(latestResponse.data.semana_inicio + 'T12:00:00');
-                    this.renderMenu();
-                    this.updateWeekDisplay();
-                    this.checkWeekendBanner();
-                    return;
-                }
-            }
-
-            console.log('[menu] No hay menús con datos, mostrando semana vacía');
+            // No hay menú para la semana actual → mostrar semana actual vacía
+            // (NO adoptamos la semana de un menú viejo; el usuario puede navegar
+            //  con los botones de semana si quiere ver otra).
+            console.log('[menu] Sin menú para la semana actual, mostrando vacía');
             this.currentMenu = null;
-            this.currentWeek = this.getMonday(new Date());
             this.updateWeekDisplay();
             this.showEmptyWeek();
             this.checkWeekendBanner();
 
         } catch (error) {
             console.error('Error cargando menú:', error);
-            this.currentWeek = this.getMonday(new Date());
+            this.currentWeek = DateUtils.currentMonday();
             this.updateWeekDisplay();
             this.showEmptyWeek();
         } finally {
@@ -449,7 +434,7 @@ class MenuManager {
 
                 const nextMonday = this.getMonday(new Date());
                 nextMonday.setDate(nextMonday.getDate() + 7);
-                customDate.value = nextMonday.toISOString().split('T')[0];
+                customDate.value = DateUtils.localISO(nextMonday);
             } else {
                 customDate.style.display = 'none';
                 customDate.required = false;
@@ -496,7 +481,7 @@ class MenuManager {
         const considerarCalificaciones = formData.get('considerar_ratings') === 'on';
 
         const data = {
-            week_start: selectedWeekStart.toISOString().split('T')[0],
+            week_start: DateUtils.localISO(selectedWeekStart),
             regenerate: true,
             settings: {
                 dias_menu: selectedDays.length > 0 ? selectedDays : ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'],
@@ -1081,8 +1066,8 @@ class MenuManager {
         let hasCurrent = false, hasNext = false;
         try {
             const [rc, rn] = await Promise.all([
-                api.get(`/api/menu/weekly?week_start=${thisMonday.toISOString().split('T')[0]}`),
-                api.get(`/api/menu/weekly?week_start=${nextMonday.toISOString().split('T')[0]}`),
+                api.get(`/api/menu/weekly?week_start=${DateUtils.localISO(thisMonday)}`),
+                api.get(`/api/menu/weekly?week_start=${DateUtils.localISO(nextMonday)}`),
             ]);
             hasCurrent = rc.success && !!rc.data;
             hasNext = rn.success && !!rn.data;
@@ -1182,8 +1167,8 @@ class MenuManager {
 
         const newWeek = new Date(this.currentWeek);
         newWeek.setDate(newWeek.getDate() + (direction * 7));
-        
-        const weekStr = newWeek.toISOString().split('T')[0];
+
+        const weekStr = DateUtils.localISO(newWeek);
         await this.loadWeekMenu(weekStr);
     }
 
@@ -1294,10 +1279,8 @@ class MenuManager {
     }
 
     getMonday(date) {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
+        // Delega en el helper compartido (fuente única de verdad).
+        return DateUtils.getMonday(date);
     }
 
     // ── Generate Day Modal ──────────────────────────────────────────────────
