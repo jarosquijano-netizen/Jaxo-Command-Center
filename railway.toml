@@ -14,5 +14,3 @@ restartPolicyMaxRetries = 10
 FLASK_ENV = "production"
 FLASK_DEBUG = "False"
 PYTHONUNBUFFERED = "1"
-# Chromium de Playwright (instalado en el build en esta ruta)
-PLAYWRIGHT_BROWSERS_PATH = "/opt/pw-browsers"
