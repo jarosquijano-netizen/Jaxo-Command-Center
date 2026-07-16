@@ -1609,6 +1609,88 @@ Si regeneras solo una comida:
         
         return result
 
+    def rebuild_shopping_list(self, menu_data: Dict, supermercado: str = "Mercadona") -> Dict:
+        """
+        Recalcula la lista_compra agregando los ingredientes de TODOS los días
+        y comidas presentes en el menú (adultos + niños). Se usa tras generar o
+        regenerar días individuales, para que la lista refleje el menú completo.
+
+        Devuelve el dict lista_compra ({coste_estimado_semana, items:[...]}).
+        Si algo falla, devuelve la lista_compra existente (para no perderla).
+        """
+        existing = menu_data.get('lista_compra', {}) or {}
+
+        # Reunir todos los platos con sus ingredientes
+        lineas = []
+        for section in ('menu_adultos', 'menu_ninos'):
+            days = menu_data.get(section) or {}
+            if not isinstance(days, dict):
+                continue
+            etiqueta = 'adultos' if section == 'menu_adultos' else 'niños'
+            for dia, meals in days.items():
+                if not isinstance(meals, dict):
+                    continue
+                for comida, plato in meals.items():
+                    if not isinstance(plato, dict):
+                        continue
+                    ings = plato.get('ingredientes') or []
+                    if ings:
+                        nombre = plato.get('plato', '')
+                        lineas.append(f"[{dia}/{comida}/{etiqueta}] {nombre}: " + "; ".join(str(i) for i in ings))
+
+        # Sin ingredientes → no hay nada que recalcular
+        if not lineas:
+            return existing
+
+        # Sin IA → devolver la existente (no podemos consolidar)
+        if not getattr(self, 'client', None):
+            return existing
+
+        prompt = f"""Eres un asistente de compras. A partir de los ingredientes de todos los platos
+de la semana, genera UNA lista de la compra consolidada para {supermercado} (España).
+
+INGREDIENTES POR PLATO:
+{chr(10).join(lineas)}
+
+REGLAS:
+- Agrupa ingredientes repetidos SUMANDO cantidades (ej: "200g pollo" + "300g pollo" = "500 g pollo").
+- Cantidades realistas de supermercado (redondea a formatos de venta).
+- Clasifica cada item con seccion_super: "Frutas y Verduras", "Carnes y Pescados",
+  "Lácteos y Huevos", "Despensa", "Pan y Cereales", "Congelados".
+- Añade precio_estimado en euros (precios de {supermercado} 2025).
+- NO inventes ingredientes que no aparezcan arriba.
+- Responde ÚNICAMENTE con JSON válido, sin texto fuera del JSON.
+
+FORMATO EXACTO:
+{{
+  "coste_estimado_semana": 47.85,
+  "items": [
+    {{"nombre": "Tomates pera", "cantidad": "1 kg", "categoria": "Frutas y Verduras", "precio_estimado": 1.80, "seccion_super": "Frutas y Verduras"}}
+  ]
+}}"""
+
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=3000,
+                temperature=0.3,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.content[0].text
+            parsed = self._extract_json_from_response(content)
+            if not parsed:
+                logger.warning("[rebuild_shopping_list] no se pudo parsear JSON, se mantiene la lista existente")
+                return existing
+            # El modelo puede devolver {lista_compra:{...}} o directamente {items:[...]}
+            lista = parsed.get('lista_compra', parsed)
+            if isinstance(lista, dict) and lista.get('items'):
+                return lista
+            logger.warning("[rebuild_shopping_list] JSON sin items, se mantiene la lista existente")
+            return existing
+        except Exception as e:
+            logger.error(f"[rebuild_shopping_list] error: {e}")
+            return existing
+
 
 # Instancia global del servicio
 ai_service = AIService()

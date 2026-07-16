@@ -12,11 +12,11 @@ class ShoppingManager {
     }
 
     setupEventListeners() {
-        // Botón de actualizar
+        // Botón de actualizar → recalcula la lista desde el menú actual
         const refreshBtn = document.getElementById('refreshShoppingBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                this.loadShoppingList();
+                this.refreshShoppingList();
             });
         }
 
@@ -64,6 +64,37 @@ class ShoppingManager {
             todayWeekBtn.addEventListener('click', () => {
                 this.navigateToToday();
             });
+        }
+    }
+
+    async refreshShoppingList() {
+        // Recalcula la lista de compra en el servidor (agrega todos los días
+        // del menú, incluidos los generados individualmente) y recarga.
+        const btn = document.getElementById('refreshShoppingBtn');
+        const weekStart = this.currentWeek
+            ? DateUtils.localISO(DateUtils.getMonday(DateUtils.parseWeek(this.currentWeek)))
+            : DateUtils.localISO(DateUtils.currentMonday());
+        try {
+            if (btn) { btn.disabled = true; }
+            this.setLoading(true);
+            const content = document.getElementById('shoppingListContent');
+            if (content) content.innerHTML = '<div class="loading">Recalculando lista de la compra…</div>';
+
+            const res = await fetch('/api/menu/rebuild-shopping-list', {
+                method: 'POST',
+                headers: this._apiHeaders(),
+                body: JSON.stringify({ week_start: weekStart })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                console.warn('[shopping] rebuild:', data.message);
+            }
+        } catch (e) {
+            console.error('[shopping] error recalculando lista:', e);
+        } finally {
+            if (btn) { btn.disabled = false; }
+            // Recargar la lista (ya actualizada en el servidor)
+            await this.loadShoppingList(weekStart);
         }
     }
 

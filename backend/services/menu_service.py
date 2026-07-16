@@ -174,6 +174,44 @@ class MenuService:
             logger.error(f"Error obteniendo último menú: {str(e)}")
             return None
 
+    def _sync_shopping_list(self, menu_data: Dict) -> Dict:
+        """Recalcula lista_compra a partir de todos los días del menú. Nunca lanza."""
+        try:
+            supermercado = 'Mercadona'
+            nueva = self.ai_service.rebuild_shopping_list(menu_data, supermercado)
+            if isinstance(nueva, dict) and nueva.get('items'):
+                menu_data['lista_compra'] = nueva
+        except Exception as e:
+            logger.warning(f"No se pudo recalcular la lista de compra: {e}")
+        return menu_data
+
+    def rebuild_shopping_list_for_week(self, week_start=None, menu_id: int = None) -> Dict:
+        """Fuerza el recálculo de la lista de compra de un menú (semana o id)."""
+        try:
+            if menu_id is not None:
+                menu = WeeklyMenu.query.get(menu_id)
+            else:
+                if week_start is None:
+                    week_start = self._get_current_week_start()
+                menu = WeeklyMenu.query.filter_by(semana_inicio=week_start).first()
+
+            if not menu:
+                return {'success': False, 'message': 'No hay menú para recalcular'}
+
+            menu_data = json.loads(menu.menu_data) if isinstance(menu.menu_data, str) else menu.menu_data
+            menu_data = self._sync_shopping_list(menu_data)
+
+            menu.menu_data = json.dumps(menu_data, ensure_ascii=False)
+            menu.lista_compra = json.dumps(menu_data.get('lista_compra', {}), ensure_ascii=False)
+            menu.updated_at = datetime.utcnow()
+            db.session.commit()
+
+            return {'success': True, 'message': 'Lista de compra recalculada', 'menu': menu.to_dict()}
+        except Exception as e:
+            logger.error(f"Error recalculando lista de compra: {e}")
+            db.session.rollback()
+            return {'success': False, 'message': f'Error: {str(e)}'}
+
     def _menu_has_meal_data(self, menu_dict: Optional[Dict]) -> bool:
         """True si el menú tiene al menos un plato en adultos o niños."""
         if not menu_dict:
@@ -281,7 +319,11 @@ class MenuService:
                 current_data, dia, comidas, tipo, family_members, preferences
             )
 
+            # Recalcular la lista de compra para incluir el nuevo día
+            updated_data = self._sync_shopping_list(updated_data)
+
             menu.menu_data = json.dumps(updated_data, ensure_ascii=False)
+            menu.lista_compra = json.dumps(updated_data.get('lista_compra', {}), ensure_ascii=False)
             menu.updated_at = datetime.utcnow()
             db.session.commit()
 
@@ -329,11 +371,15 @@ class MenuService:
             updated_menu_data = self.ai_service.regenerate_day_menu(
                 menu_data, dia, comida, tipo, family_members
             )
-            
+
+            # Recalcular la lista de compra para reflejar el día regenerado
+            updated_menu_data = self._sync_shopping_list(updated_menu_data)
+
             # Actualizar menú en base de datos
             menu.menu_data = json.dumps(updated_menu_data, ensure_ascii=False)
+            menu.lista_compra = json.dumps(updated_menu_data.get('lista_compra', {}), ensure_ascii=False)
             menu.updated_at = datetime.utcnow()
-            
+
             db.session.commit()
             
             return {

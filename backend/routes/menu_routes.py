@@ -790,6 +790,31 @@ def auto_check_menu():
     return jsonify({'success': True, 'message': 'Auto-check iniciado'})
 
 
+@menu_bp.route('/rebuild-shopping-list', methods=['POST'])
+@(limiter.limit("20 per hour") if limiter else (lambda f: f))
+def rebuild_shopping_list():
+    """
+    Recalcula la lista de compra de un menú a partir de todos sus días.
+    Body (opcional): {"week_start": "YYYY-MM-DD"} o {"menu_id": 6}
+    Por defecto, la semana actual.
+    """
+    try:
+        data = request.get_json() or {}
+        menu_id = data.get('menu_id')
+        week_start = None
+        if data.get('week_start'):
+            try:
+                week_start = datetime.strptime(data['week_start'], '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+
+        result = menu_service.rebuild_shopping_list_for_week(week_start=week_start, menu_id=menu_id)
+        return jsonify(result), (200 if result.get('success') else 400)
+    except Exception as e:
+        logger.error(f"Error en rebuild_shopping_list: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error: {str(e)[:300]}'}), 500
+
+
 @menu_bp.route('/next-week', methods=['GET'])
 def get_next_week_menu():
     """Returns menu for next Monday's week, or 404 if not yet generated."""
