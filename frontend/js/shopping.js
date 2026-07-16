@@ -713,6 +713,8 @@ class ShoppingManager {
     async _pollMercadonaJob(jobId, totalItems) {
         const pollInterval = 3000;
         let lastStatus = '';
+        let notFoundRetries = 0;
+        const MAX_NOT_FOUND = 5; // tolera reinicios de worker antes de rendirse
 
         const poll = async () => {
             try {
@@ -720,11 +722,19 @@ class ShoppingManager {
                 const job = await res.json();
 
                 if (!job.success) {
-                    this._mercadonaLog('Error consultando job: ' + (job.error || ''));
+                    // El job puede tardar un instante en aparecer, o el worker
+                    // pudo reiniciarse. Reintentar unas cuantas veces antes de fallar.
+                    notFoundRetries++;
+                    if (notFoundRetries <= MAX_NOT_FOUND) {
+                        setTimeout(poll, pollInterval);
+                        return;
+                    }
+                    this._mercadonaLog('Error consultando job: ' + (job.error || 'Job no encontrado'));
                     document.getElementById('closeMercadonaBtn').style.display = '';
                     document.getElementById('syncMercadonaBtn').disabled = false;
                     return;
                 }
+                notFoundRetries = 0;
 
                 const status = job.status;
 
