@@ -26,7 +26,6 @@ CHROMIUM_ARGS = [
     "--no-zygote",
     "--disable-extensions",
     "--memory-pressure-off",
-    "--disable-http2",
     "--disable-accelerated-2d-canvas",
     "--disable-webgl",
 ]
@@ -182,11 +181,19 @@ class MercadonaService:
         await context.route("**/*", _route)
 
     async def _goto_with_retry(self, page, url, attempts=3):
-        """Navega con reintentos (ERR_HTTP2_PROTOCOL_ERROR y demás son intermitentes)."""
+        """Navega con reintentos. Usa wait_until='commit' (se resuelve en cuanto
+        el servidor responde) y luego espera el DOM sin que sea fatal — la SPA de
+        Mercadona a veces no dispara 'domcontentloaded' a tiempo."""
         last_err = None
         for n in range(1, attempts + 1):
             try:
-                await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                await page.goto(url, wait_until="commit", timeout=45000)
+                # Esperar el DOM/red, pero sin fallar si tarda
+                try:
+                    await page.wait_for_load_state("domcontentloaded", timeout=20000)
+                except Exception:
+                    pass
+                await page.wait_for_timeout(2000)
                 return
             except Exception as e:
                 last_err = e
