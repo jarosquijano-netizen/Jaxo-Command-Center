@@ -188,17 +188,19 @@ class MercadonaService:
         for n in range(1, attempts + 1):
             try:
                 await page.goto(url, wait_until="commit", timeout=45000)
-                # Esperar el DOM/red, pero sin fallar si tarda
                 try:
                     await page.wait_for_load_state("domcontentloaded", timeout=20000)
                 except Exception:
                     pass
                 await page.wait_for_timeout(2000)
+                # Detectar página de error de Chrome (conexión reseteada por anti-bot)
+                if page.url.startswith("chrome-error"):
+                    raise RuntimeError("chrome-error (conexión reseteada, posible anti-bot)")
                 return
             except Exception as e:
                 last_err = e
                 logger.warning(f"[mercadona] goto intento {n}/{attempts} falló: {str(e)[:120]}")
-                await page.wait_for_timeout(2500 * n)
+                await page.wait_for_timeout(3000 * n)
         raise last_err
 
     def diagnose_login(self) -> Dict:
