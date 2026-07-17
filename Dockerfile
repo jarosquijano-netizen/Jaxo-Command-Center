@@ -16,6 +16,6 @@ ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
     FLASK_DEBUG=False
 
-# 1 worker (el job store de Mercadona vive en memoria del proceso).
-# Railway inyecta $PORT. railway.toml puede sobreescribir este comando.
-CMD ["sh", "-c", "cd backend && gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 600 --worker-class gthread --threads 8 app:app"]
+# Arranque sin shell y sin $PORT en la línea: gunicorn.conf.py lee PORT del
+# entorno en Python. --chdir entra a backend (no usamos `cd`, que necesita shell).
+CMD ["gunicorn", "--chdir", "backend", "-c", "backend/gunicorn.conf.py", "app:app"]
