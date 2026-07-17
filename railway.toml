@@ -4,9 +4,10 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# El comando de arranque viene del CMD del Dockerfile (usa `sh -c`, así que
-# `cd backend && gunicorn ...` funciona). NO poner startCommand aquí: Railway
-# lo ejecuta sin shell y `cd` falla ("executable cd could not be found").
+# Start command robusto (Railway lo ejecuta SIN shell):
+#  - sin `cd` (builtin de shell) → usamos gunicorn --chdir backend
+#  - sin `$PORT` (no se expande sin shell) → gunicorn.conf.py lee PORT en Python
+startCommand = "gunicorn --chdir backend -c backend/gunicorn.conf.py app:app"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
