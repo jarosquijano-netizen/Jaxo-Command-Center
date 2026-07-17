@@ -4,9 +4,9 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# 1 worker (varios hilos): el job store de Mercadona vive en memoria del proceso;
-# con >1 worker, el POST /sync y el GET /job caen en procesos distintos → "Job no encontrado".
-startCommand = "cd backend && gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 600 --worker-class gthread --threads 8 app:app"
+# El comando de arranque viene del CMD del Dockerfile (usa `sh -c`, así que
+# `cd backend && gunicorn ...` funciona). NO poner startCommand aquí: Railway
+# lo ejecuta sin shell y `cd` falla ("executable cd could not be found").
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
