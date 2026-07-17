@@ -201,6 +201,77 @@ class MercadonaService:
                 await page.wait_for_timeout(2500 * n)
         raise last_err
 
+    def diagnose_login(self) -> Dict:
+        """Captura la estructura real de la página de login para ajustar selectores."""
+        try:
+            return asyncio.run(self._diagnose_login_async())
+        except Exception as e:
+            return {"ok": False, "error": f"wrapper: {e}"}
+
+    async def _diagnose_login_async(self) -> Dict:
+        from playwright.async_api import async_playwright
+        result: Dict = {}
+        launch_env = dict(os.environ); launch_env["HOME"] = "/tmp"
+
+        async def snapshot(page, label):
+            data = {"label": label, "url": page.url}
+            try:
+                data["title"] = await page.title()
+            except Exception:
+                pass
+            try:
+                data["inputs"] = await page.eval_on_selector_all(
+                    "input",
+                    "els => els.map(e => ({type:e.type, name:e.name, id:e.id, placeholder:e.placeholder, ariaLabel:e.getAttribute('aria-label')}))",
+                )
+            except Exception as e:
+                data["inputs_err"] = str(e)[:100]
+            try:
+                data["buttons"] = await page.eval_on_selector_all(
+                    "button, a",
+                    "els => els.map(e => (e.innerText||'').trim()).filter(t => t && t.length < 40).slice(0, 40)",
+                )
+            except Exception as e:
+                data["buttons_err"] = str(e)[:100]
+            return data
+
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(
+                headless=True, executable_path=None, chromium_sandbox=False,
+                timeout=90000, env=launch_env, args=CHROMIUM_ARGS,
+            )
+            try:
+                context = await browser.new_context(
+                    viewport={"width": 1366, "height": 900}, user_agent=REALISTIC_UA,
+                    locale="es-ES", extra_http_headers={"Accept-Language": "es-ES,es;q=0.9"},
+                )
+                await self._block_heavy_resources(context)
+                page = await context.new_page()
+                await self._set_postal_code(page)
+                result["after_postal"] = await snapshot(page, "after_postal")
+
+                # Intentar llegar al login
+                clicked = None
+                for sel in ["a[href*='login']", "button:has-text('Iniciar sesión')",
+                            "a:has-text('Iniciar sesión')", "[aria-label*='cuenta']",
+                            "[aria-label*='sesión']", "button:has-text('Entrar')"]:
+                    try:
+                        await page.click(sel, timeout=3000)
+                        clicked = sel
+                        await page.wait_for_timeout(2500)
+                        break
+                    except Exception:
+                        continue
+                result["login_clicked"] = clicked
+                result["after_login_click"] = await snapshot(page, "after_login_click")
+                result["ok"] = True
+            except Exception as e:
+                result["ok"] = False
+                result["error"] = str(e)[:300]
+            finally:
+                await browser.close()
+        return result
+
     async def _set_postal_code(self, page):
         """Navigate to Mercadona and set the postal code."""
         from playwright.async_api import TimeoutError as PWTimeout

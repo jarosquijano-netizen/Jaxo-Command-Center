@@ -188,6 +188,13 @@ def diag():
     return jsonify(mercadona_service.diagnose(url, opts))
 
 
+@mercadona_bp.route("/diag-login", methods=["GET"])
+def diag_login():
+    """Diagnóstico: captura la estructura de la página de login de Mercadona."""
+    from services.mercadona_service import mercadona_service
+    return jsonify(mercadona_service.diagnose_login())
+
+
 @mercadona_bp.route("/search", methods=["POST"])
 @(limiter.limit("20 per hour") if limiter else (lambda f: f))
 def search():
