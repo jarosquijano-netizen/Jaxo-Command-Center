@@ -651,7 +651,7 @@ class ShoppingManager {
             const statusRes = await fetch('/api/mercadona/status', { headers: this._apiHeaders() });
             const statusData = await statusRes.json();
             if (!statusData.configured) {
-                alert('Mercadona no está configurado. Añade MERCADONA_EMAIL, MERCADONA_PASSWORD y MERCADONA_POSTAL_CODE en Railway → Variables.');
+                alert('Alcampo no está configurado. Añade ALCAMPO_EMAIL, ALCAMPO_PASSWORD y ALCAMPO_POSTAL_CODE en Railway → Variables.');
                 return;
             }
         } catch (e) {
@@ -662,7 +662,7 @@ class ShoppingManager {
         // Open modal and reset state
         const modal = document.getElementById('mercadonaModal');
         document.getElementById('mercadonaStatus').textContent = 'Iniciando sincronización...';
-        document.getElementById('mercadonaLog').innerHTML = '<div>Conectando con Mercadona...</div>';
+        document.getElementById('mercadonaLog').innerHTML = '<div>Conectando con Alcampo...</div>';
         document.getElementById('mercadonaSummary').style.display = 'none';
         document.getElementById('closeMercadonaBtn').style.display = 'none';
         document.getElementById('syncMercadonaBtn').disabled = true;

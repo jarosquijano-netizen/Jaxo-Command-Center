@@ -20,10 +20,10 @@ _jobs: dict = {}
 
 def _run_job(job_id: str, items: list):
     """Background thread: runs Playwright and updates job status."""
-    from services.mercadona_service import mercadona_service
+    from services.alcampo_service import alcampo_service
     _jobs[job_id]["status"] = "running"
     try:
-        result = mercadona_service.sync_cart(items)
+        result = alcampo_service.sync_cart(items)
         _jobs[job_id].update({"status": "done", "result": result, "finished_at": datetime.utcnow().isoformat()})
         # Persist successfully added items for pantry-awareness in future menus
         if result.get("success") and result.get("added_detail"):
@@ -58,13 +58,14 @@ def _save_purchase_history(added_items: list, job_id: str):
 
 @mercadona_bp.route("/status", methods=["GET"])
 def status():
-    """Check if Mercadona credentials are configured."""
-    from services.mercadona_service import mercadona_service
+    """Check if Alcampo credentials are configured."""
+    from services.alcampo_service import alcampo_service
     return jsonify({
         "success": True,
-        "configured": mercadona_service.is_configured(),
-        "postal_code": mercadona_service.postal_code,
-        "email_hint": (mercadona_service.email[:3] + "***@***") if mercadona_service.email else None,
+        "supermercado": "Alcampo",
+        "configured": alcampo_service.is_configured(),
+        "postal_code": alcampo_service.postal_code,
+        "email_hint": (alcampo_service.email[:3] + "***@***") if alcampo_service.email else None,
     })
 
 
@@ -84,15 +85,15 @@ def start_sync():
     }
     """
     from datetime import datetime as _dt
-    from services.mercadona_service import mercadona_service
+    from services.alcampo_service import alcampo_service
     from services.menu_service import menu_service
 
-    if not mercadona_service.is_configured():
+    if not alcampo_service.is_configured():
         return jsonify({
             "success": False,
             "error": (
                 "Credenciales no configuradas. "
-                "Añade MERCADONA_EMAIL, MERCADONA_PASSWORD y MERCADONA_POSTAL_CODE "
+                "Añade ALCAMPO_EMAIL, ALCAMPO_PASSWORD y ALCAMPO_POSTAL_CODE "
                 "en Railway → Variables."
             ),
         }), 400
