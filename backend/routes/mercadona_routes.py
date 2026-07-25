@@ -188,6 +188,16 @@ def diag():
     return jsonify(mercadona_service.diagnose(url, opts))
 
 
+@mercadona_bp.route("/explore", methods=["GET"])
+def explore():
+    """Mapea la estructura de una web (?url=). Para diseñar la automatización."""
+    from services.mercadona_service import mercadona_service
+    url = request.args.get("url", "")
+    if not url:
+        return jsonify({"ok": False, "error": "url requerida"}), 400
+    return jsonify(mercadona_service.explore(url))
+
+
 @mercadona_bp.route("/diag-login", methods=["GET"])
 def diag_login():
     """Diagnóstico: captura la estructura de la página de login de Mercadona."""

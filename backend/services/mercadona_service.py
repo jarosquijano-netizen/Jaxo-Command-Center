@@ -203,6 +203,56 @@ class MercadonaService:
                 await page.wait_for_timeout(3000 * n)
         raise last_err
 
+    def explore(self, url: str) -> Dict:
+        """Mapea la estructura de una web (enlaces, inputs, botones) para diseñar la automatización."""
+        try:
+            return asyncio.run(self._explore_async(url))
+        except Exception as e:
+            return {"ok": False, "error": f"wrapper: {e}"}
+
+    async def _explore_async(self, url: str) -> Dict:
+        from playwright.async_api import async_playwright
+        result: Dict = {"url_requested": url}
+        launch_env = dict(os.environ); launch_env["HOME"] = "/tmp"
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(
+                headless=True, executable_path=None, chromium_sandbox=False,
+                timeout=90000, env=launch_env, args=CHROMIUM_ARGS,
+            )
+            try:
+                context = await browser.new_context(
+                    viewport={"width": 1366, "height": 900}, user_agent=REALISTIC_UA,
+                    locale="es-ES", extra_http_headers={"Accept-Language": "es-ES,es;q=0.9"},
+                )
+                await self._block_heavy_resources(context)
+                page = await context.new_page()
+                await self._goto_with_retry(page, url, attempts=3)
+                await page.wait_for_timeout(3000)
+                result["final_url"] = page.url
+                result["title"] = await page.title()
+                # Enlaces con texto+href relevantes (login, buscar, carrito, cuenta)
+                result["links"] = await page.eval_on_selector_all(
+                    "a[href]",
+                    """els => els.map(e => ({t:(e.innerText||'').trim().slice(0,30), href:e.getAttribute('href')}))
+                        .filter(x => /login|acced|entrar|sesi|cuenta|buscar|search|carrito|cart|registr/i.test((x.t||'')+' '+(x.href||'')))
+                        .slice(0,25)""",
+                )
+                result["inputs"] = await page.eval_on_selector_all(
+                    "input, [role=searchbox], [contenteditable=true]",
+                    "els => els.map(e => ({type:e.type||e.tagName, name:e.name, id:e.id, placeholder:e.placeholder, aria:e.getAttribute('aria-label')})).slice(0,25)",
+                )
+                result["buttons"] = await page.eval_on_selector_all(
+                    "button, [role=button]",
+                    "els => els.map(e => ((e.innerText||e.getAttribute('aria-label')||'').trim())).filter(Boolean).slice(0,30)",
+                )
+                result["ok"] = True
+            except Exception as e:
+                result["ok"] = False
+                result["error"] = str(e)[:300]
+            finally:
+                await browser.close()
+        return result
+
     def diagnose_login(self) -> Dict:
         """Captura la estructura real de la página de login para ajustar selectores."""
         try:
