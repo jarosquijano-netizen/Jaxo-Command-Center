@@ -129,17 +129,35 @@ class AlcampoService:
             logger.warning(f"[alcampo] login error: {e}")
             return False
 
+    def _query_variants(self, query: str):
+        """Variantes de búsqueda de más a menos específica (quitando la última
+        palabra). Ej: 'Queso rallado suave' → ['Queso rallado suave', 'Queso rallado', 'Queso']."""
+        words = query.split()
+        variants = [query]
+        for cut in range(1, min(3, len(words))):  # hasta quitar 2 palabras
+            shorter = " ".join(words[:len(words) - cut])
+            if shorter and shorter not in variants:
+                variants.append(shorter)
+        return variants
+
     async def _add_item(self, page, query: str) -> Dict:
-        """Busca `query`, extrae precio/nombre reales y añade el primer producto."""
+        """Busca `query` (con variantes más cortas si no hay resultados) y añade el primer producto."""
         from playwright.async_api import TimeoutError as PWTimeout
-        url = f"{ALCAMPO_URL}/search?q={quote(query)}"
-        await self._goto(page, url)
-        await self._accept_cookies(page)
-        # Esperar resultados
-        try:
-            await page.wait_for_selector("button:has-text('Añadir')", timeout=12000)
-        except PWTimeout:
+
+        for variant in self._query_variants(query):
+            url = f"{ALCAMPO_URL}/search?q={quote(variant)}"
+            await self._goto(page, url)
+            await self._accept_cookies(page)
+            try:
+                await page.wait_for_selector("button:has-text('Añadir')", timeout=10000)
+                if variant != query:
+                    logger.info(f"[alcampo] '{query}' no dio resultados; usando '{variant}'")
+                break  # hay resultados, seguir a añadir
+            except PWTimeout:
+                continue  # probar variante más corta
+        else:
             return {"found": False}
+
         # Clic en el primer 'Añadir', capturando precio y nombre reales del producto
         try:
             btn = page.locator("button:has-text('Añadir')").first
