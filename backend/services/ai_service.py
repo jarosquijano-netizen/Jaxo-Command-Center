@@ -284,13 +284,20 @@ Cocina latina: arroz con pollo (estilo latino), sopa de frijoles negros, tostada
   pollo en salsa de tomate y comino, arepas de maíz (niños), tacos de pollo suave, ensalada de aguacate.
 Mediterránea / italiana: pasta al pesto, risotto de setas, pizza casera integral, moussaka de berenjenas,
   ensalada griega, hummus con verduras, ratatouille, pasta carbonara, lasaña de verduras.
-Internacional sencilla: curry de garbanzos suave, salmón teriyaki, pollo tikka masala suave,
-  wraps de pollo y aguacate, Buddha bowl de quinoa.
-Regla de rotación: cada semana usa al menos 2 platos de cada bloque (española, latina, mediterránea).
+Internacional / comfort food (estilo de las recetas de la familia): honey garlic shrimp, mac & cheese
+  casero, pasta cremosa con ajo, bowls de gambas al ajillo y miel, pollo teriyaki, pasta al horno,
+  tortellini en salsa cremosa, curry suave, salmón teriyaki, wraps de pollo.
+REGLA DE ESTILO (MEZCLA 50/50):
+  - LA MITAD de los platos de la semana al estilo de las RECETAS GUARDADAS de la familia y comfort
+    food internacional (americano, cremoso, gambas, pasta al horno, etc.).
+  - LA OTRA MITAD cocina española / latina / mediterránea.
+  - Equilibra ambos mundos cada semana; no llenes la semana solo de uno.
 """
 
-        prompt = f"""Eres chef y nutricionista especializado en cocina familiar española y latina.
-Genera el menú de la semana {week_label} para una familia en Barcelona con tendencia latina y mediterránea.
+        prompt = f"""Eres chef y nutricionista de cocina familiar internacional.
+Genera el menú de la semana {week_label} para una familia en Barcelona.
+ESTILO CLAVE: mezcla 50/50 entre (a) el estilo de las RECETAS GUARDADAS de la familia y comfort food
+internacional/americano, y (b) cocina española/latina/mediterránea. Da peso real a las recetas guardadas.
 Sé CREATIVO y VARIADO — cada semana debe sentirse diferente y apetecible.
 
 ## FAMILIA:
