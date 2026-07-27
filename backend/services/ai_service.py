@@ -36,7 +36,8 @@ class AIService:
     def generate_weekly_menu(self, family_members: List[Dict], settings: Dict,
                              house_config: Dict, historical_ratings: Optional[List[Dict]] = None,
                              week_start=None, previous_dishes: Optional[List[str]] = None,
-                             recent_purchases: Optional[List[Dict]] = None) -> Dict:
+                             recent_purchases: Optional[List[Dict]] = None,
+                             saved_recipes: Optional[List[Dict]] = None) -> Dict:
         """
         Genera un menú semanal completo usando Claude AI
         
@@ -52,7 +53,7 @@ class AIService:
         try:
             prompt = self._build_menu_prompt(family_members, settings, house_config, historical_ratings,
                                               week_start=week_start, previous_dishes=previous_dishes,
-                                              recent_purchases=recent_purchases)
+                                              recent_purchases=recent_purchases, saved_recipes=saved_recipes)
             
             logger.info("Enviando prompt a Claude...")
             logger.info(f"Prompt length: {len(prompt)} caracteres")
@@ -129,7 +130,8 @@ class AIService:
     def _build_menu_prompt(self, family_members: List[Dict], settings: Dict,
                          house_config: Dict, historical_ratings: Optional[List[Dict]] = None,
                          week_start=None, previous_dishes: Optional[List[str]] = None,
-                         recent_purchases: Optional[List[Dict]] = None) -> str:
+                         recent_purchases: Optional[List[Dict]] = None,
+                         saved_recipes: Optional[List[Dict]] = None) -> str:
         """
         Construye el prompt para Claude basado en los perfiles familiares y filtros
         """
@@ -245,6 +247,32 @@ class AIService:
                     "que aparezcan arriba NO deben repetirse en la lista_compra.\n"
                 )
 
+        # ── Recetas guardadas por la familia (referencia de estilo) ──────
+        recetas_block = ""
+        if saved_recipes:
+            favoritas, otras = [], []
+            for r in saved_recipes:
+                nombre = (r.get("nombre") or "").strip()
+                if not nombre:
+                    continue
+                tipo = r.get("tipo_comida") or ""
+                desc = (r.get("descripcion") or "").strip()
+                linea = f"  - {nombre}" + (f" [{tipo}]" if tipo and tipo != "cualquiera" else "")
+                if desc:
+                    linea += f" — {desc[:100]}"
+                (favoritas if r.get("es_favorita") else otras).append(linea)
+            if favoritas or otras:
+                recetas_block = "\n## RECETAS QUE LE GUSTAN A LA FAMILIA (usa como referencia de estilo y sabores):\n"
+                if favoritas:
+                    recetas_block += "FAVORITAS (prioriza platos en esta línea, e incluye 1-2 si encajan):\n" + "\n".join(favoritas[:20]) + "\n"
+                if otras:
+                    recetas_block += "Otras guardadas:\n" + "\n".join(otras[:20]) + "\n"
+                recetas_block += (
+                    "Inspírate en el ESTILO de estas recetas (tipo de cocina, ingredientes, sabores) "
+                    "para elegir platos parecidos que encajen con las reglas y restricciones. "
+                    "No hace falta copiarlas literalmente.\n"
+                )
+
         # ── Pool de inspiración latina/mediterránea ───────────────────────
         inspiracion = """
 ## TENDENCIA CULINARIA — USA ESTOS ESTILOS Y PLATOS (rótalo cada semana):
@@ -280,6 +308,7 @@ NIÑOS:
 {inspiracion}
 {ratings_context}
 {no_repetir_block}
+{recetas_block}
 {pantry_block}
 ## ALERGIAS Y RESTRICCIONES (CRÍTICO — NUNCA INCLUIR):
 {self._get_all_allergies(family_members)}

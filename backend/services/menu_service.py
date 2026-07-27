@@ -62,12 +62,15 @@ class MenuService:
             # Obtener compras recientes (para que la IA no re-compre lo que ya hay en casa)
             recent_purchases = self._get_recent_purchases(days=21)
 
+            # Recetas guardadas por la familia (referencia de estilo de comida)
+            saved_recipes = self._get_saved_recipes()
+
             # Generar menú con IA
             logger.info(f"Generando menú para la semana {week_start}")
             menu_data = self.ai_service.generate_weekly_menu(
                 family_members, settings, house_config, historical_ratings,
                 week_start=week_start, previous_dishes=previous_dishes,
-                recent_purchases=recent_purchases,
+                recent_purchases=recent_purchases, saved_recipes=saved_recipes,
             )
             
             # Guardar en base de datos
@@ -580,6 +583,21 @@ class MenuService:
             return [d for d in dishes if not (d in seen or seen.add(d))]
         except Exception as e:
             logger.warning(f"Error obteniendo platos anteriores: {e}")
+            return []
+
+    def _get_saved_recipes(self, limit: int = 40) -> List[Dict]:
+        """Recetas guardadas por la familia (favoritas primero) como referencia de estilo."""
+        try:
+            from models.menu import SavedRecipe
+            rows = (
+                SavedRecipe.query
+                .order_by(SavedRecipe.es_favorita.desc(), SavedRecipe.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+            return [r.to_dict() for r in rows]
+        except Exception as e:
+            logger.warning(f"Error obteniendo recetas guardadas: {e}")
             return []
 
     def _get_recent_purchases(self, days: int = 21) -> List[Dict]:

@@ -46,6 +46,9 @@
                 <a href="#menu" class="nav-link">
                     <span class="material-symbols-outlined">restaurant_menu</span><span class="nav-label"> Menú Semanal</span>
                 </a>
+                <a href="#recipes" class="nav-link">
+                    <span class="material-symbols-outlined">menu_book</span><span class="nav-label"> Recetas</span>
+                </a>
                 <a href="#shopping" class="nav-link">
                     <span class="material-symbols-outlined">shopping_cart</span><span class="nav-label"> Lista de Compras</span>
                 </a>
@@ -416,6 +419,49 @@
 
             </section>
             
+            <!-- Recipes Section -->
+            <section id="recipes" class="module-section">
+                <div class="content-header">
+                    <div>
+                        <h2>Recetas</h2>
+                        <p class="subtitle">Guarda recetas que te gustan (Pinterest, blogs…) — la IA las usa como referencia de estilo al generar el menú</p>
+                    </div>
+                </div>
+
+                <!-- Añadir receta -->
+                <div class="glass-card" style="padding:16px;margin-bottom:16px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <input id="recipeNombre" type="text" placeholder="Nombre de la receta *" maxlength="200"
+                            style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:10px 12px;font-size:14px;grid-column:1 / -1;">
+                        <input id="recipeUrl" type="url" placeholder="Link (Pinterest, blog…)" maxlength="500"
+                            style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:10px 12px;font-size:14px;grid-column:1 / -1;">
+                        <select id="recipeTipo" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:10px 12px;font-size:14px;">
+                            <option value="cualquiera">Cualquier comida</option>
+                            <option value="desayuno">Desayuno</option>
+                            <option value="comida">Comida</option>
+                            <option value="merienda">Merienda</option>
+                            <option value="cena">Cena</option>
+                            <option value="postre">Postre</option>
+                        </select>
+                        <label style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:14px;">
+                            <input id="recipeApto" type="checkbox" checked> Apta para niños
+                        </label>
+                        <input id="recipeNotas" type="text" placeholder="Notas (opcional): qué te gusta de ella…" maxlength="1000"
+                            style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:10px 12px;font-size:14px;grid-column:1 / -1;">
+                        <label style="display:flex;align-items:center;gap:8px;color:#fbbf24;font-size:14px;">
+                            <input id="recipeFav" type="checkbox"> ⭐ Favorita (la IA la prioriza)
+                        </label>
+                        <button id="recipeAddBtn" class="btn btn-primary" style="grid-column:1 / -1;">
+                            <span class="material-symbols-outlined">add</span> Guardar receta
+                        </button>
+                    </div>
+                </div>
+
+                <div id="recipesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+                    <div class="loading">Cargando recetas...</div>
+                </div>
+            </section>
+
             <!-- Shopping Section -->
             <section id="shopping" class="module-section">
                 <div class="content-header">
@@ -1572,6 +1618,7 @@
     <script src="js/navigation.js?v=20260516"></script>
     <script src="js/family.js?v=20260516"></script>
     <script src="js/menu.js?v=20260716"></script>
+    <script src="js/recipes.js?v=20260727"></script>
     <script src="js/cleaning.js?v=20260523"></script>
     <script src="js/calendar.js?v=20260530a"></script>
     <script src="js/shopping.js?v=20260717b"></script>
