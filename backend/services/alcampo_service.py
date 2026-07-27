@@ -152,14 +152,20 @@ class AlcampoService:
                 info = await btn.evaluate(
                     """el => {
                         let node = el;
-                        for (let i = 0; i < 9 && node; i++) {
+                        for (let i = 0; i < 10 && node; i++) {
                             const txt = (node.innerText || '');
                             const m = txt.match(/(\\d{1,4}[.,]\\d{2})\\s*€/);
-                            if (m) {
-                                // nombre: primera línea no vacía que no sea precio/Añadir
-                                const line = txt.split('\\n').map(s => s.trim())
-                                    .find(s => s && !/€|añadir|oferta|precio/i.test(s));
-                                return { price: m[1], name: line || null };
+                            // tarjeta real: tiene precio y bastante texto (no el chip del precio)
+                            if (m && txt.length > 15) {
+                                let name = null;
+                                const a = node.querySelector('a[href*=\"/product\"], a[href*=\"/p/\"], h1, h2, h3, h4');
+                                if (a && a.innerText) name = a.innerText.trim().slice(0, 80);
+                                if (!name) {
+                                    name = txt.split('\\n').map(s => s.trim())
+                                        .find(s => s.length >= 6 && /[a-záéíóúñ]/i.test(s)
+                                            && !/€|añadir|oferta|precio|unidad|ahora|antes|kg|litro/i.test(s)) || null;
+                                }
+                                return { price: m[1], name };
                             }
                             node = node.parentElement;
                         }
