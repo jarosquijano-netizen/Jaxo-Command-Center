@@ -130,7 +130,7 @@ class AlcampoService:
             return False
 
     async def _add_item(self, page, query: str) -> Dict:
-        """Busca `query` y añade el primer producto (botón 'Añadir')."""
+        """Busca `query`, extrae precio/nombre reales y añade el primer producto."""
         from playwright.async_api import TimeoutError as PWTimeout
         url = f"{ALCAMPO_URL}/search?q={quote(query)}"
         await self._goto(page, url)
@@ -140,13 +140,42 @@ class AlcampoService:
             await page.wait_for_selector("button:has-text('Añadir')", timeout=12000)
         except PWTimeout:
             return {"found": False}
-        # Clic en el primer 'Añadir'
+        # Clic en el primer 'Añadir', capturando precio y nombre reales del producto
         try:
             btn = page.locator("button:has-text('Añadir')").first
             await btn.scroll_into_view_if_needed(timeout=5000)
+
+            # Extraer datos de la tarjeta del producto que contiene este botón
+            price = None
+            product_name = None
+            try:
+                info = await btn.evaluate(
+                    """el => {
+                        let node = el;
+                        for (let i = 0; i < 9 && node; i++) {
+                            const txt = (node.innerText || '');
+                            const m = txt.match(/(\\d{1,4}[.,]\\d{2})\\s*€/);
+                            if (m) {
+                                // nombre: primera línea no vacía que no sea precio/Añadir
+                                const line = txt.split('\\n').map(s => s.trim())
+                                    .find(s => s && !/€|añadir|oferta|precio/i.test(s));
+                                return { price: m[1], name: line || null };
+                            }
+                            node = node.parentElement;
+                        }
+                        return { price: null, name: null };
+                    }"""
+                )
+                if info:
+                    if info.get("price"):
+                        price = float(info["price"].replace(".", "").replace(",", "."))
+                    product_name = info.get("name")
+            except Exception:
+                pass
+
             await btn.click(timeout=8000)
             await page.wait_for_timeout(1500)
-            return {"found": True}
+            return {"found": True, "price": price, "product": product_name}
         except Exception as e:
             logger.warning(f"[alcampo] no se pudo añadir '{query}': {str(e)[:80]}")
             return {"found": False}
@@ -157,6 +186,8 @@ class AlcampoService:
         from playwright.async_api import async_playwright
 
         added, not_found, errors = [], [], []
+        added_detail = []
+        total_real = 0.0
         launch_env = dict(os.environ)
         launch_env["HOME"] = "/tmp"
 
@@ -192,6 +223,14 @@ class AlcampoService:
                         res = await self._add_item(page, name)
                         if res["found"]:
                             added.append(name)
+                            precio = res.get("price")
+                            if precio:
+                                total_real += precio
+                            added_detail.append({
+                                "query": name,
+                                "producto": res.get("product"),
+                                "precio": precio,
+                            })
                         else:
                             not_found.append(name)
                     except Exception as e:
@@ -205,7 +244,8 @@ class AlcampoService:
             "added": added,
             "not_found": not_found,
             "errors": errors,
-            "added_detail": [{"query": a} for a in added],
+            "added_detail": added_detail,
+            "total_real": round(total_real, 2),  # total real de Alcampo
         }
 
 

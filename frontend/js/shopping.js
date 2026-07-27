@@ -798,6 +798,7 @@ class ShoppingManager {
             if (added.length) this._mercadonaLog(`✓ Añadidos: ${added.join(', ')}`);
             if (notFound.length) this._mercadonaLog(`? No encontrados: ${notFound.join(', ')}`);
             if (errors.length) this._mercadonaLog(`✗ Con error: ${errors.join(', ')}`);
+            if (result.total_real) this._mercadonaLog(`💶 Total real Alcampo: ${Number(result.total_real).toFixed(2)}€`);
         }
 
         const summary = document.getElementById('mercadonaSummary');
@@ -807,8 +808,10 @@ class ShoppingManager {
         summary.style.display = '';
 
         if (!failed) {
-            title.textContent = `✓ ${added.length} productos añadidos al carrito`;
+            const totalTxt = result.total_real ? ` · ${Number(result.total_real).toFixed(2)}€` : '';
+            title.textContent = `✓ ${added.length} productos añadidos${totalTxt}`;
             const parts = [];
+            if (result.total_real) parts.push(`Total real Alcampo: ${Number(result.total_real).toFixed(2)}€`);
             if (notFound.length) parts.push(`${notFound.length} no encontrados`);
             if (errors.length) parts.push(`${errors.length} con error`);
             detail.textContent = parts.length ? parts.join(' · ') : 'Todo añadido correctamente';
