@@ -27,18 +27,37 @@ class APIClient {
         const defaultOptions = { headers };
         const config = { ...defaultOptions, ...options, headers: { ...headers, ...(options.headers || {}) } };
 
+        // Timeout generoso: generar un menú con IA puede tardar ~60s.
+        const controller = new AbortController();
+        const timeoutMs = options.timeoutMs || 180000;
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        config.signal = controller.signal;
+
         try {
             const response = await fetch(url, config);
-            const data = await response.json();
-
-            if (!response.ok) {
-                return data;
+            // Leer como texto y parsear con seguridad: si el servidor está
+            // reiniciándose (deploy) puede devolver HTML/502, no JSON.
+            const text = await response.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (parseErr) {
+                console.error('API non-JSON response:', response.status, text.slice(0, 200));
+                return {
+                    success: false,
+                    message: `El servidor devolvió una respuesta no válida (HTTP ${response.status}). ` +
+                             `Puede estar reiniciándose — espera unos segundos y vuelve a intentarlo.`,
+                };
             }
-
             return data;
         } catch (error) {
             console.error('API Error:', error);
+            if (error.name === 'AbortError') {
+                throw new Error('La operación tardó demasiado. Si generabas un menú, puede haberse creado igualmente: recarga para comprobarlo.');
+            }
             throw error;
+        } finally {
+            clearTimeout(timer);
         }
     }
 
