@@ -7,10 +7,38 @@ from datetime import datetime, date, timedelta
 from services.menu_service import menu_service
 from extensions import limiter
 import logging
+import threading
+import uuid
 
 logger = logging.getLogger(__name__)
 
 menu_bp = Blueprint('menu', __name__)
+
+# In-memory job store for async menu generation (single-instance Railway deploy).
+# Menu generation with AI takes 60-90s, too long for a synchronous request that
+# a browser/proxy may drop → run it in a background thread and poll for status.
+_menu_jobs: dict = {}
+
+
+def _run_menu_job(job_id: str, week_start, settings: dict):
+    """Background thread: generates the menu with AI and stores the result."""
+    from app import app
+    _menu_jobs[job_id]["status"] = "running"
+    try:
+        with app.app_context():
+            result = menu_service.generate_weekly_menu(week_start, settings)
+        _menu_jobs[job_id].update({
+            "status": "done",
+            "result": result,
+            "finished_at": datetime.utcnow().isoformat(),
+        })
+    except Exception as e:
+        logger.error(f"[menu] job {job_id} error: {e}")
+        _menu_jobs[job_id].update({
+            "status": "error",
+            "result": {"success": False, "message": "Error interno generando el menú"},
+            "finished_at": datetime.utcnow().isoformat(),
+        })
 
 # Valid field values for input validation
 _VALID_DIAS    = {'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'}
@@ -140,6 +168,60 @@ def generate_menu():
             'success': False,
             'message': f'Error generando menú: {str(e)[:300]}'
         }), 500
+
+
+@menu_bp.route('/generate-async', methods=['POST'])
+@(limiter.limit("10 per hour") if limiter else (lambda f: f))
+def generate_menu_async():
+    """
+    Inicia la generación de menú en segundo plano (evita timeouts en peticiones
+    largas de ~60-90s). Devuelve un job_id; consulta /api/menu/job/<job_id>.
+    Mismo body que /generate.
+    """
+    try:
+        data = request.get_json() or {}
+        week_start_str = data.get('week_start')
+        if week_start_str:
+            try:
+                week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+        else:
+            from utils.dates import current_week_start
+            week_start = current_week_start()
+
+        settings = data.get('settings', {})
+        settings['regenerate'] = data.get('regenerate', False)
+
+        job_id = str(uuid.uuid4())[:8]
+        _menu_jobs[job_id] = {
+            "status": "pending",
+            "started_at": datetime.utcnow().isoformat(),
+            "result": None,
+        }
+        t = threading.Thread(target=_run_menu_job, args=(job_id, week_start, settings), daemon=True)
+        t.start()
+        logger.info(f"[menu] async job {job_id} started for week {week_start}")
+        return jsonify({"success": True, "job_id": job_id})
+    except Exception as e:
+        logger.error(f"Error en generate_menu_async: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+
+@menu_bp.route('/job/<job_id>', methods=['GET'])
+def menu_job_status(job_id):
+    """Consulta el estado de un job de generación de menú."""
+    job = _menu_jobs.get(job_id)
+    if not job:
+        return jsonify({"success": False, "message": "Job no encontrado"}), 404
+    # Si terminó, devolver el resultado en el mismo formato que /generate
+    if job["status"] == "done" and job.get("result"):
+        res = job["result"]
+        status_code = 200 if res.get("success") else (409 if 'ya existe' in (res.get('message') or '').lower() else 400)
+        return jsonify({"success": True, "status": "done", **res}), status_code
+    if job["status"] == "error":
+        return jsonify({"success": True, "status": "error", **(job.get("result") or {})})
+    return jsonify({"success": True, "status": job["status"]})
 
 
 @menu_bp.route('/current', methods=['GET'])

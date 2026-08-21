@@ -462,6 +462,40 @@ class MenuManager {
         return this.getMonday(new Date());
     }
 
+    /**
+     * Genera el menú vía job en segundo plano + polling.
+     * La generación con IA tarda 60-90s; hacerla síncrona provoca timeouts
+     * ("se queda pegado"). Aquí arrancamos el job y consultamos su estado.
+     */
+    async _generateMenuViaJob(data) {
+        const start = await api.post('/api/menu/generate-async', data);
+        if (!start || !start.success || !start.job_id) {
+            return start || { success: false, message: 'No se pudo iniciar la generación' };
+        }
+        const jobId = start.job_id;
+        const maxAttempts = 80; // 80 × 3s = 240s de margen
+        for (let i = 0; i < maxAttempts; i++) {
+            await new Promise(r => setTimeout(r, 3000));
+            // Actualizar el texto del spinner para que se note que avanza
+            this._updateLoadingText(`Generando menú con IA… (${(i + 1) * 3}s)`);
+            let job;
+            try {
+                job = await api.get(`/api/menu/job/${jobId}`);
+            } catch (e) {
+                continue; // error transitorio de red → seguir consultando
+            }
+            if (!job) continue;
+            if (job.status === 'done' || job.status === 'error') return job;
+            // pending/running → seguir esperando
+        }
+        return { success: false, message: 'La generación tardó demasiado. Recarga la página para ver si se creó el menú.' };
+    }
+
+    _updateLoadingText(txt) {
+        const el = document.getElementById('menuLoadingText') || document.querySelector('.loading-text');
+        if (el) el.textContent = txt;
+    }
+
     async generateMenu() {
         const modal = document.getElementById('generateMenuModal');
         const formData = new FormData(modal.querySelector('form'));
@@ -499,7 +533,7 @@ class MenuManager {
         try {
             this.setLoading(true);
 
-            const response = await api.post('/api/menu/generate', data);
+            const response = await this._generateMenuViaJob(data);
 
             if (response.success) {
                 this.currentMenu = response.menu;
