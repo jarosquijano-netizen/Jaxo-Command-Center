@@ -175,6 +175,30 @@ class AIService:
         perfiles_adultos = "\n".join(_perfil_adulto(a) for a in adultos if a.get('rol_hogar') == 'familia') or "  (sin adultos)"
         perfiles_ninos   = "\n".join(_perfil_nino(n) for n in ninos) or "  (sin niños)"
 
+        # ── Dieta de los adultos (dinámico según objetivo_alimentario) ────
+        _objetivos_adultos = " ".join(
+            (a.get('objetivo_alimentario') or '') for a in adultos if a.get('rol_hogar') == 'familia'
+        ).lower()
+        _low_carb = any(k in _objetivos_adultos for k in (
+            'proteí', 'protein', 'low-carb', 'low carb', 'baja en carbo', 'bajo en carbo', 'keto'
+        ))
+        dieta_block = ""
+        if _low_carb:
+            dieta_block = (
+                "\n## DIETA DE LOS ADULTOS (OBLIGATORIO — ALTA PROTEÍNA / BAJA EN CARBOHIDRATOS):\n"
+                "- El menú de ADULTOS debe ser ALTO EN PROTEÍNA y BAJO EN CARBOHIDRATOS.\n"
+                "- Cada cena de adultos = ración generosa de proteína magra (pollo, pavo, ternera magra,\n"
+                "  cerdo magro, pescado, gambas/marisco, huevos) + abundante verdura + grasas saludables\n"
+                "  (aceite de oliva, aguacate, queso, frutos secos).\n"
+                "- MINIMIZAR en adultos: pan, pasta, arroz, patata, harinas, rebozados, azúcar y postres.\n"
+                "  Si una receta base lleva pasta/arroz (p.ej. tortellini, mac & cheese), en la versión\n"
+                "  ADULTO adáptala: sustituye por 'fideos' de calabacín, arroz de coliflor, más verdura o\n"
+                "  más proteína. Las gambas al ajillo y miel, filetes, pollo al horno, etc. encajan tal cual.\n"
+                "- Objetivo aproximado por cena de adulto: ~35-45 g de proteína y <30 g de carbohidratos.\n"
+                "- Los NIÑOS NO siguen esta dieta: su menú es EQUILIBRADO, con carbohidratos adecuados para\n"
+                "  crecer (pueden llevar la pasta, arroz, mac & cheese, tortellini, etc. de las recetas).\n"
+            )
+
         # ── Ratings históricos ────────────────────────────────────────────
         ratings_context = ""
         if historical_ratings:
@@ -316,6 +340,7 @@ NIÑOS:
 {ratings_context}
 {no_repetir_block}
 {recetas_block}
+{dieta_block}
 {pantry_block}
 ## ALERGIAS Y RESTRICCIONES (CRÍTICO — NUNCA INCLUIR):
 {self._get_all_allergies(family_members)}
@@ -326,7 +351,7 @@ NIÑOS:
    sin especias fuertes, raciones menores) — NUNCA una copia literal del adulto.
 3. VARIEDAD TOTAL: cero repeticiones dentro de la semana. Cero coincidencias con la lista "NO REPETIR".
 4. Rotar proteínas: máx 2 días seguidos la misma (pollo, ternera, cerdo, pescado, legumbres, huevos, tofu).
-5. Al menos 2 platos vegetarianos/legumbres por semana en adultos.
+5. Verdura abundante en cada cena de adultos. (Si NO hay dieta baja en carbohidratos, incluye además al menos 2 platos vegetarianos/de legumbres por semana en adultos.)
 6. Tiempo de preparación realista para días de trabajo (máx 45 min lunes-viernes, hasta 90 min fin de semana).
 7. lista_compra: ingredientes agregados de TODA la semana, con cantidades exactas y precios de {supermercado}.
    Organizada por secciones: Frutas y Verduras, Carnes y Pescados, Lácteos y Huevos, Despensa, Pan y Cereales, Congelados.
