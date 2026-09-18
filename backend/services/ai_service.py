@@ -355,7 +355,11 @@ NIÑOS:
 6. Tiempo de preparación realista para días de trabajo (máx 45 min lunes-viernes, hasta 90 min fin de semana).
 7. lista_compra: ingredientes agregados de TODA la semana, con cantidades exactas y precios de {supermercado}.
    Organizada por secciones: Frutas y Verduras, Carnes y Pescados, Lácteos y Huevos, Despensa, Pan y Cereales, Congelados.
-8. Responder ÚNICAMENTE con JSON válido, sin texto fuera del JSON.
+8. OBLIGATORIO en CADA plato (adultos y niños): "calorias" y "nutrientes" con
+   proteinas_g, carbohidratos_g y grasas_g realistas para la ración de ESA persona
+   (no del total de la receta). Deben ser coherentes con el plato y con la dieta:
+   en adultos low-carb, carbohidratos_g bajo; en niños, carbohidratos normales.
+9. Responder ÚNICAMENTE con JSON válido, sin texto fuera del JSON.
 
 ## FORMATO JSON (estructura exacta — TODOS los días y comidas):
 {{
@@ -366,6 +370,7 @@ NIÑOS:
         "descripcion": "1-2 frases que hagan apetecer el plato",
         "tiempo_prep": 30,
         "calorias": 420,
+        "nutrientes": {{"proteinas_g": 38, "carbohidratos_g": 18, "grasas_g": 22}},
         "dificultad": "Fácil",
         "alergenos": [],
         "ingredientes": ["500g pechuga de pollo", "2 dientes de ajo", "1 limón", "aceite de oliva"],
@@ -380,6 +385,7 @@ NIÑOS:
         "descripcion": "Descripción adaptada y atractiva para niños",
         "tiempo_prep": 20,
         "calorias": 280,
+        "nutrientes": {{"proteinas_g": 20, "carbohidratos_g": 30, "grasas_g": 10}},
         "dificultad": "Fácil",
         "alergenos": [],
         "ingredientes": ["300g pechuga de pollo", "1 diente de ajo suave", "pasta o arroz de acompañamiento"],

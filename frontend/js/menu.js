@@ -1221,35 +1221,64 @@ class MenuManager {
         }
     }
 
+    /** Recorre un bloque de menú y agrega kcal + macros reales de los platos. */
+    _collectNutrition(block) {
+        const acc = { meals: 0, kcal: 0, kcalN: 0, prot: 0, carb: 0, fat: 0, macroN: 0 };
+        Object.values(block || {}).forEach(day => {
+            Object.values(day || {}).forEach(meal => {
+                if (!meal || (!meal.plato && !meal.nombre)) return;
+                acc.meals++;
+                const kcal = Number(meal.calorias);
+                if (kcal > 0) { acc.kcal += kcal; acc.kcalN++; }
+                const n = meal.nutrientes || {};
+                const p = Number(n.proteinas_g), c = Number(n.carbohidratos_g), g = Number(n.grasas_g);
+                if (p > 0 || c > 0 || g > 0) {
+                    acc.prot += p || 0; acc.carb += c || 0; acc.fat += g || 0; acc.macroN++;
+                }
+            });
+        });
+        return acc;
+    }
+
+    _nutritionCard(title, acc, hint) {
+        if (!acc.meals) return '';
+        const avgKcal = acc.kcalN ? Math.round(acc.kcal / acc.kcalN) : null;
+        const macro = (sum) => Math.round(sum / acc.macroN);
+        const macrosHtml = acc.macroN
+            ? `<div class="mn-stats-macros">
+                 <div class="mn-macro"><span class="mn-macro-val mn-macro-val--cyan">${macro(acc.prot)}g</span><span class="mn-macro-lbl">PROTEÍNAS</span></div>
+                 <div class="mn-macro"><span class="mn-macro-val mn-macro-val--blue">${macro(acc.carb)}g</span><span class="mn-macro-lbl">CARBOS</span></div>
+                 <div class="mn-macro"><span class="mn-macro-val mn-macro-val--violet">${macro(acc.fat)}g</span><span class="mn-macro-lbl">GRASAS</span></div>
+               </div>`
+            : `<p class="mn-stats-sub" style="margin-top:6px;">Este menú no incluye macros. Se mostrarán al regenerarlo.</p>`;
+
+        return `
+            <div style="flex:1;min-width:220px;">
+                <h4 class="mn-stats-title">${title}</h4>
+                <p class="mn-stats-sub">
+                    ${acc.meals} ${acc.meals === 1 ? 'plato' : 'platos'}${avgKcal ? ` · media ${avgKcal} kcal por plato` : ''}
+                </p>
+                ${hint ? `<p class="mn-stats-sub" style="opacity:.7;">${hint}</p>` : ''}
+                ${macrosHtml}
+            </div>`;
+    }
+
     updateStatistics() {
         const el = document.getElementById('menuStatistics');
         if (!el || !this.currentMenu) { if (el) el.innerHTML = ''; return; }
+
+        let parsed = this.currentMenu.menu_data;
+        if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch { parsed = null; } }
+        if (!parsed) { el.innerHTML = ''; return; }
+
+        const adultos = this._collectNutrition(parsed.menu_adultos);
+        const ninos   = this._collectNutrition(parsed.menu_ninos);
+        if (!adultos.meals && !ninos.meals) { el.innerHTML = ''; return; }
+
         el.innerHTML = `
-            <div class="mn-stats-inner">
-                <div class="mn-stats-left">
-                    <div class="mn-stats-ring"><span class="mn-stats-pct">87%</span></div>
-                    <div>
-                        <h4 class="mn-stats-title">Resumen Nutricional Semanal</h4>
-                        <p class="mn-stats-sub">Objetivo: 2,200 kcal promedio diario</p>
-                    </div>
-                </div>
-                <div class="mn-stats-macros">
-                    <div class="mn-macro">
-                        <span class="mn-macro-val mn-macro-val--cyan">145g</span>
-                        <span class="mn-macro-lbl">PROTEÍNAS</span>
-                        <div class="mn-macro-bar"><div class="mn-macro-fill mn-macro-fill--cyan" style="width:75%"></div></div>
-                    </div>
-                    <div class="mn-macro">
-                        <span class="mn-macro-val mn-macro-val--blue">210g</span>
-                        <span class="mn-macro-lbl">CARBOS</span>
-                        <div class="mn-macro-bar"><div class="mn-macro-fill mn-macro-fill--blue" style="width:50%"></div></div>
-                    </div>
-                    <div class="mn-macro">
-                        <span class="mn-macro-val mn-macro-val--violet">65g</span>
-                        <span class="mn-macro-lbl">GRASAS</span>
-                        <div class="mn-macro-bar"><div class="mn-macro-fill mn-macro-fill--violet" style="width:65%"></div></div>
-                    </div>
-                </div>
+            <div class="mn-stats-inner" style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+                ${this._nutritionCard('🍽️ Adultos', adultos, 'Objetivo: alta proteína · bajo en carbos')}
+                ${this._nutritionCard('👧 Niñas', ninos, 'Dieta equilibrada (crecimiento)')}
             </div>`;
     }
 
