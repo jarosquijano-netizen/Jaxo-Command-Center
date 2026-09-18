@@ -226,11 +226,10 @@ class CalendarManager {
             const from = _toLocalISO(base);
             const to = _toLocalISO(new Date(base.getTime() + 27 * 24 * 60 * 60 * 1000));
 
-            const importResp = await api.post('/api/google/import', { calendar_id: 'all', from, to });
+            const importResp = await api.post('/api/google/import', { calendar_id: 'jaxo', from, to });
             if (importResp.success) {
                 const d = importResp.data;
-                const cals = d.calendars_synced != null ? ` de ${d.calendars_synced} calendarios` : '';
-                this.showMessage(`Sincronización completada${cals}: ${d.created} nuevos, ${d.updated} actualizados`, 'success');
+                this.showMessage(`Calendario JAXO sincronizado: ${d.created} nuevos, ${d.updated} actualizados`, 'success');
                 await this.loadCurrentWeek();
             } else {
                 this.showMessage('Error sincronizando: ' + (importResp.message || 'desconocido'), 'error');

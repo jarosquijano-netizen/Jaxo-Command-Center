@@ -17,6 +17,19 @@ from config import Config
 google_bp = Blueprint('google', __name__)
 
 
+def _resolve_calendar_id_by_name(name: str):
+    """Devuelve el id del calendario cuyo nombre (summary) coincide con `name`."""
+    try:
+        cals = google_calendar_service.list_calendars()
+        target = (name or '').strip().lower()
+        for c in cals:
+            if (c.get('summary') or '').strip().lower() == target:
+                return c.get('id')
+    except Exception as e:
+        logger.warning(f"[google] no se pudo resolver calendario '{name}': {e}")
+    return None
+
+
 def _ensure_token_file():
     """Restore OAuth token file from DB if the container lost it (new deploy)."""
     token_path = str(Config.GOOGLE_TOKEN_PATH)
@@ -224,7 +237,7 @@ def import_events():
     try:
         _ensure_token_file()
         payload = request.get_json() or {}
-        calendar_id = payload.get('calendar_id', 'all')  # 'all' = todos los calendarios
+        calendar_id = payload.get('calendar_id', 'jaxo')  # por defecto: solo el calendario JAXO
         from_str = payload.get('from')
         to_str = payload.get('to')
 
@@ -238,8 +251,21 @@ def import_events():
             from_date = datetime.strptime(from_str, '%Y-%m-%d').date()
             to_date = datetime.strptime(to_str, '%Y-%m-%d').date()
 
-        # calendar_id == 'all' → importar de TODOS los calendarios del usuario
-        if calendar_id in ('all', '', None):
+        # Selección de calendarios a importar:
+        #   'jaxo' (por defecto) → solo el calendario "JAXO"
+        #   'all'                → todos los calendarios del usuario
+        #   <id concreto>        → ese calendario
+        jaxo_only = False
+        jaxo_id = None
+        if calendar_id in ('jaxo', 'JAXO', '', None):
+            jaxo_id = _resolve_calendar_id_by_name('JAXO')
+            if jaxo_id:
+                cal_ids = [jaxo_id]
+                jaxo_only = True
+            else:
+                logger.warning("[google] no se encontró el calendario 'JAXO'; usando primary")
+                cal_ids = ['primary']
+        elif calendar_id == 'all':
             try:
                 cals = google_calendar_service.list_calendars()
                 cal_ids = [c.get('id') for c in cals if c.get('id')]
@@ -325,16 +351,28 @@ def import_events():
             per_calendar.append({'calendar_id': cid, 'created': created, 'updated': updated, 'total': len(events)})
 
         db.session.commit()
+
+        # En modo solo-JAXO, eliminar eventos importados de otros calendarios
+        # (p.ej. de sincronizaciones anteriores que traían MY LIFE, holidays, etc.)
+        purged = 0
+        if jaxo_only and jaxo_id:
+            purged = GoogleImportedEvent.query.filter(
+                GoogleImportedEvent.calendar_id != jaxo_id
+            ).delete(synchronize_session=False)
+            db.session.commit()
+
         _persist_token_to_db()  # persist any token refresh that happened during import
         return jsonify({
             'success': True,
             'data': {
                 'calendars_synced': len(per_calendar),
+                'source': 'JAXO' if jaxo_only else calendar_id,
                 'from': from_date.isoformat(),
                 'to': to_date.isoformat(),
                 'created': total_created,
                 'updated': total_updated,
                 'total': total_events,
+                'purged_other_calendars': purged,
                 'per_calendar': per_calendar,
             }
         })
