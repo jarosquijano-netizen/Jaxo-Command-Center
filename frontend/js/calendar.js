@@ -221,13 +221,16 @@ class CalendarManager {
 
             if (syncBtn) syncBtn.innerHTML = '<span class="material-symbols-outlined">sync</span> Sincronizando...';
             const _toLocalISO = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : null;
-            const weekStart = _toLocalISO(this.currentWeek);
-            const weekEnd = this.currentWeek ? _toLocalISO(new Date(this.currentWeek.getTime() + 6 * 24 * 60 * 60 * 1000)) : null;
+            // Sincroniza TODOS los calendarios, desde esta semana hasta 4 semanas después
+            const base = this.currentWeek ? new Date(this.currentWeek) : new Date();
+            const from = _toLocalISO(base);
+            const to = _toLocalISO(new Date(base.getTime() + 27 * 24 * 60 * 60 * 1000));
 
-            const importResp = await api.post('/api/google/import', { from: weekStart, to: weekEnd });
+            const importResp = await api.post('/api/google/import', { calendar_id: 'all', from, to });
             if (importResp.success) {
                 const d = importResp.data;
-                this.showMessage(`Sincronización completada: ${d.created} nuevos, ${d.updated} actualizados`, 'success');
+                const cals = d.calendars_synced != null ? ` de ${d.calendars_synced} calendarios` : '';
+                this.showMessage(`Sincronización completada${cals}: ${d.created} nuevos, ${d.updated} actualizados`, 'success');
                 await this.loadCurrentWeek();
             } else {
                 this.showMessage('Error sincronizando: ' + (importResp.message || 'desconocido'), 'error');

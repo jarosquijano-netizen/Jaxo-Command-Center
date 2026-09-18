@@ -1,6 +1,9 @@
 import os
+import logging
 from flask import Blueprint, request, jsonify
 from datetime import datetime, date, timedelta
+
+logger = logging.getLogger(__name__)
 
 from extensions import db
 from models.settings import Settings
@@ -221,93 +224,118 @@ def import_events():
     try:
         _ensure_token_file()
         payload = request.get_json() or {}
-        calendar_id = payload.get('calendar_id', 'primary')
+        calendar_id = payload.get('calendar_id', 'all')  # 'all' = todos los calendarios
         from_str = payload.get('from')
         to_str = payload.get('to')
 
         if not from_str or not to_str:
+            # Por defecto: desde el lunes de esta semana hasta 4 semanas después
             from utils.dates import current_week_start
             monday = current_week_start()
-            sunday = monday + timedelta(days=6)
             from_date = monday
-            to_date = sunday
+            to_date = monday + timedelta(days=27)
         else:
             from_date = datetime.strptime(from_str, '%Y-%m-%d').date()
             to_date = datetime.strptime(to_str, '%Y-%m-%d').date()
 
-        events = google_calendar_service.list_events(calendar_id, from_date, to_date)
-        created = 0
-        updated = 0
-        for ev in events:
-            event_id = ev['id']
-            summary = ev.get('summary')
-            description = ev.get('description')
-            location = ev.get('location')
-            status = ev.get('status')
-            all_day = ev.get('all_day', False)
-            start_dt_str = ev.get('start_datetime')
-            end_dt_str = ev.get('end_datetime')
-            google_updated_str = ev.get('updated')
+        # calendar_id == 'all' → importar de TODOS los calendarios del usuario
+        if calendar_id in ('all', '', None):
+            try:
+                cals = google_calendar_service.list_calendars()
+                cal_ids = [c.get('id') for c in cals if c.get('id')]
+            except Exception as e:
+                logger.warning(f"[google] no se pudieron listar calendarios: {e}")
+                cal_ids = ['primary']
+        else:
+            cal_ids = [calendar_id]
 
-            if not start_dt_str or not end_dt_str:
+        from datetime import timezone as _tz
+
+        def _parse_dt(s):
+            if not s:
+                return None
+            if len(s) == 10:
+                # All-day: "YYYY-MM-DD" — treat as UTC midnight
+                return datetime.strptime(s, '%Y-%m-%d')
+            dt = datetime.fromisoformat(s.replace('Z', '+00:00'))
+            if dt.tzinfo is not None:
+                dt = dt.astimezone(_tz.utc).replace(tzinfo=None)
+            return dt
+
+        total_created = 0
+        total_updated = 0
+        total_events = 0
+        per_calendar = []
+
+        for cid in cal_ids:
+            try:
+                events = google_calendar_service.list_events(cid, from_date, to_date)
+            except Exception as e:
+                logger.warning(f"[google] error leyendo calendario {cid}: {e}")
                 continue
 
-            from datetime import timezone as _tz
+            created = 0
+            updated = 0
+            for ev in events:
+                event_id = ev['id']
+                start_dt_str = ev.get('start_datetime')
+                end_dt_str = ev.get('end_datetime')
+                if not start_dt_str or not end_dt_str:
+                    continue
 
-            def _parse_dt(s):
-                if not s:
-                    return None
-                if len(s) == 10:
-                    # All-day: "YYYY-MM-DD" — treat as UTC midnight
-                    return datetime.strptime(s, '%Y-%m-%d')
-                dt = datetime.fromisoformat(s.replace('Z', '+00:00'))
-                if dt.tzinfo is not None:
-                    dt = dt.astimezone(_tz.utc).replace(tzinfo=None)
-                return dt
+                summary = ev.get('summary')
+                description = ev.get('description')
+                location = ev.get('location')
+                status = ev.get('status')
+                all_day = ev.get('all_day', False)
+                google_updated = _parse_dt(ev.get('updated')) if ev.get('updated') else None
+                start_dt = _parse_dt(start_dt_str)
+                end_dt = _parse_dt(end_dt_str)
 
-            start_dt = _parse_dt(start_dt_str)
-            end_dt = _parse_dt(end_dt_str)
-            google_updated = _parse_dt(google_updated_str) if google_updated_str else None
+                existing = GoogleImportedEvent.query.filter_by(calendar_id=cid, event_id=event_id).first()
+                if existing:
+                    if google_updated and existing.google_updated and google_updated > existing.google_updated:
+                        existing.summary = summary
+                        existing.description = description
+                        existing.location = location
+                        existing.status = status
+                        existing.all_day = all_day
+                        existing.start_datetime = start_dt
+                        existing.end_datetime = end_dt
+                        existing.google_updated = google_updated
+                        updated += 1
+                else:
+                    db.session.add(GoogleImportedEvent(
+                        calendar_id=cid,
+                        event_id=event_id,
+                        summary=summary,
+                        description=description,
+                        location=location,
+                        status=status,
+                        all_day=all_day,
+                        start_datetime=start_dt,
+                        end_datetime=end_dt,
+                        google_updated=google_updated,
+                    ))
+                    created += 1
 
-            existing = GoogleImportedEvent.query.filter_by(calendar_id=calendar_id, event_id=event_id).first()
-            if existing:
-                if google_updated and existing.google_updated and google_updated > existing.google_updated:
-                    existing.summary = summary
-                    existing.description = description
-                    existing.location = location
-                    existing.status = status
-                    existing.all_day = all_day
-                    existing.start_datetime = start_dt
-                    existing.end_datetime = end_dt
-                    existing.google_updated = google_updated
-                    updated += 1
-            else:
-                existing = GoogleImportedEvent(
-                    calendar_id=calendar_id,
-                    event_id=event_id,
-                    summary=summary,
-                    description=description,
-                    location=location,
-                    status=status,
-                    all_day=all_day,
-                    start_datetime=start_dt,
-                    end_datetime=end_dt,
-                    google_updated=google_updated,
-                )
-                db.session.add(existing)
-                created += 1
+            total_created += created
+            total_updated += updated
+            total_events += len(events)
+            per_calendar.append({'calendar_id': cid, 'created': created, 'updated': updated, 'total': len(events)})
 
         db.session.commit()
         _persist_token_to_db()  # persist any token refresh that happened during import
         return jsonify({
             'success': True,
             'data': {
-                'calendar_id': calendar_id,
+                'calendars_synced': len(per_calendar),
                 'from': from_date.isoformat(),
                 'to': to_date.isoformat(),
-                'created': created,
-                'updated': updated,
-                'total': len(events)
+                'created': total_created,
+                'updated': total_updated,
+                'total': total_events,
+                'per_calendar': per_calendar,
             }
         })
     except Exception as e:
