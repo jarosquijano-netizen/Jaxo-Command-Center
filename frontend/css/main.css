@@ -4381,7 +4381,7 @@ body {
     flex-direction: column;
     gap: 6px;
     overflow-y: auto;
-    max-height: 220px;
+    max-height: 330px;
 }
 .db-shopping-item {
     display: flex;

@@ -391,18 +391,43 @@ class DashboardManager {
                 });
             });
 
-            if (counterEl) counterEl.textContent = `${allItems.length} Items`;
+            // Estado marcado persistente por semana (antes se perdía al recargar)
+            const weekKey = `jaxo_shop_checked_${menuData.semana_inicio || 'actual'}`;
+            let checkedSet;
+            try {
+                checkedSet = new Set(JSON.parse(localStorage.getItem(weekKey) || '[]'));
+            } catch { checkedSet = new Set(); }
 
-            listEl.innerHTML = allItems.slice(0, 10).map(item => `
-                <li class="db-shopping-item">
+            const pending = allItems.filter(i => !checkedSet.has(i.name)).length;
+            if (counterEl) counterEl.textContent = `${pending} de ${allItems.length}`;
+
+            const SHOWN = 12;
+            const shown = allItems.slice(0, SHOWN);
+            listEl.innerHTML = shown.map(item => `
+                <li class="db-shopping-item${checkedSet.has(item.name) ? ' checked' : ''}" data-name="${item.name.replace(/"/g, '&quot;')}">
                     <span class="db-shopping-check"></span>
                     <span class="db-shopping-item-name">${item.name}</span>
                     ${item.qty ? `<span class="db-shopping-item-qty">${item.qty}</span>` : ''}
-                </li>`).join('');
+                </li>`).join('') +
+                (allItems.length > SHOWN
+                    ? `<li class="db-shopping-more" style="padding:8px 10px;">
+                         <a href="#shopping" style="color:var(--color-primary);font-size:13px;font-weight:600;text-decoration:none;">
+                           Ver los ${allItems.length} productos →
+                         </a>
+                       </li>`
+                    : '');
 
-            // Clickable checkboxes
+            // Marcar / desmarcar (se guarda en el dispositivo)
             listEl.querySelectorAll('.db-shopping-item').forEach(li => {
-                li.addEventListener('click', () => li.classList.toggle('checked'));
+                li.addEventListener('click', () => {
+                    li.classList.toggle('checked');
+                    const name = li.dataset.name;
+                    if (li.classList.contains('checked')) checkedSet.add(name);
+                    else checkedSet.delete(name);
+                    try { localStorage.setItem(weekKey, JSON.stringify([...checkedSet])); } catch {}
+                    const left = allItems.filter(i => !checkedSet.has(i.name)).length;
+                    if (counterEl) counterEl.textContent = `${left} de ${allItems.length}`;
+                });
             });
         } catch {
             listEl.innerHTML = '<li class="db-shopping-empty">Error cargando lista</li>';
