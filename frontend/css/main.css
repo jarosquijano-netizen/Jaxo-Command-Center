@@ -5123,6 +5123,7 @@ body {
     /* Sidebar becomes a fixed bottom nav */
     .sidebar {
         position: fixed;
+        top: auto;                /* clear the desktop sticky top:0, or it pins to the top */
         bottom: 0; left: 0; right: 0;
         width: 100%;
         height: 56px;
@@ -5191,6 +5192,28 @@ body {
         padding: 16px 12px;
         border-radius: 12px;
     }
+
+    /* ── Filas horizontales: que no se corten en móvil ── */
+    /* Pestañas de Configuración: scroll horizontal */
+    .tab-buttons {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 4px;
+    }
+    .tab-buttons::-webkit-scrollbar { display: none; }
+    .tab-buttons .tab-btn { flex: 0 0 auto; white-space: nowrap; }
+
+    /* Filtros (calendario / to-do): que se ajusten en varias líneas */
+    .ca-filters,
+    .td-filter-bar { flex-wrap: wrap; gap: 6px; }
+    .ca-filters .ca-nav-btn { margin-left: 0 !important; }
+
+    /* Toggle Adultos/Niños/Ambos: repartir ancho */
+    .mn-toggle { display: flex; width: 100%; }
+    .mn-toggle .mn-toggle-btn { flex: 1; }
 
     /* ── Content headers ── */
     .content-header {
