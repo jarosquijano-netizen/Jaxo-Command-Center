@@ -531,8 +531,13 @@ class DashboardManager {
             const eventsHtml = dayEvents.length
                 ? dayEvents.slice(0, 4).map(ev => {
                     const type = this.getEventType(ev);
-                    const time = ev.start?.includes('T')
-                        ? ev.start.split('T')[1].substring(0, 5) + ' ' : '';
+                    // Las horas llegan en UTC (…Z): hay que pasarlas a hora local,
+                    // y los eventos de todo el día no llevan hora.
+                    let time = '';
+                    if (!ev.all_day && ev.start?.includes('T')) {
+                        const d = new Date(ev.start);
+                        if (!isNaN(d)) time = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + ' ';
+                    }
                     return `<div class="db-cal-event-pill type-${type}">${time}${ev.title || 'Evento'}</div>`;
                 }).join('')
                 : '<div class="db-cal-empty-col">·</div>';

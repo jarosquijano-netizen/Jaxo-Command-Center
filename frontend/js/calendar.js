@@ -144,7 +144,9 @@ class CalendarManager {
         const nextEl = document.getElementById('caNextEvent');
         if (nextEl) {
             if (upcoming) {
-                const time = new Date(upcoming.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const time = upcoming.all_day
+                    ? 'todo el día'
+                    : new Date(upcoming.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
                 nextEl.textContent = `${upcoming.title} (${time})`;
             } else {
                 nextEl.textContent = 'Sin próximos eventos';
@@ -170,7 +172,11 @@ class CalendarManager {
 
     renderEventCard(ev) {
         const src = ev.source || 'google';
-        const time = new Date(ev.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        // Los de todo el día se guardan a medianoche UTC: mostrar la hora los
+        // pintaba como "02:00" en hora española.
+        const time = ev.all_day
+            ? 'Todo el día'
+            : new Date(ev.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
         const title = ev.title || '(sin título)';
         const badgeLabel = this.getSourceLabel(src);
 

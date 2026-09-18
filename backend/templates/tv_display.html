@@ -252,12 +252,16 @@
       {%- if events -%}
         {%- for ev in events -%}
           <div class="glass-card {% if loop.first %}glass-card-active{% endif %}" style="padding:10px 12px;display:flex;gap:10px;{% if loop.first %}border-left:3px solid #22d3ee;{% endif %}">
-            <div style="display:flex;flex-direction:column;align-items:center;min-width:40px;">
-              <span style="font-size:16px;font-weight:700;color:#fff;">{{ ev.time }}</span>
-              <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;">{{ ev.day_label }}</span>
+            <div style="display:flex;flex-direction:column;align-items:center;min-width:52px;">
+              {%- if ev.all_day -%}
+                <span style="font-size:10px;font-weight:800;line-height:1.2;text-align:center;color:#cbd5e1;text-transform:uppercase;">Todo<br>el día</span>
+              {%- else -%}
+                <span style="font-size:16px;font-weight:700;color:#fff;">{{ ev.time }}</span>
+              {%- endif -%}
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-top:2px;">{{ ev.day_label }}</span>
             </div>
             <div style="flex:1;min-width:0;">
-              <h4 style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ ev.title | e }}</h4>
+              <h4 style="font-size:13px;font-weight:600;color:#fff;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ ev.title | e }}</h4>
               <div style="display:flex;gap:6px;align-items:center;margin-top:3px;">
                 <span style="font-size:9px;font-weight:700;padding:1px 6px;background:rgba(51,65,85,0.8);color:#22d3ee;border-radius:4px;text-transform:uppercase;">Google</span>
                 {%- if ev.is_live -%}

@@ -229,7 +229,12 @@ def tv_view():
         )
         for ev in upcoming:
             start_utc = ev.start_datetime
-            if use_pytz:
+            if ev.all_day:
+                # Los eventos de todo el día se guardan a medianoche UTC:
+                # convertirlos a hora local los mostraba como "02:00".
+                start_local = start_utc
+                ev_date = start_utc.date()
+            elif use_pytz:
                 start_local = start_utc.replace(tzinfo=pytz.utc).astimezone(madrid)
                 ev_date = start_local.date()
             else:
@@ -246,9 +251,10 @@ def tv_view():
             diff_min = (start_utc - now_utc).total_seconds() / 60
             events.append({
                 'title': ev.summary or 'Evento',
-                'time': start_local.strftime('%H:%M'),
+                'time': '' if ev.all_day else start_local.strftime('%H:%M'),
+                'all_day': bool(ev.all_day),
                 'day_label': day_label,
-                'is_live': -30 <= diff_min <= 60,
+                'is_live': (not ev.all_day) and -30 <= diff_min <= 60,
             })
             if len(events) >= 5:
                 break
