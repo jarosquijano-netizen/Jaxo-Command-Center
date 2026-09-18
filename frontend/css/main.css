@@ -5193,6 +5193,43 @@ body {
         border-radius: 12px;
     }
 
+    /* ── Dashboard: calendario semanal como lista vertical ──
+       7 columnas en 390px parten el texto letra a letra. */
+    .db-cal-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        min-height: 0;
+    }
+    .db-cal-day {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 10px;
+        min-height: 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .db-cal-day-hd {
+        flex: 0 0 58px;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: flex-start;
+        gap: 5px;
+        padding: 6px 8px;
+    }
+    .db-cal-events-col {
+        flex: 1;
+        min-width: 0;          /* imprescindible: permite que el texto se ajuste */
+    }
+    .db-cal-event-pill {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-overflow: clip;
+        overflow: visible;
+        text-align: left;
+        line-height: 1.35;
+    }
+    .db-cal-empty-col { text-align: left; opacity: .25; }
+
     /* ── Filas horizontales: que no se corten en móvil ── */
     /* Pestañas de Configuración: scroll horizontal */
     .tab-buttons {
