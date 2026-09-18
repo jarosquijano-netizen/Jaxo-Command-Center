@@ -124,7 +124,21 @@ def get_week_calendar():
                         'color': '#EA4335',
                     })
 
-        all_events = google_events + cleaning_events + menu_events
+        # El calendario muestra SOLO los eventos del calendario JAXO (Google).
+        # La limpieza y el menú tienen sus propias secciones en la app; se pueden
+        # reactivar aquí con ?include_cleaning=1 / ?include_menu=1.
+        include_cleaning = request.args.get('include_cleaning') in ('1', 'true', 'yes')
+        include_menu = request.args.get('include_menu') in ('1', 'true', 'yes')
+
+        all_events = list(google_events)
+        sources = {'google': {'label': 'Calendario JAXO', 'color': '#4285F4'}}
+        if include_cleaning:
+            all_events += cleaning_events
+            sources['cleaning'] = {'label': 'Limpieza', 'color': '#34A853'}
+        if include_menu:
+            all_events += menu_events
+            sources['menu'] = {'label': 'Menú', 'color': '#EA4335'}
+
         all_events.sort(key=lambda x: x['start'])
 
         return jsonify({
@@ -133,11 +147,7 @@ def get_week_calendar():
                 'week_start': week_start.isoformat(),
                 'week_end': week_end.isoformat(),
                 'events': all_events,
-                'sources': {
-                    'google': {'label': 'Google Calendar', 'color': '#4285F4'},
-                    'cleaning': {'label': 'Limpieza', 'color': '#34A853'},
-                    'menu': {'label': 'Menú', 'color': '#EA4335'},
-                }
+                'sources': sources,
             }
         })
     except Exception as e:
