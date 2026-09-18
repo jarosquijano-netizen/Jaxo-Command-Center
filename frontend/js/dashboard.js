@@ -183,27 +183,33 @@ class DashboardManager {
             : (heroData.descripcion || '');
 
         const heroHtml = `
-            <div class="db-menu-hero">
+            <div class="db-menu-hero db-dish-clickable" data-meal="${heroKey}" role="button" tabindex="0" style="cursor:pointer;position:relative;">
                 <p class="db-menu-hero-meal">${mealLabels[heroKey] || heroKey}</p>
                 <p class="db-menu-hero-name">${heroData.plato || heroData.nombre || '—'}</p>
                 ${desc ? `<p class="db-menu-hero-desc">${desc}</p>` : ''}
                 <div class="db-menu-hero-tags">
                     ${heroData.dificultad ? `<span class="db-menu-tag">${heroData.dificultad}</span>` : ''}
+                    ${heroData.tiempo_prep ? `<span class="db-menu-tag">⏱ ${heroData.tiempo_prep} min</span>` : ''}
                 </div>
+                <span class="db-menu-more" style="display:inline-flex;align-items:center;gap:3px;margin-top:8px;font-size:0.78rem;font-weight:600;color:#7db1ff;">
+                    Ver receta completa
+                    <span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span>
+                </span>
             </div>`;
 
         const secondaryHtml = meals
             .filter(([k]) => k !== heroKey)
             .slice(0, 3)
             .map(([k, v]) => `
-                <div class="db-menu-row">
+                <div class="db-menu-row db-dish-clickable" data-meal="${k}" role="button" tabindex="0" style="cursor:pointer;">
                     <span class="db-menu-row-icon">
                         <span class="material-symbols-outlined">${mealIcons[k] || 'restaurant'}</span>
                     </span>
-                    <div>
+                    <div style="flex:1;">
                         <p class="db-menu-row-label">${mealLabels[k] || k}</p>
                         <p class="db-menu-row-name">${v?.plato || v?.nombre || '—'}</p>
                     </div>
+                    <span class="material-symbols-outlined" style="font-size:18px;opacity:0.4;">chevron_right</span>
                 </div>`).join('');
 
         return heroHtml + secondaryHtml;
@@ -214,6 +220,7 @@ class DashboardManager {
         if (!container) return;
 
         const { adultos, ninos } = this.getTodayMenuBoth(menuData);
+        this._todayMenus = { adultos, ninos };  // para el modal de receta completa
         const hasAdultos = Object.keys(adultos).length > 0;
         const hasNinos   = Object.keys(ninos).length > 0;
 
@@ -262,6 +269,96 @@ class DashboardManager {
                     });
                 });
             });
+        }
+
+        // Tap en un plato → abrir receta completa
+        container.querySelectorAll('.db-dish-clickable').forEach(el => {
+            const open = () => {
+                const pane = el.closest('.db-menu-pane')?.dataset.pane || 'adultos';
+                const meal = el.dataset.meal;
+                const dish = (this._todayMenus?.[pane] || {})[meal];
+                const tipo = pane === 'ninos' ? '👧 Niños' : '👨‍👩 Adultos';
+                this.showDishModal(dish, meal, tipo);
+            };
+            el.addEventListener('click', open);
+            el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        });
+    }
+
+    // ─── Modal de receta completa (móvil) ─────────────────────────────────
+
+    showDishModal(dish, mealKey, tipoLabel) {
+        if (!dish || (!dish.plato && !dish.nombre)) return;
+        const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const mealLabels = { desayuno:'Desayuno', almuerzo:'Almuerzo', comida:'Comida', merienda:'Merienda', cena:'Cena' };
+        const nombre = esc(dish.plato || dish.nombre || 'Plato');
+        const ingredientes = Array.isArray(dish.ingredientes) ? dish.ingredientes
+            : (dish.ingredientes ? String(dish.ingredientes).split(',') : []);
+        let prep = dish.preparacion || dish.instrucciones || '';
+        const pasos = Array.isArray(prep) ? prep
+            : String(prep).split(/\.\s+/).map(s => s.trim()).filter(Boolean);
+        const aler = Array.isArray(dish.alergenos) ? dish.alergenos : [];
+        const nutr = dish.nutrientes || {};
+
+        const chips = [];
+        if (dish.tiempo_prep) chips.push(`⏱ ${esc(dish.tiempo_prep)} min`);
+        if (dish.calorias) chips.push(`🔥 ${esc(dish.calorias)} kcal`);
+        if (dish.dificultad) chips.push(`📊 ${esc(dish.dificultad)}`);
+        if (nutr.proteinas_g) chips.push(`💪 ${esc(nutr.proteinas_g)}g prot`);
+        if (nutr.carbohidratos_g != null) chips.push(`🍞 ${esc(nutr.carbohidratos_g)}g carbs`);
+
+        let modal = document.getElementById('dbDishModal');
+        if (!modal) { modal = document.createElement('div'); modal.id = 'dbDishModal'; document.body.appendChild(modal); }
+        modal.setAttribute('style',
+            'position:fixed;inset:0;z-index:9999;background:rgba(2,6,23,0.75);backdrop-filter:blur(3px);' +
+            'display:flex;align-items:flex-end;justify-content:center;');
+        modal.innerHTML = `
+            <div style="background:#0f172a;border:1px solid #1e293b;border-radius:20px 20px 0 0;width:100%;max-width:640px;
+                        max-height:88vh;overflow-y:auto;padding:20px 18px 32px;box-shadow:0 -8px 40px rgba(0,0,0,.5);
+                        animation:dbSheetUp .22s ease;">
+                <div style="display:flex;justify-content:center;margin-bottom:12px;">
+                    <span style="width:40px;height:4px;border-radius:99px;background:#334155;"></span>
+                </div>
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                    <div>
+                        <p style="margin:0 0 2px;font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;color:#7db1ff;">
+                            ${esc(mealLabels[mealKey] || mealKey)} · ${esc(tipoLabel)}</p>
+                        <h2 style="margin:0;font-size:1.25rem;line-height:1.25;color:#f1f5f9;">${nombre}</h2>
+                    </div>
+                    <button id="dbDishClose" style="background:#1e293b;border:none;color:#cbd5e1;border-radius:50%;
+                        width:34px;height:34px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                        <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+                    </button>
+                </div>
+                ${dish.descripcion ? `<p style="margin:10px 0 0;font-size:0.9rem;color:#94a3b8;line-height:1.5;">${esc(dish.descripcion)}</p>` : ''}
+                ${chips.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
+                    ${chips.map(c => `<span style="font-size:0.75rem;background:#1e293b;color:#cbd5e1;padding:4px 10px;border-radius:99px;">${c}</span>`).join('')}
+                </div>` : ''}
+                ${ingredientes.length ? `
+                <div style="margin-top:18px;">
+                    <h3 style="margin:0 0 8px;font-size:0.95rem;color:#e2e8f0;">🧺 Ingredientes</h3>
+                    <ul style="margin:0;padding-left:18px;color:#cbd5e1;font-size:0.88rem;line-height:1.7;">
+                        ${ingredientes.map(i => `<li>${esc(String(i).trim())}</li>`).join('')}
+                    </ul>
+                </div>` : ''}
+                ${pasos.length ? `
+                <div style="margin-top:18px;">
+                    <h3 style="margin:0 0 8px;font-size:0.95rem;color:#e2e8f0;">👩‍🍳 Preparación</h3>
+                    <ol style="margin:0;padding-left:20px;color:#cbd5e1;font-size:0.88rem;line-height:1.7;">
+                        ${pasos.map(p => `<li style="margin-bottom:6px;">${esc(p.replace(/\.$/,''))}.</li>`).join('')}
+                    </ol>
+                </div>` : ''}
+                ${aler.length ? `<div style="margin-top:16px;font-size:0.8rem;color:#fca5a5;">⚠️ Alérgenos: ${aler.map(esc).join(', ')}</div>` : ''}
+            </div>`;
+
+        const close = () => { modal.remove(); };
+        modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+        document.getElementById('dbDishClose')?.addEventListener('click', close);
+        // Animación (una sola vez)
+        if (!document.getElementById('dbSheetAnim')) {
+            const st = document.createElement('style'); st.id = 'dbSheetAnim';
+            st.textContent = '@keyframes dbSheetUp{from{transform:translateY(30px);opacity:.4}to{transform:translateY(0);opacity:1}}';
+            document.head.appendChild(st);
         }
     }
 
