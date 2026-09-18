@@ -10,12 +10,15 @@
 
 :root {
     /* Glassmorphic Command - Color System */
+    /* Escala de superficies con separación real sobre el fondo:
+       antes las tarjetas contrastaban 1.23 con la página (se fundían);
+       ahora mid=1.56, high=1.95, highest=2.58. */
     --color-background: #020617;
-    --color-surface: #0c1324;
-    --color-surface-low: #151b2d;
-    --color-surface-mid: #191f31;
-    --color-surface-high: #23293c;
-    --color-surface-highest: #2e3447;
+    --color-surface: #111a2c;
+    --color-surface-low: #1c2638;
+    --color-surface-mid: #26314a;
+    --color-surface-high: #33405c;
+    --color-surface-highest: #445270;
 
     /* Accent Colors */
     --color-primary: #adc6ff;
@@ -28,9 +31,9 @@
 
     /* Text */
     --color-on-surface: #dce1fb;
-    --color-on-surface-variant: #c2c6d6;
-    --color-outline: #8c909f;
-    --color-outline-variant: #424754;
+    --color-on-surface-variant: #c9cede;
+    --color-outline: #a3a8b8;
+    --color-outline-variant: #5c6377;
 
     /* Legacy aliases — keep so existing selectors still resolve */
     --barcelona-blue:   #4d8eff;
@@ -52,22 +55,22 @@
 
     /* UI Colors */
     --bg-dark: #020617;
-    --bg-sidebar: rgba(15, 23, 42, 0.7);
-    --bg-card: rgba(25, 31, 49, 0.6);
-    --bg-primary: #151b2d;
-    --bg-secondary: #191f31;
-    --bg-tertiary: #23293c;
-    --bg-hover: rgba(255, 255, 255, 0.05);
+    --bg-sidebar: rgba(17, 26, 44, 0.92);
+    --bg-card: rgba(38, 49, 74, 0.85);
+    --bg-primary: #1c2638;
+    --bg-secondary: #26314a;
+    --bg-tertiary: #33405c;
+    --bg-hover: rgba(255, 255, 255, 0.09);
     --text-primary: #dce1fb;
-    --text-secondary: #c2c6d6;
-    --text-muted: #8c909f;
-    --border-color: rgba(255, 255, 255, 0.1);
+    --text-secondary: #c9cede;
+    --text-muted: #a3a8b8;
+    --border-color: rgba(255, 255, 255, 0.22);
 
     /* Calendar Colors */
-    --calendar-bg: #191f31;
-    --calendar-border: rgba(255, 255, 255, 0.1);
-    --calendar-header-bg: #151b2d;
-    --calendar-day-bg: #23293c;
+    --calendar-bg: #26314a;
+    --calendar-border: rgba(255, 255, 255, 0.22);
+    --calendar-header-bg: #1c2638;
+    --calendar-day-bg: #33405c;
     --calendar-event-bg: #4d8eff;
     --calendar-event-hover: #3b82f6;
 
@@ -4683,28 +4686,28 @@ body {
     word-break: break-word;
 }
 .db-cal-event-pill.type-google {
-    background: rgba(77, 142, 255, 0.18);
-    color: var(--color-primary);
-    border-left: 2px solid var(--color-primary);
+    background: rgba(77, 142, 255, 0.34);
+    color: #eaf1ff;
+    border-left: 3px solid var(--color-primary-action);
 }
 .db-cal-event-pill.type-cleaning {
-    background: rgba(208, 188, 255, 0.15);
-    color: var(--color-tertiary);
-    border-left: 2px solid var(--color-tertiary);
+    background: rgba(208, 188, 255, 0.30);
+    color: #f4efff;
+    border-left: 3px solid var(--color-tertiary);
 }
 .db-cal-event-pill.type-menu {
-    background: rgba(76, 215, 246, 0.12);
-    color: var(--color-secondary);
-    border-left: 2px solid var(--color-secondary);
+    background: rgba(76, 215, 246, 0.28);
+    color: #eafaff;
+    border-left: 3px solid var(--color-secondary);
 }
 .db-cal-event-pill.type-other {
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--color-on-surface-variant);
-    border-left: 2px solid var(--color-outline);
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--color-on-surface);
+    border-left: 3px solid var(--color-outline);
 }
 .db-cal-empty-col {
     font-size: 11px;
-    color: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.28);
     text-align: center;
     padding-top: 8px;
 }
