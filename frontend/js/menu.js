@@ -573,7 +573,10 @@ class MenuManager {
         if (!modal) return;
 
         // Cargar detalles del menú
-        const menuData = this.currentMenu.menu_data;
+        let menuData = this.currentMenu.menu_data;
+        if (typeof menuData === 'string') {
+            try { menuData = JSON.parse(menuData); } catch { menuData = {}; }
+        }
         const adultMeal = menuData.menu_adultos?.[day]?.[meal];
         const childMeal = menuData.menu_ninos?.[day]?.[meal];
 
