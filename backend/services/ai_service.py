@@ -58,24 +58,33 @@ class AIService:
             logger.info("Enviando prompt a Claude...")
             logger.info(f"Prompt length: {len(prompt)} caracteres")
             
+            # Una semana completa con varias comidas por día y macros por plato
+            # supera con holgura los 8k tokens: si se trunca, el JSON no parsea.
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=8000,
+                max_tokens=16000,
                 temperature=0.9,
                 messages=[
                     {
-                        "role": "user", 
+                        "role": "user",
                         "content": prompt
                     }
                 ]
             )
-            
+
             content = response.content[0].text
-            logger.info(f"Respuesta recibida de Claude (primeros 500 chars): {content[:500]}")
-            
+            stop_reason = getattr(response, 'stop_reason', None)
+            logger.info(f"Respuesta recibida de Claude (stop_reason={stop_reason}, {len(content)} chars)")
+
             menu_data = self._extract_json_from_response(content)
-            
+
             if not menu_data:
+                if stop_reason == 'max_tokens':
+                    raise ValueError(
+                        "La respuesta se cortó por longitud: el menú pedido es demasiado grande. "
+                        "Reduce días o comidas por día y vuelve a intentarlo."
+                    )
+                logger.error(f"JSON inválido. Final de la respuesta: ...{content[-300:]}")
                 raise ValueError("No se pudo extraer JSON válido de la respuesta de Claude")
             
             self._validate_menu_structure(menu_data)
