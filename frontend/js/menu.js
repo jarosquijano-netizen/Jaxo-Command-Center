@@ -266,7 +266,7 @@ class MenuManager {
         const months   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
         const todayKey = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date().getDay()];
         const monday   = this.currentWeek ? new Date(this.currentWeek) : this.getMonday(new Date());
-        const availableMeals = this.getAvailableMeals(parsed);
+        // (las comidas se calculan por día más abajo)
 
         grid.innerHTML = '';
 
@@ -323,19 +323,27 @@ class MenuManager {
                 </h2>
                 <div class="mn-day-body">`;
 
-            if (availableMeals.length === 0) {
+            // Cada día puede tener comidas distintas (p.ej. solo cena entre semana,
+            // comida y cena el fin de semana): usar las de ESE día, no una lista global.
+            const mealOrder = ['desayuno', 'comida', 'merienda', 'cena'];
+            const dayMeals = mealOrder.filter(m =>
+                parsed.menu_adultos?.[day]?.[m] || parsed.menu_ninos?.[day]?.[m]
+            );
+
+            if (dayMeals.length === 0) {
                 col.innerHTML += `<div class="mn-meal-empty" data-day="${day}" style="cursor:pointer;" title="Generar día"><span class="material-symbols-outlined">add</span></div>`;
             } else if (this.viewMode === 'ambos') {
-                availableMeals.forEach(meal => {
+                dayMeals.forEach(meal => {
                     const adultMd = parsed.menu_adultos?.[day]?.[meal];
                     const kidMd   = parsed.menu_ninos?.[day]?.[meal];
-                    col.innerHTML += buildCard(day, meal, adultMd, 'adultos');
-                    col.innerHTML += buildCard(day, meal, kidMd, 'ninos');
+                    if (adultMd) col.innerHTML += buildCard(day, meal, adultMd, 'adultos');
+                    if (kidMd)   col.innerHTML += buildCard(day, meal, kidMd, 'ninos');
                 });
             } else {
                 const menu = this.viewMode === 'ninos' ? (parsed.menu_ninos || parsed.menu_adultos) : (parsed.menu_adultos || parsed.menu_ninos);
-                availableMeals.forEach(meal => {
-                    col.innerHTML += buildCard(day, meal, menu?.[day]?.[meal], null);
+                dayMeals.forEach(meal => {
+                    const md = menu?.[day]?.[meal];
+                    if (md) col.innerHTML += buildCard(day, meal, md, null);
                 });
             }
 
@@ -411,12 +419,57 @@ class MenuManager {
         }
     }
 
+    /** Matriz día × comida: permite elegir qué comidas planificar en cada día. */
+    buildMealPlanGrid() {
+        const grid = document.getElementById('mealPlanGrid');
+        if (!grid || grid.dataset.built === '1') return;
+
+        const dias = [
+            ['lunes', 'Lunes'], ['martes', 'Martes'], ['miercoles', 'Miércoles'],
+            ['jueves', 'Jueves'], ['viernes', 'Viernes'],
+            ['sabado', 'Sábado'], ['domingo', 'Domingo'],
+        ];
+        const comidas = ['desayuno', 'comida', 'merienda', 'cena'];
+        // Por defecto: cena de lunes a viernes; comida y cena el fin de semana
+        const porDefecto = (dia, comida) =>
+            ['sabado', 'domingo'].includes(dia) ? ['comida', 'cena'].includes(comida) : comida === 'cena';
+
+        grid.insertAdjacentHTML('beforeend', dias.map(([dia, label]) => `
+            <div class="mp-row${['sabado','domingo'].includes(dia) ? ' mp-weekend' : ''}">
+                <span class="mp-day">${label}</span>
+                ${comidas.map(c => `
+                    <label class="mp-cell" title="${label} · ${c}">
+                        <input type="checkbox" data-day="${dia}" value="${c}"
+                            ${porDefecto(dia, c) ? 'checked' : ''}>
+                    </label>`).join('')}
+            </div>`).join(''));
+
+        // Atajos
+        const setPlan = (fn) => grid.querySelectorAll('input[type="checkbox"]')
+            .forEach(cb => { cb.checked = fn(cb.dataset.day, cb.value); });
+        document.querySelectorAll('.mp-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const p = btn.dataset.preset;
+                if (p === 'cenas') {
+                    setPlan((d, c) => c === 'cena' && !['sabado','domingo'].includes(d));
+                } else if (p === 'cenas-finde') {
+                    setPlan(porDefecto);
+                } else {
+                    setPlan(() => false);
+                }
+            });
+        });
+
+        grid.dataset.built = '1';
+    }
+
     async showGenerateModal() {
         const modal = document.getElementById('generateMenuModal');
         if (!modal) return;
 
         // Configurar el dropdown de semanas
         this.setupWeekSelection();
+        this.buildMealPlanGrid();
 
         modal.style.display = 'flex';
     }
@@ -502,11 +555,20 @@ class MenuManager {
 
         const selectedWeekStart = this.getSelectedWeekStart();
 
-        const selectedDays = Array.from(modal.querySelectorAll('input[name="dias"]:checked'))
-            .map(input => input.value);
+        // Plan por día: {lunes: ['cena'], sabado: ['comida','cena'], ...}
+        const planPorDia = {};
+        modal.querySelectorAll('#mealPlanGrid input[type="checkbox"]:checked').forEach(cb => {
+            (planPorDia[cb.dataset.day] ||= []).push(cb.value);
+        });
 
-        const selectedMeals = Array.from(modal.querySelectorAll('input[name="comidas"]:checked'))
-            .map(input => input.value);
+        // Derivados para compatibilidad con el backend antiguo
+        const selectedDays  = Object.keys(planPorDia);
+        const selectedMeals = [...new Set(Object.values(planPorDia).flat())];
+
+        if (!selectedDays.length) {
+            this.showError('Marca al menos una comida en algún día.');
+            return;
+        }
 
         const presupuesto = parseInt(formData.get('presupuesto')) || 200;
         const supermercado = formData.get('supermercado') || 'Mercadona';
@@ -518,8 +580,9 @@ class MenuManager {
             week_start: DateUtils.localISO(selectedWeekStart),
             regenerate: true,
             settings: {
-                dias_menu: selectedDays.length > 0 ? selectedDays : ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'],
-                comidas_por_dia: selectedMeals.length > 0 ? selectedMeals : ['cena'],
+                dias_menu: selectedDays,
+                comidas_por_dia: selectedMeals,
+                plan_por_dia: planPorDia,   // qué comidas en cada día concreto
                 presupuesto_semanal: presupuesto,
                 supermercado_preferido: supermercado,
                 preferencias_especiales: preferencias,

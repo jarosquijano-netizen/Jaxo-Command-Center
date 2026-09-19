@@ -139,6 +139,29 @@ class AIService:
         # Obtener filtros específicos
         dias_menu = settings.get('dias_menu', ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'])
         comidas = settings.get('comidas_por_dia', ['cena'])
+
+        # plan_por_dia permite comidas distintas en cada día
+        # (p.ej. solo cena L-V, pero comida y cena el fin de semana).
+        plan_por_dia = settings.get('plan_por_dia') or {}
+        _ORDEN = ['desayuno', 'comida', 'merienda', 'cena']
+        if plan_por_dia:
+            plan_por_dia = {
+                d: sorted([c for c in ms if c in _ORDEN], key=_ORDEN.index)
+                for d, ms in plan_por_dia.items() if ms
+            }
+            dias_menu = [d for d in ['lunes','martes','miercoles','jueves','viernes','sabado','domingo']
+                         if d in plan_por_dia]
+            comidas = sorted({c for ms in plan_por_dia.values() for c in ms}, key=_ORDEN.index)
+            plan_lineas = "\n".join(f"  - {d}: {', '.join(plan_por_dia[d])}" for d in dias_menu)
+            plan_block = (
+                "\n## QUÉ GENERAR EXACTAMENTE (comidas por día — OBLIGATORIO):\n"
+                f"{plan_lineas}\n"
+                "Genera EXACTAMENTE esas comidas en esos días: ni una más, ni una menos.\n"
+                "Cada día llevará solo las claves indicadas (no añadas 'desayuno' si no aparece, etc.).\n"
+            )
+        else:
+            plan_block = ""
+            plan_por_dia = {d: list(comidas) for d in dias_menu}
         presupuesto = settings.get('presupuesto_semanal', 200)
         supermercado = settings.get('supermercado_preferido', 'Mercadona')
         preferencias_especiales = settings.get('preferencias_especiales', '')
@@ -338,6 +361,7 @@ NIÑOS:
 {pref_extra}
 {inspiracion}
 {ratings_context}
+{plan_block}
 {no_repetir_block}
 {recetas_block}
 {dieta_block}
@@ -346,7 +370,8 @@ NIÑOS:
 {self._get_all_allergies(family_members)}
 
 ## REGLAS OBLIGATORIAS:
-1. Generar SOLO los días {', '.join(dias_menu)} y SOLO las comidas {', '.join(comidas)}.
+1. Generar SOLO los días {', '.join(dias_menu)}, y en CADA día solo las comidas indicadas
+   en "QUÉ GENERAR EXACTAMENTE" (si no aparece ese bloque: {', '.join(comidas)} en todos los días).
 2. SIEMPRE dos versiones: menu_adultos y menu_ninos. El menú de niños es adaptado (texturas suaves,
    sin especias fuertes, raciones menores) — NUNCA una copia literal del adulto.
 3. VARIEDAD TOTAL: cero repeticiones dentro de la semana. Cero coincidencias con la lista "NO REPETIR".
