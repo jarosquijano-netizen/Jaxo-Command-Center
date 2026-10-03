@@ -106,7 +106,7 @@
         </div>
       {%- endif -%}
       <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ label }}</span>
-      <h3 class="text-lg font-bold text-white leading-tight pr-16">{{ meal.nombre or '—' }}</h3>
+      <h3 class="font-bold text-white" style="font-size:15px;line-height:1.2;padding-right:70px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">{{ meal.nombre or '—' }}</h3>
       <div class="flex flex-wrap gap-2">
         {%- if meal.tiempo -%}
           <span class="flex items-center gap-1 text-xs text-slate-300">
@@ -141,11 +141,11 @@
       {%- if meal.ingredientes -%}
         <div class="pt-1.5 border-t border-white/10">
           <p class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Ingredientes</p>
-          <p class="text-[11px] text-slate-300 leading-snug">{{ meal.ingredientes[:6] | join(' · ') }}</p>
+          <p class="text-[11px] text-slate-300 leading-snug" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">{{ meal.ingredientes[:8] | join(' · ') }}</p>
         </div>
       {%- endif -%}
       {%- if meal.preparacion -%}
-        <div class="pt-1.5 border-t border-white/10">
+        <div class="pt-1.5 border-t border-white/10" style="min-height:0;overflow:hidden;">
           <p class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Preparación</p>
           <ol class="text-[11px] text-slate-300 space-y-0.5">
             {%- for step in meal.preparacion[:3] -%}
@@ -219,7 +219,7 @@
 </header>
 
 {# ─── Main Grid ───────────────────────────────────────────────────────── #}
-<main style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr 320px;gap:10px;min-height:0;overflow:hidden;">
+<main style="flex:1;display:grid;grid-template-columns:1.45fr 1.45fr 1fr 270px;gap:10px;min-height:0;overflow:hidden;">
 
   {# ── Adultos column ────────────────────────────────────────────────── #}
   <div style="display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden;">
@@ -308,33 +308,23 @@
       <span data-task-counter style="font-size:12px;font-weight:600;color:#475569;font-family:monospace;">{{ completed_count }}/{{ tasks|length }}</span>
     </div>
     <div class="col-scroll" style="display:flex;flex-direction:column;gap:6px;flex:1;">
-      {%- if tasks -%}
-        {%- for task in tasks -%}
-          {%- if task.completada -%}
-            <button class="glass-card task-card" type="button" data-task-id="{{ task.id }}" data-done="1" onclick="tvToggleTask(this)" style="width:100%;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;opacity:0.55;cursor:pointer;background:rgba(21,27,45,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:10px;text-align:left;touch-action:manipulation;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div class="task-circle" style="width:22px;height:22px;border-radius:50%;border:2px solid #2dd4bf;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                  <svg class="task-check" style="width:12px;height:12px;color:#2dd4bf;" fill="currentColor" viewBox="0 0 20 20">
-                    <path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"/>
-                  </svg>
-                </div>
-                <span class="task-label" style="font-size:13px;color:#94a3b8;text-decoration:line-through;">{{ task.nombre }}</span>
+      {%- if task_zones -%}
+        {%- for z in task_zones -%}
+          <div class="glass-card" style="padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:{% if z.pending == 0 %}rgba(45,212,191,0.10){% else %}rgba(255,255,255,0.04){% endif %};">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span style="font-size:18px;line-height:1;">{{ z.icon }}</span>
+                <span style="font-size:14px;font-weight:700;color:{% if z.pending == 0 %}#2dd4bf{% else %}#fff{% endif %};">{{ z.label }}</span>
               </div>
-              {{ avatar(task.member) }}
-            </button>
-          {%- else -%}
-            <button class="glass-card task-card" type="button" data-task-id="{{ task.id }}" data-done="0" onclick="tvToggleTask(this)" style="width:100%;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;text-align:left;cursor:pointer;touch-action:manipulation;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div class="task-circle" style="width:22px;height:22px;border-radius:50%;border:2px solid #334155;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                  <svg class="task-check" style="width:12px;height:12px;color:#2dd4bf;display:none;" fill="currentColor" viewBox="0 0 20 20">
-                    <path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"/>
-                  </svg>
-                </div>
-                <span class="task-label" style="font-size:13px;color:#fff;">{{ task.nombre }}</span>
-              </div>
-              {{ avatar(task.member) }}
-            </button>
-          {%- endif -%}
+              <span style="font-size:13px;font-weight:700;font-family:monospace;color:{% if z.pending == 0 %}#2dd4bf{% else %}#94a3b8{% endif %};white-space:nowrap;">
+                {%- if z.pending == 0 -%}✓ hecho{%- else -%}{{ z.pending }} pend.{%- endif -%}
+              </span>
+            </div>
+            <div style="margin-top:7px;height:5px;border-radius:99px;background:rgba(255,255,255,0.08);overflow:hidden;">
+              <div style="height:100%;width:{{ z.pct }}%;border-radius:99px;background:{% if z.pending == 0 %}#2dd4bf{% else %}#4d8eff{% endif %};"></div>
+            </div>
+            <p style="margin:4px 0 0;font-size:10px;color:#64748b;font-family:monospace;">{{ z.done }}/{{ z.total }} tareas</p>
+          </div>
         {%- endfor -%}
       {%- else -%}
         <div class="glass-card" style="padding:12px;text-align:center;color:#475569;font-style:italic;font-size:13px;">Sin tareas asignadas hoy</div>

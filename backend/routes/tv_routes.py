@@ -234,13 +234,61 @@ def tv_view():
             .all()
         )
         tasks = [
-            {'id': r.id, 'nombre': r.task_nombre, 'member': r.member_nombre, 'completada': r.completada}
+            {'id': r.id, 'nombre': r.task_nombre, 'member': r.member_nombre,
+             'completada': r.completada, 'area': r.area}
             for r in rows
         ]
     except Exception as e:
         logger.warning(f'[tv] tasks: {e}')
 
     completed_count = sum(1 for t in tasks if t['completada'])
+
+    # Resumen por zonas de la casa (en la TV interesa el estado por zona,
+    # no la lista detallada de 24 tareas).
+    _ZONAS = [
+        ('cocina',     'Cocina',       '🍳'),
+        ('salon',      'Sala',         '🛋️'),
+        ('dormitorio', 'Habitaciones', '🛏️'),
+        ('bano',       'Baños',        '🚿'),
+        ('exterior',   'Exterior',     '🌿'),
+        ('mascotas',   'Mascotas',     '🐾'),
+        ('general',    'General',      '🏠'),
+    ]
+    _orden = {k: i for i, (k, _, _) in enumerate(_ZONAS)}
+    _meta = {k: (lbl, ic) for k, lbl, ic in _ZONAS}
+
+    _agg = {}
+    for t in tasks:
+        key = (t.get('area') or 'general').strip().lower()
+        # normalizar variantes (baño/baños, salón, habitación…)
+        if key.startswith('ba'):
+            key = 'bano'
+        elif key.startswith('sal') or key.startswith('com'):
+            key = 'salon'
+        elif key.startswith('dorm') or key.startswith('hab'):
+            key = 'dormitorio'
+        elif key.startswith('coc'):
+            key = 'cocina'
+        elif key.startswith('ext') or key.startswith('terr') or key.startswith('jar'):
+            key = 'exterior'
+        elif key.startswith('masc'):
+            key = 'mascotas'
+        elif key not in _meta:
+            key = 'general'
+        z = _agg.setdefault(key, {'total': 0, 'done': 0})
+        z['total'] += 1
+        if t['completada']:
+            z['done'] += 1
+
+    task_zones = []
+    for key, z in sorted(_agg.items(), key=lambda kv: _orden.get(kv[0], 99)):
+        label, icon = _meta.get(key, ('Otros', '🏠'))
+        task_zones.append({
+            'key': key, 'label': label, 'icon': icon,
+            'total': z['total'], 'done': z['done'],
+            'pending': z['total'] - z['done'],
+            'pct': round(z['done'] / z['total'] * 100) if z['total'] else 0,
+        })
 
     # ------------------------------------------------------------------
     # Next 3 calendar events
@@ -364,6 +412,7 @@ def tv_view():
         meals_adultos=meals_adultos,
         meals_ninos=meals_ninos,
         tasks=tasks,
+        task_zones=task_zones,
         completed_count=completed_count,
         events=events,
         member_colors=member_colors,
