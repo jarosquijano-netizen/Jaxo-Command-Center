@@ -67,12 +67,43 @@ def _weather_desc(code):
     return 'Tormenta'
 
 
-def _normalise_meal(raw):
+def _macros(raw, objetivo_kcal=None):
+    """Macros del plato en gramos y en % de SUS calorías, más el % del objetivo diario."""
+    nut = (raw or {}).get('nutrientes') or {}
+    try:
+        p = float(nut.get('proteinas_g') or 0)
+        c = float(nut.get('carbohidratos_g') or 0)
+        g = float(nut.get('grasas_g') or 0)
+    except (TypeError, ValueError):
+        return None
+    if p <= 0 and c <= 0 and g <= 0:
+        return None
+
+    try:
+        kcal = float((raw or {}).get('calorias') or 0)
+    except (TypeError, ValueError):
+        kcal = 0
+    # Si no viene, derivarla de los macros (4/4/9 kcal por gramo)
+    kcal_macros = p * 4 + c * 4 + g * 9
+    base = kcal if kcal > 0 else kcal_macros
+    if base <= 0:
+        return None
+
+    pct = lambda kc: round(kc / kcal_macros * 100) if kcal_macros > 0 else 0
+    return {
+        'prot_g': round(p), 'carb_g': round(c), 'gras_g': round(g),
+        'prot_pct': pct(p * 4), 'carb_pct': pct(c * 4), 'gras_pct': pct(g * 9),
+        # Qué parte del objetivo diario cubre este plato
+        'pct_dia': round(base / objetivo_kcal * 100) if objetivo_kcal else None,
+    }
+
+
+def _normalise_meal(raw, objetivo_kcal=None):
     """Accept str or dict meal entry, return unified dict or None."""
     if raw is None:
         return None
     if isinstance(raw, str):
-        return {'nombre': raw, 'tiempo': None, 'dificultad': None, 'calorias': None}
+        return {'nombre': raw, 'tiempo': None, 'dificultad': None, 'calorias': None, 'macros': None}
     if isinstance(raw, dict):
         return {
             'nombre': raw.get('nombre') or raw.get('plato') or raw.get('name', ''),
@@ -81,6 +112,7 @@ def _normalise_meal(raw):
             'calorias': raw.get('calorias') or raw.get('kcal') or raw.get('calories'),
             'ingredientes': raw.get('ingredientes') or [],
             'preparacion': raw.get('preparacion') or [],
+            'macros': _macros(raw, objetivo_kcal),
         }
     return None
 
@@ -133,9 +165,20 @@ def tv_view():
             adultos_day = md.get('menu_adultos', {}).get(today_key, {})
             ninos_day = md.get('menu_ninos', {}).get(today_key, {})
             logger.info('[tv] menu loaded — adultos today keys: %s', list(adultos_day.keys()))
+
+            # Objetivo diario de los adultos, para mostrar qué parte cubre el plato
+            objetivo_kcal = 2000
+            try:
+                from models.settings import Settings
+                _s = Settings.query.first()
+                if _s and getattr(_s, 'objetivo_kcal_adultos', None):
+                    objetivo_kcal = _s.objetivo_kcal_adultos
+            except Exception:
+                pass
+
             for c in COMIDAS:
-                meals_adultos[c] = _normalise_meal(adultos_day.get(c))
-                meals_ninos[c] = _normalise_meal(ninos_day.get(c))
+                meals_adultos[c] = _normalise_meal(adultos_day.get(c), objetivo_kcal)
+                meals_ninos[c] = _normalise_meal(ninos_day.get(c))  # los niños no siguen ese objetivo
         else:
             logger.warning('[tv] no menu data found in DB at all')
     except Exception as e:
