@@ -170,6 +170,17 @@ def create_app(config_name='default'):
                     db.session.execute(_text('ALTER TABLE settings ADD COLUMN google_token TEXT'))
                     db.session.commit()
                     print("Migración: columna google_token añadida a settings")
+                # Objetivo nutricional diario de los adultos
+                for col, ddl in (
+                    ('objetivo_kcal_adultos', 'INTEGER DEFAULT 2000'),
+                    ('pct_proteina', 'INTEGER DEFAULT 35'),
+                    ('pct_carbos', 'INTEGER DEFAULT 35'),
+                    ('pct_grasas', 'INTEGER DEFAULT 30'),
+                ):
+                    if col not in existing_cols:
+                        db.session.execute(_text(f'ALTER TABLE settings ADD COLUMN {col} {ddl}'))
+                        db.session.commit()
+                        print(f"Migración: columna {col} añadida a settings")
         except Exception as mig_err:
             db.session.rollback()
             print(f"WARNING:  Migración settings: {mig_err}")

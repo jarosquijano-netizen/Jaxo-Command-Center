@@ -528,17 +528,36 @@ class MenuService:
             return []
     
     def _get_menu_settings(self, custom_settings: Dict = None) -> Dict:
-        """Obtiene la configuración del menú"""
+        """Obtiene la configuración del menú (BD + overrides de la petición)"""
         default_settings = {
             'dias_menu': ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'],
             'comidas_por_dia': ['desayuno', 'comida', 'merienda', 'cena'],
             'presupuesto_semanal': 100,
-            'supermercado_preferido': 'Mercadona'
+            'supermercado_preferido': 'Mercadona',
+            # Objetivo nutricional diario de los adultos
+            'objetivo_kcal_adultos': 2000,
+            'pct_proteina': 35,
+            'pct_carbos': 35,
+            'pct_grasas': 30,
         }
-        
+
+        # Valores guardados en Configuración
+        try:
+            from models.settings import Settings
+            s = Settings.query.first()
+            if s:
+                for campo in ('objetivo_kcal_adultos', 'pct_proteina', 'pct_carbos', 'pct_grasas'):
+                    val = getattr(s, campo, None)
+                    if val:
+                        default_settings[campo] = val
+                if s.supermercado_preferido:
+                    default_settings['supermercado_preferido'] = s.supermercado_preferido
+        except Exception as e:
+            logger.warning(f"No se pudo leer la configuración nutricional: {e}")
+
         if custom_settings:
             default_settings.update(custom_settings)
-        
+
         return default_settings
     
     def _get_house_config(self, family_members: List[Dict]) -> Dict:

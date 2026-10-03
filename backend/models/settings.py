@@ -26,7 +26,14 @@ class Settings(db.Model):
     comidas_por_dia = db.Column(db.Text, default='["desayuno", "comida", "merienda", "cena"]')  # JSON array
     presupuesto_semanal = db.Column(db.Integer, default=0)
     supermercado_preferido = db.Column(db.String(100))
-    
+
+    # Objetivo nutricional diario — SOLO ADULTOS (los niños mantienen dieta
+    # equilibrada de crecimiento y no se les aplica)
+    objetivo_kcal_adultos = db.Column(db.Integer, default=2000)
+    pct_proteina = db.Column(db.Integer, default=35)
+    pct_carbos = db.Column(db.Integer, default=35)
+    pct_grasas = db.Column(db.Integer, default=30)
+
     # Preferencias de limpieza
     dias_limpieza_profunda = db.Column(db.Text, default='["sabado"]')  # JSON array
     incluir_ninos_tareas = db.Column(db.Boolean, default=True)
@@ -60,6 +67,10 @@ class Settings(db.Model):
             'comidas_por_dia': json.loads(self.comidas_por_dia) if self.comidas_por_dia else [],
             'presupuesto_semanal': self.presupuesto_semanal,
             'supermercado_preferido': self.supermercado_preferido,
+            'objetivo_kcal_adultos': self.objetivo_kcal_adultos,
+            'pct_proteina': self.pct_proteina,
+            'pct_carbos': self.pct_carbos,
+            'pct_grasas': self.pct_grasas,
             'dias_limpieza_profunda': json.loads(self.dias_limpieza_profunda) if self.dias_limpieza_profunda else [],
             'incluir_ninos_tareas': self.incluir_ninos_tareas,
             'edad_minima_tareas_simples': self.edad_minima_tareas_simples,

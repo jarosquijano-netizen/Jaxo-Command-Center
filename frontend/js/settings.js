@@ -69,6 +69,11 @@ class SettingsManager {
         
         document.getElementById('presupuesto_semanal').value = this.settings.presupuesto_semanal || '';
         document.getElementById('supermercado_preferido').value = this.settings.supermercado_preferido || '';
+        document.getElementById('objetivo_kcal_adultos').value = this.settings.objetivo_kcal_adultos ?? 2000;
+        document.getElementById('pct_proteina').value = this.settings.pct_proteina ?? 35;
+        document.getElementById('pct_carbos').value   = this.settings.pct_carbos ?? 35;
+        document.getElementById('pct_grasas').value   = this.settings.pct_grasas ?? 30;
+        this._wireMacroHint();
         
         // Cleaning tab - checkboxes for cleaning days
         const diasLimpieza = this.settings.dias_limpieza_profunda || [];
@@ -84,6 +89,33 @@ class SettingsManager {
         // API tab
         document.getElementById('anthropic_api_key').value = this.settings.anthropic_api_key || '';
         document.getElementById('google_credentials').value = this.settings.google_credentials || '';
+    }
+
+    /** Muestra en vivo si los macros suman 100% y a cuántos gramos equivalen. */
+    _wireMacroHint() {
+        const hint = document.getElementById('macroSumHint');
+        if (!hint) return;
+        const ids = ['objetivo_kcal_adultos', 'pct_proteina', 'pct_carbos', 'pct_grasas'];
+        const update = () => {
+            const [kcal, p, c, g] = ids.map(id => parseInt(document.getElementById(id)?.value) || 0);
+            const suma = p + c + g;
+            if (suma !== 100) {
+                hint.textContent = `\u26a0\ufe0f Los porcentajes suman ${suma}% \u2014 deben sumar 100%.`;
+                hint.style.color = '#fca5a5';
+                return;
+            }
+            const gP = Math.round(kcal * p / 100 / 4);
+            const gC = Math.round(kcal * c / 100 / 4);
+            const gG = Math.round(kcal * g / 100 / 9);
+            const cena = Math.round(kcal * 0.30);
+            hint.textContent = `\u2713 Suman 100% \u2192 ${gP}g prote\u00edna \u00b7 ${gC}g carbos \u00b7 ${gG}g grasas al d\u00eda (cena \u2248 ${cena} kcal).`;
+            hint.style.color = 'var(--text-muted)';
+        };
+        if (!hint.dataset.wired) {
+            ids.forEach(id => document.getElementById(id)?.addEventListener('input', update));
+            hint.dataset.wired = '1';
+        }
+        update();
     }
 
     renderHouseTab(houseConfig) {
@@ -291,6 +323,10 @@ class SettingsManager {
                 comidas_por_dia: comidasPorDia,
                 presupuesto_semanal: parseInt(document.getElementById('presupuesto_semanal').value) || 0,
                 supermercado_preferido: document.getElementById('supermercado_preferido').value,
+                objetivo_kcal_adultos: parseInt(document.getElementById('objetivo_kcal_adultos').value) || 2000,
+                pct_proteina: parseInt(document.getElementById('pct_proteina').value) || 0,
+                pct_carbos: parseInt(document.getElementById('pct_carbos').value) || 0,
+                pct_grasas: parseInt(document.getElementById('pct_grasas').value) || 0,
                 dias_limpieza_profunda: diasLimpieza,
                 edad_minima_tareas_simples: parseInt(document.getElementById('edad_minima_tareas_simples').value) || 4,
                 edad_minima_tareas_medias: parseInt(document.getElementById('edad_minima_tareas_medias').value) || 10,

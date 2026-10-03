@@ -64,6 +64,34 @@ def update_settings():
             settings.presupuesto_semanal = data['presupuesto_semanal']
         if 'supermercado_preferido' in data:
             settings.supermercado_preferido = data['supermercado_preferido']
+
+        # Objetivo nutricional diario (solo adultos)
+        if 'objetivo_kcal_adultos' in data:
+            try:
+                settings.objetivo_kcal_adultos = max(800, min(6000, int(data['objetivo_kcal_adultos'])))
+            except (TypeError, ValueError):
+                pass
+        _pcts = {}
+        for campo in ('pct_proteina', 'pct_carbos', 'pct_grasas'):
+            if campo in data:
+                try:
+                    _pcts[campo] = max(0, min(100, int(data[campo])))
+                except (TypeError, ValueError):
+                    pass
+        if _pcts:
+            actual = {
+                'pct_proteina': settings.pct_proteina or 0,
+                'pct_carbos': settings.pct_carbos or 0,
+                'pct_grasas': settings.pct_grasas or 0,
+            }
+            actual.update(_pcts)
+            if sum(actual.values()) != 100:
+                return jsonify({
+                    'success': False,
+                    'message': f"Los porcentajes de macros deben sumar 100 (ahora suman {sum(actual.values())})."
+                }), 400
+            for k, v in actual.items():
+                setattr(settings, k, v)
         if 'dias_limpieza_profunda' in data:
             settings.dias_limpieza_profunda = json.dumps(data['dias_limpieza_profunda'])
         if 'incluir_ninos_tareas' in data:

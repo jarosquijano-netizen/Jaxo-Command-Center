@@ -217,19 +217,46 @@ class AIService:
         dieta_block = ""
         if _low_carb:
             dieta_block = (
-                "\n## DIETA DE LOS ADULTOS (OBLIGATORIO — ALTA PROTEÍNA / BAJA EN CARBOHIDRATOS):\n"
-                "- El menú de ADULTOS debe ser ALTO EN PROTEÍNA y BAJO EN CARBOHIDRATOS.\n"
-                "- Cada cena de adultos = ración generosa de proteína magra (pollo, pavo, ternera magra,\n"
+                "\n## DIETA DE LOS ADULTOS (OBLIGATORIO — ALTA PROTEÍNA):\n"
+                "- Cada plato de adulto = ración generosa de proteína magra (pollo, pavo, ternera magra,\n"
                 "  cerdo magro, pescado, gambas/marisco, huevos) + abundante verdura + grasas saludables\n"
                 "  (aceite de oliva, aguacate, queso, frutos secos).\n"
-                "- MINIMIZAR en adultos: pan, pasta, arroz, patata, harinas, rebozados, azúcar y postres.\n"
-                "  Si una receta base lleva pasta/arroz (p.ej. tortellini, mac & cheese), en la versión\n"
-                "  ADULTO adáptala: sustituye por 'fideos' de calabacín, arroz de coliflor, más verdura o\n"
-                "  más proteína. Las gambas al ajillo y miel, filetes, pollo al horno, etc. encajan tal cual.\n"
-                "- Objetivo aproximado por cena de adulto: ~35-45 g de proteína y <30 g de carbohidratos.\n"
+                "- Evita azúcares y harinas refinadas. Los carbohidratos que haya, de calidad:\n"
+                "  verdura, legumbre, integral o fruta — y dentro del objetivo numérico de abajo.\n"
                 "- Los NIÑOS NO siguen esta dieta: su menú es EQUILIBRADO, con carbohidratos adecuados para\n"
                 "  crecer (pueden llevar la pasta, arroz, mac & cheese, tortellini, etc. de las recetas).\n"
             )
+
+        # ── Objetivo nutricional diario de los adultos, repartido por comida ──
+        try:
+            kcal_dia = int(settings.get('objetivo_kcal_adultos') or 2000)
+            pct_p = int(settings.get('pct_proteina') or 35)
+            pct_c = int(settings.get('pct_carbos') or 35)
+            pct_g = int(settings.get('pct_grasas') or 30)
+        except (TypeError, ValueError):
+            kcal_dia, pct_p, pct_c, pct_g = 2000, 35, 35, 30
+
+        # Reparto estándar del día entre comidas
+        _SHARE = {'desayuno': 0.25, 'comida': 0.35, 'merienda': 0.10, 'cena': 0.30}
+        _lineas_obj = []
+        for _c in comidas:
+            _share = _SHARE.get(_c, 1.0 / max(len(comidas), 1))
+            _kc = round(kcal_dia * _share)
+            _lineas_obj.append(
+                f"  - {_c}: ~{_kc} kcal · proteínas ~{round(_kc * pct_p / 100 / 4)}g · "
+                f"carbohidratos ~{round(_kc * pct_c / 100 / 4)}g · grasas ~{round(_kc * pct_g / 100 / 9)}g"
+            )
+        objetivo_block = (
+            "\n## OBJETIVO NUTRICIONAL DE LOS ADULTOS (OBLIGATORIO — SOLO ADULTOS):\n"
+            f"Objetivo diario: {kcal_dia} kcal con {pct_p}% proteína / {pct_c}% carbohidratos / {pct_g}% grasas\n"
+            f"(= {round(kcal_dia*pct_p/100/4)}g proteína, {round(kcal_dia*pct_c/100/4)}g carbohidratos y "
+            f"{round(kcal_dia*pct_g/100/9)}g grasas al día).\n"
+            "Como solo se planifican algunas comidas, CADA PLATO DE ADULTO debe acercarse a su parte del día:\n"
+            + "\n".join(_lineas_obj) + "\n"
+            "Ajusta las raciones (gramos de proteína, guarnición y grasa) para cumplirlo y refleja esos\n"
+            "valores reales en 'calorias' y 'nutrientes'. Margen aceptable: ±10%.\n"
+            "Los NIÑOS NO siguen este objetivo: raciones y macros propias de su edad y crecimiento.\n"
+        )
 
         # ── Ratings históricos ────────────────────────────────────────────
         ratings_context = ""
@@ -374,6 +401,7 @@ NIÑOS:
 {no_repetir_block}
 {recetas_block}
 {dieta_block}
+{objetivo_block}
 {pantry_block}
 ## ALERGIAS Y RESTRICCIONES (CRÍTICO — NUNCA INCLUIR):
 {self._get_all_allergies(family_members)}
