@@ -71,8 +71,8 @@ class SettingsManager {
         document.getElementById('supermercado_preferido').value = this.settings.supermercado_preferido || '';
         document.getElementById('objetivo_kcal_adultos').value = this.settings.objetivo_kcal_adultos ?? 2000;
         document.getElementById('pct_proteina').value = this.settings.pct_proteina ?? 35;
-        document.getElementById('pct_carbos').value   = this.settings.pct_carbos ?? 35;
-        document.getElementById('pct_grasas').value   = this.settings.pct_grasas ?? 30;
+        document.getElementById('pct_carbos').value   = this.settings.pct_carbos ?? 20;
+        document.getElementById('pct_grasas').value   = this.settings.pct_grasas ?? 45;
         this._wireMacroHint();
         
         // Cleaning tab - checkboxes for cleaning days

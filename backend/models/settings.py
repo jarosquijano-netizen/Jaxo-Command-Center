@@ -31,8 +31,8 @@ class Settings(db.Model):
     # equilibrada de crecimiento y no se les aplica)
     objetivo_kcal_adultos = db.Column(db.Integer, default=2000)
     pct_proteina = db.Column(db.Integer, default=35)
-    pct_carbos = db.Column(db.Integer, default=35)
-    pct_grasas = db.Column(db.Integer, default=30)
+    pct_carbos = db.Column(db.Integer, default=20)
+    pct_grasas = db.Column(db.Integer, default=45)
 
     # Preferencias de limpieza
     dias_limpieza_profunda = db.Column(db.Text, default='["sabado"]')  # JSON array

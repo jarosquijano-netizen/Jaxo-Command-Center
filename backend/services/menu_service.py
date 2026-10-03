@@ -537,8 +537,8 @@ class MenuService:
             # Objetivo nutricional diario de los adultos
             'objetivo_kcal_adultos': 2000,
             'pct_proteina': 35,
-            'pct_carbos': 35,
-            'pct_grasas': 30,
+            'pct_carbos': 20,
+            'pct_grasas': 45,
         }
 
         # Valores guardados en Configuración

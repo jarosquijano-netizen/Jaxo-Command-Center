@@ -174,13 +174,22 @@ def create_app(config_name='default'):
                 for col, ddl in (
                     ('objetivo_kcal_adultos', 'INTEGER DEFAULT 2000'),
                     ('pct_proteina', 'INTEGER DEFAULT 35'),
-                    ('pct_carbos', 'INTEGER DEFAULT 35'),
-                    ('pct_grasas', 'INTEGER DEFAULT 30'),
+                    ('pct_carbos', 'INTEGER DEFAULT 20'),
+                    ('pct_grasas', 'INTEGER DEFAULT 45'),
                 ):
                     if col not in existing_cols:
                         db.session.execute(_text(f'ALTER TABLE settings ADD COLUMN {col} {ddl}'))
                         db.session.commit()
                         print(f"Migración: columna {col} añadida a settings")
+                # Bajar carbos: sólo filas que sigan con el reparto inicial 35/35/30
+                # (si el usuario ya lo personalizó, no se toca).
+                res = db.session.execute(_text(
+                    'UPDATE settings SET pct_carbos = 20, pct_grasas = 45 '
+                    'WHERE pct_proteina = 35 AND pct_carbos = 35 AND pct_grasas = 30'
+                ))
+                if res.rowcount:
+                    db.session.commit()
+                    print(f"Migración: reparto de macros bajado a 35/20/45 en {res.rowcount} fila(s)")
         except Exception as mig_err:
             db.session.rollback()
             print(f"WARNING:  Migración settings: {mig_err}")
