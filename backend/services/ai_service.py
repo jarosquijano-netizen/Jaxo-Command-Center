@@ -217,12 +217,15 @@ class AIService:
         dieta_block = ""
         if _low_carb:
             dieta_block = (
-                "\n## DIETA DE LOS ADULTOS (OBLIGATORIO — ALTA PROTEÍNA):\n"
+                "\n## DIETA DE LOS ADULTOS (OBLIGATORIO — ALTA PROTEÍNA / BAJA EN CARBOHIDRATOS):\n"
+                "- El menú de ADULTOS debe ser ALTO EN PROTEÍNA y BAJO EN CARBOHIDRATOS.\n"
                 "- Cada plato de adulto = ración generosa de proteína magra (pollo, pavo, ternera magra,\n"
                 "  cerdo magro, pescado, gambas/marisco, huevos) + abundante verdura + grasas saludables\n"
                 "  (aceite de oliva, aguacate, queso, frutos secos).\n"
-                "- Evita azúcares y harinas refinadas. Los carbohidratos que haya, de calidad:\n"
-                "  verdura, legumbre, integral o fruta — y dentro del objetivo numérico de abajo.\n"
+                "- MINIMIZAR en adultos: pan, pasta, arroz, patata, harinas, rebozados, azúcar y postres.\n"
+                "  Si una receta base lleva pasta/arroz (p.ej. tortellini, mac & cheese), en la versión\n"
+                "  ADULTO adáptala: sustituye por 'fideos' de calabacín, arroz de coliflor, más verdura o\n"
+                "  más proteína. Las gambas al ajillo y miel, filetes, pollo al horno, etc. encajan tal cual.\n"
                 "- Los NIÑOS NO siguen esta dieta: su menú es EQUILIBRADO, con carbohidratos adecuados para\n"
                 "  crecer (pueden llevar la pasta, arroz, mac & cheese, tortellini, etc. de las recetas).\n"
             )
@@ -242,19 +245,27 @@ class AIService:
         for _c in comidas:
             _share = _SHARE.get(_c, 1.0 / max(len(comidas), 1))
             _kc = round(kcal_dia * _share)
+            _carb = round(_kc * pct_c / 100 / 4)
+            # Con dieta low-carb el carbohidrato es un TECHO, no una meta.
+            _carb_txt = (f"carbohidratos MÁXIMO {_carb}g (cuanto más bajo, mejor)"
+                         if _low_carb else f"carbohidratos ~{_carb}g")
             _lineas_obj.append(
                 f"  - {_c}: ~{_kc} kcal · proteínas ~{round(_kc * pct_p / 100 / 4)}g · "
-                f"carbohidratos ~{round(_kc * pct_c / 100 / 4)}g · grasas ~{round(_kc * pct_g / 100 / 9)}g"
+                f"{_carb_txt} · grasas ~{round(_kc * pct_g / 100 / 9)}g"
             )
+        _nota_carb = (
+            "IMPORTANTE: el valor de carbohidratos es un LÍMITE SUPERIOR, no un objetivo a alcanzar.\n"
+            "Si el plato queda por debajo, mejor. Compensa las calorías que falten con proteína y\n"
+            "grasas saludables, NUNCA añadiendo pan, pasta, arroz o patata.\n"
+        ) if _low_carb else ""
         objetivo_block = (
             "\n## OBJETIVO NUTRICIONAL DE LOS ADULTOS (OBLIGATORIO — SOLO ADULTOS):\n"
-            f"Objetivo diario: {kcal_dia} kcal con {pct_p}% proteína / {pct_c}% carbohidratos / {pct_g}% grasas\n"
-            f"(= {round(kcal_dia*pct_p/100/4)}g proteína, {round(kcal_dia*pct_c/100/4)}g carbohidratos y "
-            f"{round(kcal_dia*pct_g/100/9)}g grasas al día).\n"
+            f"Referencia diaria: {kcal_dia} kcal con {pct_p}% proteína / {pct_c}% carbohidratos / {pct_g}% grasas.\n"
             "Como solo se planifican algunas comidas, CADA PLATO DE ADULTO debe acercarse a su parte del día:\n"
             + "\n".join(_lineas_obj) + "\n"
-            "Ajusta las raciones (gramos de proteína, guarnición y grasa) para cumplirlo y refleja esos\n"
-            "valores reales en 'calorias' y 'nutrientes'. Margen aceptable: ±10%.\n"
+            + _nota_carb +
+            "Ajusta las raciones (gramos de proteína, guarnición y grasa) y refleja los valores reales\n"
+            "en 'calorias' y 'nutrientes'. Margen en calorías y proteína: ±10%.\n"
             "Los NIÑOS NO siguen este objetivo: raciones y macros propias de su edad y crecimiento.\n"
         )
 
