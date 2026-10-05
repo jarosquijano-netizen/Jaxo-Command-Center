@@ -145,10 +145,10 @@
         </div>
       {%- endif -%}
       {%- if meal.preparacion -%}
-        <div class="pt-1.5 border-t border-white/10" style="min-height:0;overflow:hidden;">
+        <div class="pt-1.5 border-t border-white/10" style="flex:1 1 auto;min-height:0;overflow:hidden;">
           <p class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Preparación</p>
           <ol class="text-[11px] text-slate-300 space-y-0.5">
-            {%- for step in meal.preparacion[:3] -%}
+            {%- for step in meal.preparacion[:6] -%}
               <li class="flex gap-1"><span class="text-jaxo-cyan font-bold flex-shrink-0">{{ loop.index }}.</span>{{ step }}</li>
             {%- endfor -%}
           </ol>
