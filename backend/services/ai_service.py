@@ -1153,6 +1153,38 @@ IMPORTANTE:
             logger.error(f"Error en generate_single_day: {str(e)}")
             raise
 
+    def _objetivo_adultos_block(self, comidas, low_carb=True):
+        """Bloque de objetivo nutricional de adultos, repartido por comida.
+        Lo usan tanto la generación semanal como la de un día suelto."""
+        try:
+            from models.settings import Settings
+            _s = Settings.query.first()
+            kcal_dia = int(getattr(_s, 'objetivo_kcal_adultos', None) or 2000)
+            pct_p = int(getattr(_s, 'pct_proteina', None) or 35)
+            pct_c = int(getattr(_s, 'pct_carbos', None) or 20)
+            pct_g = int(getattr(_s, 'pct_grasas', None) or 45)
+        except Exception:
+            kcal_dia, pct_p, pct_c, pct_g = 2000, 35, 20, 45
+
+        share = {'desayuno': 0.25, 'comida': 0.35, 'merienda': 0.10, 'cena': 0.30}
+        lineas = []
+        for c in (comidas or ['cena']):
+            kc = round(kcal_dia * share.get(c, 0.30))
+            carb = round(kc * pct_c / 100 / 4)
+            carb_txt = f"carbohidratos MÁXIMO {carb}g" if low_carb else f"carbohidratos ~{carb}g"
+            lineas.append(
+                f"  - {c}: ~{kc} kcal · proteínas MÍNIMO {round(kc * pct_p / 100 / 4)}g · "
+                f"{carb_txt} · grasas hasta ~{round(kc * pct_g / 100 / 9)}g"
+            )
+        return (
+            "\n## OBJETIVO NUTRICIONAL DE LOS ADULTOS (OBLIGATORIO — SOLO ADULTOS):\n"
+            + "\n".join(lineas) + "\n"
+            "LA PROTEÍNA ES LA PRIORIDAD: es un MÍNIMO a alcanzar. Pon raciones reales por persona\n"
+            "(200-250 g de carne o pescado limpio, o equivalente) y dilo en los ingredientes.\n"
+            "Minimiza pan, pasta, arroz, patata, harinas y azúcar en los platos de ADULTO.\n"
+            "Los NIÑOS NO siguen este objetivo: raciones y macros propias de su crecimiento.\n"
+        )
+
     def _build_single_day_prompt(self, current_menu: Dict, dia: str,
                                   comidas: Optional[List[str]], tipo: str,
                                   family_members: List[Dict], preferences: Dict) -> str:
@@ -1208,6 +1240,7 @@ PREFERENCIAS:
 {(chr(10) + fridge_block) if fridge_block else ''}
 {tipo_instruccion}
 
+{self._objetivo_adultos_block(comidas)}
 Cada comida debe tener exactamente estos campos:
 - plato: nombre del plato (string)
 - descripcion: descripción corta 1 frase (string)
