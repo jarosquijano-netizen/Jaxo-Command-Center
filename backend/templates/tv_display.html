@@ -376,7 +376,48 @@
   }
   updateClock();
   setInterval(updateClock, 1000);
-  setTimeout(() => location.reload(), 5 * 60 * 1000);
+
+  /* ── Recarga robusta para pantalla de pared ──────────────────────────
+     Un único setTimeout no basta: si el dispositivo suspende la pestaña
+     (típico en Android TV / Chromecast tras horas), los timers se congelan
+     y la pantalla se queda con el menú viejo para siempre. Comprobamos el
+     reloj real en cada oportunidad de despertar. */
+  const PAGE_LOADED_AT = Date.now();
+  const MAX_AGE_MS = 5 * 60 * 1000;
+  let reloading = false;
+
+  function reloadIfStale(motivo) {
+    if (reloading) return;
+    const edad = Date.now() - PAGE_LOADED_AT;
+    if (edad >= MAX_AGE_MS) {
+      reloading = true;
+      console.log('[tv] recargando (' + motivo + ', ' + Math.round(edad / 1000) + 's)');
+      location.reload();
+    }
+  }
+
+  // Comprobación periódica en vez de un disparo único
+  setInterval(() => reloadIfStale('intervalo'), 30 * 1000);
+
+  // Al despertar la pestaña/dispositivo: aquí es donde se recupera de una
+  // suspensión larga, porque Date.now() sí refleja el tiempo real pasado.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) reloadIfStale('visible');
+  });
+  window.addEventListener('focus',  () => reloadIfStale('focus'));
+  window.addEventListener('pageshow', () => reloadIfStale('pageshow'));
+
+  // Si se cayó la red y vuelve, recargar aunque no haya pasado el tiempo
+  window.addEventListener('online', () => { if (!reloading) { reloading = true; location.reload(); } });
+
+  // Detector de reloj congelado: si entre dos tics pasa mucho más tiempo
+  // del esperado, el dispositivo estuvo dormido → refrescar datos.
+  let ultimoTic = Date.now();
+  setInterval(() => {
+    const ahora = Date.now();
+    if (ahora - ultimoTic > 90 * 1000) reloadIfStale('reloj-congelado');
+    ultimoTic = ahora;
+  }, 10 * 1000);
 
   async function tvRateMeal(starBtn) {
     const row = starBtn.closest('.meal-stars');
