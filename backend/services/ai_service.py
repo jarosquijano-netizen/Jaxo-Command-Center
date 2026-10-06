@@ -250,8 +250,8 @@ class AIService:
             _carb_txt = (f"carbohidratos MÁXIMO {_carb}g (cuanto más bajo, mejor)"
                          if _low_carb else f"carbohidratos ~{_carb}g")
             _lineas_obj.append(
-                f"  - {_c}: ~{_kc} kcal · proteínas ~{round(_kc * pct_p / 100 / 4)}g · "
-                f"{_carb_txt} · grasas ~{round(_kc * pct_g / 100 / 9)}g"
+                f"  - {_c}: ~{_kc} kcal · proteínas MÍNIMO {round(_kc * pct_p / 100 / 4)}g · "
+                f"{_carb_txt} · grasas hasta ~{round(_kc * pct_g / 100 / 9)}g"
             )
         _nota_carb = (
             "IMPORTANTE: el valor de carbohidratos es un LÍMITE SUPERIOR, no un objetivo a alcanzar.\n"
@@ -264,8 +264,14 @@ class AIService:
             "Como solo se planifican algunas comidas, CADA PLATO DE ADULTO debe acercarse a su parte del día:\n"
             + "\n".join(_lineas_obj) + "\n"
             + _nota_carb +
-            "Ajusta las raciones (gramos de proteína, guarnición y grasa) y refleja los valores reales\n"
-            "en 'calorias' y 'nutrientes'. Margen en calorías y proteína: ±10%.\n"
+            "LA PROTEÍNA ES LA PRIORIDAD: es un MÍNIMO que hay que alcanzar, no una referencia.\n"
+            "Para llegar, pon raciones reales de proteína por persona (p.ej. 200-250 g de carne o\n"
+            "pescado limpio, o equivalente en huevos/marisco) y dilo en los ingredientes.\n"
+            "Las GRASAS son el ajuste fino para cuadrar calorías: no las uses para rellenar; si un\n"
+            "plato se pasa de grasa y no llega a proteína, reduce aceite/embutido/nata y sube la carne.\n"
+            "ANTES DE RESPONDER, revisa plato por plato que CADA cena de adulto cumple el mínimo de\n"
+            "proteína; si alguno no llega, corrígelo subiendo la ración antes de dar el JSON.\n"
+            "Margen: calorías ±10%; la proteína nunca por debajo del mínimo.\n"
             "Los NIÑOS NO siguen este objetivo: raciones y macros propias de su edad y crecimiento.\n"
         )
 
