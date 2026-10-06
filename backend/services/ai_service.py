@@ -1207,6 +1207,7 @@ Cada comida debe tener exactamente estos campos:
 - descripcion: descripción corta 1 frase (string)
 - tiempo_prep: minutos (número)
 - calorias: kcal aproximadas (número)
+- nutrientes: objeto {{"proteinas_g": N, "carbohidratos_g": N, "grasas_g": N}} de la ración (OBLIGATORIO)
 - dificultad: "Fácil", "Media" o "Difícil"
 - alergenos: array de strings (vacío si ninguno)
 - ingredientes: array de máximo 8 strings con cantidades (ej: "200g pechuga de pollo")
@@ -1260,7 +1261,8 @@ Necesito regenerar parte de un menú semanal existente.
 ## INSTRUCCIONES:
 1. Regenera SOLAMENTE lo solicitado manteniendo coherencia con el resto del menú
 2. Respeta las mismas preferencias, alergias y restricciones
-3. Mantén el estilo y formato del menú existente
+3. Mantén el estilo y formato del menú existente: cada plato debe llevar los mismos campos,
+   incluidos "calorias" (número) y "nutrientes" ({{"proteinas_g": N, "carbohidratos_g": N, "grasas_g": N}})
 4. Si es solo una comida, asegúrate que combine bien con las otras comidas del día
 5. Responde SOLO con el JSON actualizado de la sección modificada
 

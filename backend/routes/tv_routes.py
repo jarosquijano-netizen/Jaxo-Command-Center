@@ -33,6 +33,31 @@ def tv_debug():
         result['adultos_today'] = adultos.get(today_key)
         ninos = md.get('menu_ninos', {})
         result['ninos_today'] = ninos.get(today_key)
+
+    # Resumen legible: ¿los platos de hoy traen calorías y macros?
+    def _resumen(dia_dict):
+        out = {}
+        for comida, plato in (dia_dict or {}).items():
+            if not isinstance(plato, dict):
+                continue
+            out[comida] = {
+                'plato': plato.get('plato') or plato.get('nombre'),
+                'tiene_calorias': bool(plato.get('calorias')),
+                'calorias': plato.get('calorias'),
+                'tiene_nutrientes': bool(plato.get('nutrientes')),
+                'nutrientes': plato.get('nutrientes'),
+                'campos': sorted(plato.keys()),
+            }
+        return out
+
+    if weekly:
+        wmd = weekly.get('menu_data') or {}
+        result['RESUMEN_semana_actual'] = {
+            'semana': weekly.get('semana_inicio'),
+            'adultos_hoy': _resumen((wmd.get('menu_adultos') or {}).get(today_key)),
+            'ninos_hoy': _resumen((wmd.get('menu_ninos') or {}).get(today_key)),
+        }
+
     return jsonify(result)
 
 
