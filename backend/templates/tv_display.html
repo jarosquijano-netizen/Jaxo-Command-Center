@@ -169,18 +169,38 @@
             </span>
           {%- endif -%}
           {{ diff_badge(meal.dificultad) }}
+          {%- if meal.calorias -%}
+            <span class="text-[10px] font-bold px-1.5 py-0.5 bg-jaxo-teal/20 text-jaxo-teal rounded">{{ meal.calorias }}kcal{% if meal.macros and meal.macros.pct_dia %} · {{ meal.macros.pct_dia }}% del día{% endif %}</span>
+          {%- endif -%}
         </div>
+        {%- if meal.macros -%}
+          {%- set m = meal.macros -%}
+          <div class="flex gap-1.5">
+            <span class="flex-1 text-center rounded px-1 py-1 bg-cyan-500/15">
+              <span class="block text-[11px] font-bold text-cyan-300">{{ m.prot_g }}g</span>
+              <span class="block text-[9px] font-bold text-cyan-400/80">PROT {{ m.prot_pct }}%</span>
+            </span>
+            <span class="flex-1 text-center rounded px-1 py-1 bg-blue-500/15">
+              <span class="block text-[11px] font-bold text-blue-300">{{ m.carb_g }}g</span>
+              <span class="block text-[9px] font-bold text-blue-400/80">CARB {{ m.carb_pct }}%</span>
+            </span>
+            <span class="flex-1 text-center rounded px-1 py-1 bg-violet-500/15">
+              <span class="block text-[11px] font-bold text-violet-300">{{ m.gras_g }}g</span>
+              <span class="block text-[9px] font-bold text-violet-400/80">GRASA {{ m.gras_pct }}%</span>
+            </span>
+          </div>
+        {%- endif -%}
         {%- if meal.ingredientes -%}
           <div class="pt-1 border-t border-white/10">
             <p class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Ingredientes</p>
-            <p class="text-[11px] text-slate-400 leading-snug">{{ meal.ingredientes[:5] | join(' · ') }}</p>
+            <p class="text-[11px] text-slate-400 leading-snug">{{ meal.ingredientes[:8] | join(' · ') }}</p>
           </div>
         {%- endif -%}
         {%- if meal.preparacion -%}
           <div class="pt-1 border-t border-white/10">
             <p class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Preparación</p>
             <ol class="text-[11px] text-slate-400 space-y-0.5">
-              {%- for step in meal.preparacion[:3] -%}
+              {%- for step in meal.preparacion[:6] -%}
                 <li class="flex gap-1"><span class="text-jaxo-cyan font-bold flex-shrink-0">{{ loop.index }}.</span>{{ step }}</li>
               {%- endfor -%}
             </ol>
