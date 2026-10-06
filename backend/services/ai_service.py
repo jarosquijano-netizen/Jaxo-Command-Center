@@ -1210,7 +1210,12 @@ IMPORTANTE:
         if preferences.get('dificultad'):
             prefs.append(f"Dificultad: {preferences['dificultad']}")
         if preferences.get('notas'):
-            prefs.append(f"Notas adicionales: {preferences['notas']}")
+            prefs.append(
+                f"PETICIÓN DEL USUARIO (PRIORITARIA): {preferences['notas']}\n"
+                "Si nombra un plato o ingrediente concreto (p.ej. 'lentejas', 'que sea pescado'),\n"
+                "ESE debe ser el plato principal; adáptalo a las reglas de dieta y macros,\n"
+                "pero no lo sustituyas por otro."
+            )
         prefs_str = '\n'.join(prefs) if prefs else 'Sin preferencias especiales'
 
         fridge_items = preferences.get('fridge_items', [])
