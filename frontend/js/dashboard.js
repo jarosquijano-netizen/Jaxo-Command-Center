@@ -159,6 +159,27 @@ class DashboardManager {
         } catch { return { adultos: {}, ninos: {} }; }
     }
 
+    /** Fila de macros (g y % de las kcal del plato) para la tarjeta del día. */
+    _macroRowHtml(dish) {
+        const n = (dish && dish.nutrientes) || {};
+        const p = Number(n.proteinas_g) || 0;
+        const c = Number(n.carbohidratos_g) || 0;
+        const g = Number(n.grasas_g) || 0;
+        if (p <= 0 && c <= 0 && g <= 0) return '';
+        const kcal = p * 4 + c * 4 + g * 9;
+        const pct = (x) => kcal > 0 ? Math.round(x / kcal * 100) : 0;
+        const cel = (val, lbl, pc, color, bg) =>
+            `<span style="flex:1;text-align:center;border-radius:8px;padding:5px 2px;background:${bg};">
+                <span style="display:block;font-size:13px;font-weight:700;color:${color};">${val}g</span>
+                <span style="display:block;font-size:9px;font-weight:700;color:${color};opacity:.8;">${lbl} ${pc}%</span>
+             </span>`;
+        return `<div style="display:flex;gap:6px;margin-top:8px;">
+            ${cel(Math.round(p), 'PROT', pct(p * 4), '#67e8f9', 'rgba(34,211,238,.15)')}
+            ${cel(Math.round(c), 'CARB', pct(c * 4), '#93c5fd', 'rgba(59,130,246,.15)')}
+            ${cel(Math.round(g), 'GRASA', pct(g * 9), '#c4b5fd', 'rgba(139,92,246,.15)')}
+        </div>`;
+    }
+
     _buildMenuSectionHtml(dayMenu) {
         const meals = Object.entries(dayMenu);
         if (!meals.length) return '<p class="db-menu-empty">Sin menú para hoy</p>';
@@ -190,7 +211,9 @@ class DashboardManager {
                 <div class="db-menu-hero-tags">
                     ${heroData.dificultad ? `<span class="db-menu-tag">${heroData.dificultad}</span>` : ''}
                     ${heroData.tiempo_prep ? `<span class="db-menu-tag">⏱ ${heroData.tiempo_prep} min</span>` : ''}
+                    ${heroData.calorias ? `<span class="db-menu-tag">🔥 ${heroData.calorias} kcal</span>` : ''}
                 </div>
+                ${this._macroRowHtml(heroData)}
                 <span class="db-menu-more" style="display:inline-flex;align-items:center;gap:3px;margin-top:8px;font-size:0.78rem;font-weight:600;color:#7db1ff;">
                     Ver receta completa
                     <span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span>
