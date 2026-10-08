@@ -1190,6 +1190,12 @@ IMPORTANTE:
                 "  tomate, boloñesa, albóndigas, hamburguesas, croquetas o rellenos.\n"
                 "  Constan en los ingredientes, pero no se anuncian en la descripción del plato.\n"
             )
+        txt += (
+            "- OBLIGATORIO: CADA plato de niños debe llevar AL MENOS UNA verdura de verdad.\n"
+            "  No vale quitarlas para esquivar el problema (patata y kétchup NO cuentan como verdura).\n"
+            "  Si no es de las que aceptan, va escondida: triturada en la salsa, rallada en la carne\n"
+            "  picada, en crema o en puré. El objetivo es que coman verdura sin verla.\n"
+        )
         return txt
 
     def _objetivo_adultos_block(self, comidas, low_carb=True):
