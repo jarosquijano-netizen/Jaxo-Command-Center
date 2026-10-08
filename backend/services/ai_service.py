@@ -1213,10 +1213,39 @@ IMPORTANTE:
             prefs.append(
                 f"PETICIÓN DEL USUARIO (PRIORITARIA): {preferences['notas']}\n"
                 "Si nombra un plato o ingrediente concreto (p.ej. 'lentejas', 'que sea pescado'),\n"
+                "ESE debe ser el plato principal. Si dice que NO quiere algo (p.ej. 'sin bacalao',\n"
+                "'nada de pescado'), queda PROHIBIDO usarlo.\n"
                 "ESE debe ser el plato principal; adáptalo a las reglas de dieta y macros,\n"
                 "pero no lo sustituyas por otro."
             )
         prefs_str = '\n'.join(prefs) if prefs else 'Sin preferencias especiales'
+
+        # Platos que hay AHORA en ese día: el usuario regenera porque no le
+        # convencen, así que no deben repetirse (salvo que los pida él mismo).
+        actuales = []
+        try:
+            _md = (current_menu or {}).get('menu_data') or {}
+            if isinstance(_md, str):
+                import json as _j
+                _md = _j.loads(_md)
+            for _bloque in ('menu_adultos', 'menu_ninos'):
+                _dia = (_md.get(_bloque) or {}).get(dia) or {}
+                for _c, _pl in _dia.items():
+                    if comidas and _c not in comidas:
+                        continue
+                    if isinstance(_pl, dict) and _pl.get('plato'):
+                        actuales.append(_pl['plato'])
+        except Exception:
+            actuales = []
+        evitar_block = ""
+        if actuales:
+            evitar_block = (
+                "\nEVITAR (el usuario está cambiando este día porque NO le convence lo que hay):\n"
+                + "\n".join(f"  - {p}" for p in dict.fromkeys(actuales))
+                + "\nNo repitas esos platos ni una variante cercana con el mismo ingrediente principal.\n"
+                "Propón algo CLARAMENTE distinto. Excepción: si la petición del usuario o los\n"
+                "ingredientes de casa mencionan expresamente ese alimento, entonces sí puedes usarlo.\n"
+            )
 
         fridge_items = preferences.get('fridge_items', [])
         fridge_mode = preferences.get('fridge_mode', 'base')
@@ -1251,6 +1280,7 @@ PREFERENCIAS:
 {(chr(10) + fridge_block) if fridge_block else ''}
 {tipo_instruccion}
 
+{evitar_block}
 {self._objetivo_adultos_block(comidas)}
 Cada comida debe tener exactamente estos campos:
 - plato: nombre del plato (string)
