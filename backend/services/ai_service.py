@@ -1171,6 +1171,27 @@ IMPORTANTE:
             logger.error(f"Error en generate_single_day: {str(e)}")
             raise
 
+    def _ninos_verdura_block(self, ninos):
+        """Regla de verdura escondida para los platos de niños."""
+        if not ninos:
+            return ""
+        rechazadas = sorted({v for n in ninos for v in (n.get('verduras_rechazadas') or [])})
+        aceptadas = sorted({v for n in ninos for v in (n.get('verduras_aceptadas') or [])})
+        if not rechazadas and not aceptadas:
+            return ""
+        txt = "\n## VERDURA EN LOS PLATOS DE NIÑOS (OBLIGATORIO):\n"
+        if aceptadas:
+            txt += f"- Aceptan sin problema: {', '.join(aceptadas)}.\n"
+        if rechazadas:
+            txt += (
+                f"- RECHAZAN: {', '.join(rechazadas)}. NO pueden aparecer en trozos reconocibles\n"
+                "  ni como guarnición aparte (nada de 'bastones', 'en gajos' o 'salteado de...').\n"
+                "  Si las usas, van TRITURADAS o ralladas muy fino dentro de cremas, purés, salsa de\n"
+                "  tomate, boloñesa, albóndigas, hamburguesas, croquetas o rellenos.\n"
+                "  Constan en los ingredientes, pero no se anuncian en la descripción del plato.\n"
+            )
+        return txt
+
     def _objetivo_adultos_block(self, comidas, low_carb=True):
         """Bloque de objetivo nutricional de adultos, repartido por comida.
         Lo usan tanto la generación semanal como la de un día suelto."""
@@ -1216,7 +1237,12 @@ IMPORTANTE:
             familia_desc += f"- {m['nombre']} (adulto): {m.get('estilo_alimentacion','Mediterráneo')}, Alergias: {alergias}\n"
         for m in ninos:
             alergias = ', '.join(m.get('alergias', [])) or 'Ninguna'
-            familia_desc += f"- {m['nombre']} (niño {m.get('edad','?')} años): Alergias: {alergias}\n"
+            _ok = ', '.join(m.get('verduras_aceptadas') or []) or '—'
+            _no = ', '.join(m.get('verduras_rechazadas') or []) or '—'
+            familia_desc += (
+                f"- {m['nombre']} (niño {m.get('edad','?')} años): Alergias: {alergias}. "
+                f"Verduras que acepta: {_ok}. Verduras que RECHAZA: {_no}\n"
+            )
 
         comidas_str = ', '.join(comidas) if comidas else 'desayuno, comida, merienda, cena'
 
@@ -1327,7 +1353,7 @@ PREFERENCIAS:
 {tipo_instruccion}
 
 {evitar_block}{semana_block}
-{self._objetivo_adultos_block(comidas)}
+{self._objetivo_adultos_block(comidas)}{self._ninos_verdura_block(ninos)}
 Cada comida debe tener exactamente estos campos:
 - plato: nombre del plato (string)
 - descripcion: descripción corta 1 frase (string)
