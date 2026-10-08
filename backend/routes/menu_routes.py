@@ -580,6 +580,48 @@ def get_menu_by_id(menu_id):
         }), 500
 
 
+@menu_bp.route('/<int:menu_id>/meal', methods=['DELETE'])
+def delete_meal(menu_id):
+    """Elimina comidas concretas de un día (p.ej. el desayuno del sábado).
+    Body: {"dia": "sabado", "comidas": ["desayuno","merienda"], "tipo": "ambos"}"""
+    try:
+        from models.menu import WeeklyMenu
+        from extensions import db
+        import json as _json
+
+        data = request.get_json() or {}
+        dia = data.get('dia')
+        comidas = data.get('comidas') or []
+        tipo = data.get('tipo', 'ambos')
+        if not dia or not comidas:
+            return jsonify({'success': False, 'message': 'Se requieren dia y comidas'}), 400
+
+        menu = WeeklyMenu.query.get(menu_id)
+        if not menu:
+            return jsonify({'success': False, 'message': 'Menú no encontrado'}), 404
+
+        md = _json.loads(menu.menu_data) if isinstance(menu.menu_data, str) else (menu.menu_data or {})
+        bloques = {'adultos': ['menu_adultos'], 'ninos': ['menu_ninos']}.get(tipo, ['menu_adultos', 'menu_ninos'])
+
+        borradas = []
+        for bloque in bloques:
+            dia_dict = (md.get(bloque) or {}).get(dia)
+            if not isinstance(dia_dict, dict):
+                continue
+            for c in comidas:
+                if c in dia_dict:
+                    dia_dict.pop(c)
+                    borradas.append(f'{bloque}/{c}')
+
+        menu.menu_data = _json.dumps(md, ensure_ascii=False)
+        db.session.commit()
+        return jsonify({'success': True, 'eliminadas': borradas, 'menu': menu.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error eliminando comida: {e}')
+        return jsonify({'success': False, 'message': 'Error eliminando la comida'}), 500
+
+
 @menu_bp.route('/<int:menu_id>', methods=['DELETE'])
 def delete_menu(menu_id):
     """Elimina un menú semanal"""
