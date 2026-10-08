@@ -1237,10 +1237,18 @@ IMPORTANTE:
         # convencen, así que no deben repetirse (salvo que los pida él mismo).
         actuales = []
         try:
-            _md = (current_menu or {}).get('menu_data') or {}
-            if isinstance(_md, str):
+            # generate_single_day recibe el menu_data YA desenvuelto, pero otras
+            # rutas pasan el menú completo: aceptar ambas formas.
+            _raw = current_menu or {}
+            if isinstance(_raw, str):
                 import json as _j
-                _md = _j.loads(_md)
+                _raw = _j.loads(_raw)
+            _md = _raw.get('menu_data') if isinstance(_raw, dict) and 'menu_data' in _raw else _raw
+            if isinstance(_md, str):
+                import json as _j2
+                _md = _j2.loads(_md)
+            if not isinstance(_md, dict):
+                _md = {}
             for _bloque in ('menu_adultos', 'menu_ninos'):
                 _dia = (_md.get(_bloque) or {}).get(dia) or {}
                 for _c, _pl in _dia.items():
