@@ -1588,6 +1588,12 @@ class MenuManager {
         if (step === 3) {
             this._gdState.time = document.getElementById('gdTimeInput').value || null;
             this._gdState.notes = document.getElementById('gdNotesInput').value.trim();
+            // Si escribió un ingrediente y no pulsó Enter, se perdía: recogerlo igualmente
+            const fridgeInput = document.getElementById('gdFridgeInput');
+            if (fridgeInput && fridgeInput.value.trim()) {
+                fridgeInput.value.split(',').forEach(v => this._addFridgeItem(v));
+                fridgeInput.value = '';
+            }
             this._gdState.fridgeItems = [...(this._fridgeItems || [])];
             this._gdState.fridgeMode = document.querySelector('input[name="gdFridgeMode"]:checked')?.value || 'base';
             this._buildGdSummary();

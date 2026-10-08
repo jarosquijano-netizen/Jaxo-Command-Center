@@ -1225,7 +1225,13 @@ IMPORTANTE:
             if fridge_mode == 'strict':
                 fridge_block = f"RESTRICCIÓN IMPORTANTE: El menú debe crearse ÚNICAMENTE con estos ingredientes disponibles en casa: {items_str}. No incluyas ningún ingrediente que no esté en esta lista. Si no es posible hacer una comida completa, simplifica el plato o combina los ingredientes de forma creativa."
             else:
-                fridge_block = f"PREFERENCIA: El usuario tiene estos ingredientes en casa y prefiere usarlos como base: {items_str}. Construye el menú alrededor de estos ingredientes pero puedes añadir otros básicos de despensa si es necesario para completar el plato."
+                fridge_block = (
+                    f"INGREDIENTES QUE HAY EN CASA (USAR OBLIGATORIAMENTE): {items_str}.\n"
+                    "Construye el plato ALREDEDOR de ellos. Si en la lista hay una proteína "
+                    "(pollo, pescado, ternera, cerdo, huevos, marisco...), ESA debe ser la proteína "
+                    "principal del plato: NO la sustituyas por otra. Puedes añadir básicos de despensa "
+                    "(aceite, especias, verduras, lácteos) para completar la receta."
+                )
         else:
             fridge_block = ''
 
