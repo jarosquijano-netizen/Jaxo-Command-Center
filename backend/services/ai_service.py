@@ -241,6 +241,11 @@ class AIService:
                 "  objetivo, así que cambia el ingrediente, no el número.\n"
                 "- Los NIÑOS NO siguen esta dieta: su menú es EQUILIBRADO, con carbohidratos adecuados para\n"
                 "  crecer (pueden llevar la pasta, arroz, mac & cheese, tortellini, etc. de las recetas).\n"
+                "- VERDURA ESCONDIDA EN LOS PLATOS DE NIÑOS: respeta sus verduras aceptadas y rechazadas.\n"
+                "  Las verduras que rechazan NO pueden aparecer en trozos reconocibles ni como guarnición\n"
+                "  aparte: incorpóralas TRITURADAS o ralladas finas dentro de cremas, purés, salsa de tomate,\n"
+                "  boloñesa, albóndigas, hamburguesas, croquetas o rellenos. En la descripción del plato no\n"
+                "  hace falta anunciarlas; en los ingredientes sí deben constar.\n"
             )
 
         # ── Objetivo nutricional diario de los adultos, repartido por comida ──
