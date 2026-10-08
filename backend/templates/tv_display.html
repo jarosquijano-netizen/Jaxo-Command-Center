@@ -399,6 +399,27 @@
   // Comprobación periódica en vez de un disparo único
   setInterval(() => reloadIfStale('intervalo'), 30 * 1000);
 
+  /* Detección inmediata de cambios: si se regenera un menú, la pantalla no
+     debe esperar al ciclo de 5 min. Consultamos una firma ligera. */
+  let versionInicial = null;
+  async function comprobarVersion() {
+    if (reloading) return;
+    try {
+      const r = await fetch('/api/tv-version', { cache: 'no-store' });
+      if (!r.ok) return;
+      const v = await r.json();
+      const firma = (v.menu_updated || '') + '|' + (v.today || '');
+      if (versionInicial === null) { versionInicial = firma; return; }
+      if (firma !== versionInicial) {
+        reloading = true;
+        console.log('[tv] contenido actualizado → recargando');
+        location.reload();
+      }
+    } catch (e) { /* sin red: el resto de disparadores cubren */ }
+  }
+  comprobarVersion();
+  setInterval(comprobarVersion, 20 * 1000);
+
   // Al despertar la pestaña/dispositivo: aquí es donde se recupera de una
   // suspensión larga, porque Date.now() sí refleja el tiempo real pasado.
   document.addEventListener('visibilitychange', () => {

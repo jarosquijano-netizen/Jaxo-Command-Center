@@ -605,6 +605,7 @@ class MenuManager {
                 this.updateWeekDisplay();
                 this.closeModal('generateMenuModal');
                 this.updateShoppingDropdown();
+                this._refreshDashboard();
                 this.showSuccess('¡Menú generado exitosamente!');
 
                 // Over-budget check
@@ -1678,6 +1679,15 @@ class MenuManager {
         setTimeout(() => el.remove(), 15000);
     }
 
+    /** Refresca el panel "Menú de Hoy" del dashboard tras cambiar un menú. */
+    _refreshDashboard() {
+        try {
+            if (typeof dashboardManager !== 'undefined' && dashboardManager?.loadAll) {
+                dashboardManager.loadAll();
+            }
+        } catch (e) { console.warn('[menu] no se pudo refrescar el dashboard', e); }
+    }
+
     async submitGenerateDay() {
         const s = this._gdState;
         const btn = document.getElementById('gdGenerateBtn');
@@ -1719,6 +1729,8 @@ class MenuManager {
                     const col = document.querySelector(`.mn-day[data-day="${s.day}"]`);
                     if (col) { col.classList.add('mn-day--glow'); setTimeout(() => col.classList.remove('mn-day--glow'), 3600); }
                 }, 50);
+                this.updateShoppingDropdown();
+                this._refreshDashboard();
                 this.showSuccess(`Menú del ${s.day} generado correctamente`);
             } else {
                 throw new Error(result.message || 'Error desconocido');

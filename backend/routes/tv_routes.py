@@ -13,6 +13,22 @@ logger = logging.getLogger(__name__)
 tv_bp = Blueprint('tv', __name__)
 
 
+@tv_bp.route('/api/tv-version')
+def tv_version():
+    """Firma ligera del contenido de la TV: si cambia, la pantalla recarga.
+    Evita esperar al ciclo de 5 minutos cuando se regenera un menú."""
+    from services.menu_service import menu_service
+    try:
+        weekly = menu_service.get_weekly_menu()
+        updated = (weekly or {}).get('updated_at') or ''
+    except Exception:
+        updated = ''
+    return jsonify({
+        'menu_updated': str(updated),
+        'today': datetime.now().strftime('%Y-%m-%d'),
+    })
+
+
 @tv_bp.route('/api/tv-debug')
 def tv_debug():
     """Diagnostic endpoint — shows raw menu data for TV troubleshooting."""
