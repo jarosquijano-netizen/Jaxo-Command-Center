@@ -227,6 +227,12 @@ class AIService:
                 "  (tortellini, fideuà, mac & cheese, paella...), la versión ADULTO DEBE sustituirlos\n"
                 "  de verdad en los INGREDIENTES: fideos de calabacín, arroz de coliflor, más verdura\n"
                 "  o más proteína. No vale mantener la pasta y declarar pocos carbohidratos.\n"
+                "- VARÍA LA GUARNICIÓN: no repitas siempre 'verduras asadas'. Alterna acompañamientos\n"
+                "  nutritivos y bajos en carbohidratos: arroz de coliflor, puré de coliflor o brócoli,\n"
+                "  fideos de calabacín, setas salteadas, berenjena al horno, pisto, espinacas a la crema,\n"
+                "  ensalada con aguacate y frutos secos, huevo poché o cocido, queso fresco o halloumi,\n"
+                "  hummus, edamame, pimientos asados, judías verdes con almendras.\n"
+                "  También vale una ración CONTROLADA de legumbre (lenteja, garbanzo) si cabe en el límite.\n"
                 "- COHERENCIA OBLIGATORIA: 'nutrientes' debe corresponderse con las CANTIDADES REALES\n"
                 "  de los ingredientes y la ración por persona. Referencia: pasta/fideos secos ~71 g de\n"
                 "  carbohidratos por 100 g; pasta fresca ~30 g/100 g; arroz seco ~78 g/100 g; pan ~50 g/100 g;\n"
@@ -1244,6 +1250,26 @@ IMPORTANTE:
                         actuales.append(_pl['plato'])
         except Exception:
             actuales = []
+        # Platos del RESTO de la semana: para no amontonar la misma proteína
+        otros_dias = []
+        try:
+            for _d, _comidas in (_md.get('menu_adultos') or {}).items():
+                if _d == dia:
+                    continue
+                for _pl in (_comidas or {}).values():
+                    if isinstance(_pl, dict) and _pl.get('plato'):
+                        otros_dias.append(f"{_d}: {_pl['plato']}")
+        except Exception:
+            otros_dias = []
+        semana_block = ""
+        if otros_dias:
+            semana_block = (
+                "\nRESTO DE LA SEMANA (para dar VARIEDAD, no repitas su proteína principal):\n"
+                + "\n".join(f"  - {x}" for x in otros_dias[:10])
+                + "\nElige una proteína distinta de las que ya dominan la semana (si ya hay mucho\n"
+                "pollo o salmón, usa ternera, cerdo, huevos, marisco, pavo, legumbre o pescado blanco).\n"
+            )
+
         evitar_block = ""
         if actuales:
             evitar_block = (
@@ -1287,7 +1313,7 @@ PREFERENCIAS:
 {(chr(10) + fridge_block) if fridge_block else ''}
 {tipo_instruccion}
 
-{evitar_block}
+{evitar_block}{semana_block}
 {self._objetivo_adultos_block(comidas)}
 Cada comida debe tener exactamente estos campos:
 - plato: nombre del plato (string)
