@@ -43,16 +43,29 @@ def _ensure_token_file():
 
 
 def _persist_token_to_db():
-    """After auth/refresh, save the token file contents back to DB for durability."""
+    """After auth/refresh, save the token file contents back to DB for durability.
+    Es lo único que hace sobrevivir la sesión de Google a un redeploy, así que
+    cualquier fallo se registra en vez de pasar en silencio."""
     token_path = str(Config.GOOGLE_TOKEN_PATH)
-    if not os.path.exists(token_path):
-        return
-    with open(token_path, 'r', encoding='utf-8') as f:
-        token_json = f.read()
-    settings = Settings.query.first()
-    if settings:
+    try:
+        if not os.path.exists(token_path):
+            logger.warning('[google] no se guarda el token: no existe %s', token_path)
+            return
+        with open(token_path, 'r', encoding='utf-8') as f:
+            token_json = f.read()
+        if not token_json.strip():
+            logger.warning('[google] no se guarda el token: fichero vacío')
+            return
+        settings = Settings.query.first()
+        if not settings:
+            logger.error('[google] no se guarda el token: no hay fila en settings')
+            return
         settings.google_token = token_json
         db.session.commit()
+        logger.info('[google] token guardado en BD (%d bytes)', len(token_json))
+    except Exception as e:
+        db.session.rollback()
+        logger.error('[google] ERROR guardando el token en BD: %s', e)
 
 
 @google_bp.route('/auth/status', methods=['GET'])
