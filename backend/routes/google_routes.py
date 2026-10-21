@@ -63,6 +63,9 @@ def auth_status():
         _persist_token_to_db()  # persist any auto-refresh that happened
         settings = Settings.query.first()
         status['has_credentials_json'] = bool(settings and settings.google_credentials)
+        # Distingue "nunca se guardó el token" (fallo de persistencia) de
+        # "hay token pero ya no sirve" (caducado o revocado).
+        status['has_token_in_db'] = bool(settings and settings.google_token)
         return jsonify({
             'success': True,
             'data': status
@@ -236,6 +239,14 @@ def list_events():
 def import_events():
     try:
         _ensure_token_file()
+        if not google_calendar_service.get_connection_status().get('connected'):
+            return jsonify({
+                'success': False,
+                'message': 'Google Calendar no está conectado. Vuelve a autorizar el acceso '
+                           'desde Calendario → Sincronizar.',
+                'needs_auth': True,
+            }), 409
+
         payload = request.get_json() or {}
         calendar_id = payload.get('calendar_id', 'jaxo')  # por defecto: solo el calendario JAXO
         from_str = payload.get('from')
