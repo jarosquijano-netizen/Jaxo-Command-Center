@@ -26,6 +26,11 @@ _STOPWORDS = {
 
 SIMILARITY_THRESHOLD = 0.88
 
+# Un plato (salvo desayuno) no puede volver hasta pasado ~1 mes: se compara
+# con las N semanas anteriores. Con 4, lo que se cocinó en la semana 1
+# puede volver a partir de la semana 6.
+NO_REPEAT_WEEKS = 4
+
 # Comidas que SÍ pueden repetirse (la familia desayuna parecido cada día).
 REPEATABLE_MEALS = {'desayuno'}
 
@@ -94,7 +99,8 @@ def find_repeats(menu_data: Dict, previous_dishes: Optional[List[str]] = None,
 
     - Dentro de la semana (por sección): la PRIMERA aparición se queda,
       las siguientes se marcan para sustituir.
-    - Contra semanas anteriores: cualquier coincidencia se marca.
+    - Contra el último mes (NO_REPEAT_WEEKS semanas): cualquier coincidencia
+      se marca. Pasado ese plazo la receta puede volver.
     - only_days: limita qué días pueden marcarse (los demás siguen
       contando como "ya usados"). Útil al generar un solo día.
     """
@@ -118,7 +124,7 @@ def find_repeats(menu_data: Dict, previous_dishes: Optional[List[str]] = None,
             elif marcable and any(same_dish(nombre, p) for p in previous):
                 repeats.append({
                     'section': section, 'dia': dia, 'comida': comida, 'plato': nombre,
-                    'motivo': 'ya se cocinó en semanas anteriores',
+                    'motivo': 'ya se cocinó este último mes',
                 })
             vistos.append((dia, comida, nombre))
     return repeats

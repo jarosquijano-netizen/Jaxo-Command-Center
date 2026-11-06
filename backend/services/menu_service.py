@@ -10,7 +10,7 @@ from extensions import db
 from models.menu import WeeklyMenu, MenuRating, SavedRecipe
 from models.family import FamilyMember
 from services.ai_service import ai_service
-from utils.dish_variety import dish_name, REPEATABLE_MEALS
+from utils.dish_variety import dish_name, REPEATABLE_MEALS, NO_REPEAT_WEEKS
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class MenuService:
             historical_ratings = self._get_historical_ratings()
 
             # Obtener platos de semanas anteriores para evitar repetición
-            previous_dishes = self._get_previous_dishes(week_start, weeks=3)
+            previous_dishes = self._get_previous_dishes(week_start, weeks=NO_REPEAT_WEEKS)
 
             # Obtener compras recientes (para que la IA no re-compre lo que ya hay en casa)
             recent_purchases = self._get_recent_purchases(days=21)
@@ -322,7 +322,7 @@ class MenuService:
             # Para que el día nuevo tampoco repita platos de semanas anteriores
             preferences = dict(preferences or {})
             if menu.semana_inicio and 'previous_dishes' not in preferences:
-                preferences['previous_dishes'] = self._get_previous_dishes(menu.semana_inicio, weeks=3)
+                preferences['previous_dishes'] = self._get_previous_dishes(menu.semana_inicio, weeks=NO_REPEAT_WEEKS)
 
             updated_data = self.ai_service.generate_single_day(
                 current_data, dia, comidas, tipo, family_members, preferences
@@ -577,7 +577,7 @@ class MenuService:
             'total_ninos': len([m for m in family_members if m['tipo'] == 'niño'])
         }
     
-    def _get_previous_dishes(self, current_week_start: date, weeks: int = 3) -> List[str]:
+    def _get_previous_dishes(self, current_week_start: date, weeks: int = NO_REPEAT_WEEKS) -> List[str]:
         """Returns list of dish names from the previous N weeks to avoid repetition."""
         try:
             cutoff = current_week_start - timedelta(weeks=weeks)

@@ -316,7 +316,7 @@ class AIService:
             if liked or disliked:
                 ratings_context = "\n## FEEDBACK DE LA FAMILIA:\n"
                 if liked:
-                    ratings_context += f"Les encantó (4-5★) — repetir cada 3-4 semanas:\n" + "\n".join(liked[:15]) + "\n"
+                    ratings_context += f"Les encantó (4-5★) — vuelve a incluirlos, pero solo si NO aparecen en la lista del último mes:\n" + "\n".join(liked[:15]) + "\n"
                 if disliked:
                     ratings_context += f"NO gustó (1-2★) — NO incluir nunca:\n" + "\n".join(disliked[:10]) + "\n"
 
@@ -332,8 +332,13 @@ class AIService:
 
         no_repetir_block = ""
         if previous_dishes:
-            lista = "\n".join(f"  - {d}" for d in previous_dishes[:60])
-            no_repetir_block = f"\n## PLATOS YA COCINADOS — NO REPETIR NINGUNO DE ESTOS:\n{lista}\n"
+            lista = "\n".join(f"  - {d}" for d in previous_dishes[:150])
+            no_repetir_block = (
+                "\n## PLATOS COCINADOS EL ÚLTIMO MES — NO REPETIR NINGUNO DE ESTOS:\n"
+                f"{lista}\n"
+                "Las recetas de hace MÁS de un mes (y las favoritas o guardadas que no estén en esta\n"
+                "lista) SÍ se pueden reutilizar: es bueno que vuelvan los platos que gustan.\n"
+            )
 
         # ── Despensa — artículos comprados recientemente ─────────────────
         # Perishable categories that should always be re-bought
@@ -1440,7 +1445,7 @@ Responde SOLO con JSON válido con EXACTAMENTE estos huecos y nada más:
                         otros_dias.append(f"{_d} {_c} ({_etq}): {_pl}")
         except Exception:
             otros_dias = []
-        anteriores = [p for p in (preferences.get('previous_dishes') or []) if p][:40]
+        anteriores = [p for p in (preferences.get('previous_dishes') or []) if p][:100]
         semana_block = ""
         if otros_dias:
             semana_block = (
@@ -1451,7 +1456,7 @@ Responde SOLO con JSON válido con EXACTAMENTE estos huecos y nada más:
             )
         if anteriores:
             semana_block += (
-                "\nYA COCINADOS LAS SEMANAS ANTERIORES — TAMPOCO LOS REPITAS:\n"
+                "\nYA COCINADOS EL ÚLTIMO MES — TAMPOCO LOS REPITAS (lo anterior a un mes sí puede volver):\n"
                 + "\n".join(f"  - {p}" for p in anteriores) + "\n"
             )
 
