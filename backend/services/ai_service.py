@@ -88,7 +88,12 @@ class AIService:
                 raise ValueError("No se pudo extraer JSON válido de la respuesta de Claude")
             
             self._validate_menu_structure(menu_data)
-            
+
+            # El prompt pide "cero repeticiones" pero el modelo no siempre cumple:
+            # se comprueba y se sustituyen solo los huecos repetidos.
+            menu_data = self.enforce_variety(menu_data, family_members,
+                                             previous_dishes=previous_dishes)
+
             logger.info(f"Menú generado exitosamente con claves: {list(menu_data.keys())}")
             return menu_data
             
@@ -1166,10 +1171,138 @@ IMPORTANTE:
             new_data = self._extract_json_from_response(content)
             if not new_data:
                 raise ValueError("No se pudo extraer JSON de la respuesta de Claude")
-            return self._merge_menu_changes(current_menu, new_data, dia, None, tipo)
+            merged = self._merge_menu_changes(current_menu, new_data, dia, None, tipo)
+            # Solo se corrige el día nuevo: el resto de la semana queda como estaba.
+            return self.enforce_variety(
+                merged, family_members,
+                previous_dishes=preferences.get('previous_dishes'),
+                only_days=[dia],
+                sections=self._sections_for(tipo),
+            )
         except Exception as e:
             logger.error(f"Error en generate_single_day: {str(e)}")
             raise
+
+    @staticmethod
+    def _sections_for(tipo: str):
+        return {'adultos': ('menu_adultos',), 'ninos': ('menu_ninos',)}.get(
+            tipo, ('menu_adultos', 'menu_ninos'))
+
+    @staticmethod
+    def _is_low_carb(family_members: List[Dict]) -> bool:
+        objetivos = " ".join(
+            (a.get('objetivo_alimentario') or '') for a in (family_members or [])
+            if a.get('tipo') == 'adulto' and a.get('rol_hogar', 'familia') == 'familia'
+        ).lower()
+        return any(k in objetivos for k in (
+            'proteí', 'protein', 'low-carb', 'low carb', 'baja en carbo', 'bajo en carbo', 'keto'
+        ))
+
+    def enforce_variety(self, menu_data: Dict, family_members: List[Dict],
+                        previous_dishes: Optional[List[str]] = None,
+                        only_days: Optional[List[str]] = None,
+                        sections=('menu_adultos', 'menu_ninos'),
+                        max_rounds: int = 2) -> Dict:
+        """
+        Detecta platos repetidos (dentro de la semana y frente a semanas
+        anteriores) y pide a Claude sustitutos SOLO para esos huecos.
+        Nunca rompe la generación: si algo falla, devuelve el menú tal cual.
+        """
+        from utils.dish_variety import find_repeats, dish_name
+
+        if not self.client or not isinstance(menu_data, dict):
+            return menu_data
+
+        for ronda in range(1, max_rounds + 1):
+            repeats = find_repeats(menu_data, previous_dishes, sections=sections, only_days=only_days)
+            if not repeats:
+                if ronda > 1:
+                    logger.info("Variedad OK tras corregir repeticiones")
+                return menu_data
+            logger.warning(
+                f"Ronda {ronda}: {len(repeats)} plato(s) repetido(s): "
+                + "; ".join(f"{r['section']}.{r['dia']}.{r['comida']}='{r['plato']}'" for r in repeats)
+            )
+            try:
+                prompt = self._build_variety_fix_prompt(menu_data, repeats, previous_dishes, family_members)
+                response = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=min(16000, 900 * len(repeats) + 1000),
+                    temperature=0.9,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                fixes = self._extract_json_from_response(response.content[0].text)
+            except Exception as e:
+                logger.error(f"No se pudieron corregir las repeticiones: {e}")
+                return menu_data
+            if not isinstance(fixes, dict):
+                logger.error("Corrección de repeticiones sin JSON válido")
+                return menu_data
+
+            aplicados = 0
+            for r in repeats:
+                nuevo = ((fixes.get(r['section']) or {}).get(r['dia']) or {}).get(r['comida'])
+                if isinstance(nuevo, dict) and dish_name(nuevo):
+                    menu_data.setdefault(r['section'], {}).setdefault(r['dia'], {})[r['comida']] = nuevo
+                    aplicados += 1
+            if not aplicados:
+                return menu_data
+
+        restantes = find_repeats(menu_data, previous_dishes, sections=sections, only_days=only_days)
+        if restantes:
+            logger.warning(f"Quedan {len(restantes)} repetición(es) tras {max_rounds} rondas")
+        return menu_data
+
+    def _build_variety_fix_prompt(self, menu_data: Dict, repeats: List[Dict],
+                                  previous_dishes: Optional[List[str]],
+                                  family_members: List[Dict]) -> str:
+        from utils.dish_variety import used_dishes
+
+        ninos = [m for m in (family_members or []) if m.get('tipo') == 'nino']
+        huecos = "\n".join(
+            f"  - {r['section']} / {r['dia']} / {r['comida']}: \"{r['plato']}\" ({r['motivo']})"
+            for r in repeats
+        )
+        prohibidos = []
+        for section in sorted({r['section'] for r in repeats}):
+            prohibidos += used_dishes(menu_data, section)
+        prohibidos += list(previous_dishes or [])[:60]
+        prohibidos_txt = "\n".join(f"  - {p}" for p in dict.fromkeys(prohibidos))
+
+        comidas_adulto = sorted({r['comida'] for r in repeats if r['section'] == 'menu_adultos'})
+        objetivo = self._objetivo_adultos_block(comidas_adulto, low_carb=self._is_low_carb(family_members)) \
+            if comidas_adulto else ""
+        verdura = self._ninos_verdura_block(ninos) if any(r['section'] == 'menu_ninos' for r in repeats) else ""
+
+        ejemplo = {}
+        for r in repeats:
+            ejemplo.setdefault(r['section'], {}).setdefault(r['dia'], {})[r['comida']] = "{ ... }"
+        esqueleto = json.dumps(ejemplo, ensure_ascii=False, indent=2).replace('"{ ... }"', '{ ... }')
+
+        return f"""Eres chef y nutricionista familiar. En este menú semanal hay platos REPETIDOS.
+Sustituye SOLO estos huecos por platos NUEVOS y distintos:
+{huecos}
+
+## PROHIBIDO usar estos platos ni variantes con el mismo nombre o la misma base
+(cambia la proteína principal o el tipo de preparación de verdad):
+{prohibidos_txt}
+
+Para desayunos y meriendas también hay que variar: alterna lácteos, huevos, tostadas,
+fruta, frutos secos, batidos, tortitas, etc. No repitas el mismo desayuno dos días.
+Los platos de niños (menu_ninos) son raciones infantiles, texturas suaves y sin picante.
+
+## ALERGIAS Y RESTRICCIONES (CRÍTICO — NUNCA INCLUIR):
+{self._get_all_allergies(family_members or [])}
+{objetivo}{verdura}
+Cada plato debe tener exactamente estos campos:
+- plato, descripcion (1 frase), tiempo_prep (número), calorias (número),
+- nutrientes: {{"proteinas_g": N, "carbohidratos_g": N, "grasas_g": N}} de la ración,
+- dificultad ("Fácil", "Media" o "Difícil"), alergenos (array),
+- ingredientes (máx 8, con cantidades), preparacion (máx 5 pasos).
+
+Responde SOLO con JSON válido con EXACTAMENTE estos huecos y nada más:
+{esqueleto}
+"""
 
     def _ninos_verdura_block(self, ninos):
         """Regla de verdura escondida para los platos de niños."""
@@ -1295,24 +1428,30 @@ IMPORTANTE:
                         actuales.append(_pl['plato'])
         except Exception:
             actuales = []
-        # Platos del RESTO de la semana: para no amontonar la misma proteína
+        # Platos del RESTO de la semana (adultos y niños, todas las comidas):
+        # ninguno puede repetirse en el día nuevo.
         otros_dias = []
         try:
-            for _d, _comidas in (_md.get('menu_adultos') or {}).items():
-                if _d == dia:
-                    continue
-                for _pl in (_comidas or {}).values():
-                    if isinstance(_pl, dict) and _pl.get('plato'):
-                        otros_dias.append(f"{_d}: {_pl['plato']}")
+            from utils.dish_variety import iter_slots
+            for _bloque, _etq in (('menu_adultos', 'adultos'), ('menu_ninos', 'niños')):
+                for _d, _c, _pl in iter_slots(_md, _bloque):
+                    if _d != dia:
+                        otros_dias.append(f"{_d} {_c} ({_etq}): {_pl}")
         except Exception:
             otros_dias = []
+        anteriores = [p for p in (preferences.get('previous_dishes') or []) if p][:40]
         semana_block = ""
         if otros_dias:
             semana_block = (
-                "\nRESTO DE LA SEMANA (para dar VARIEDAD, no repitas su proteína principal):\n"
-                + "\n".join(f"  - {x}" for x in otros_dias[:10])
-                + "\nElige una proteína distinta de las que ya dominan la semana (si ya hay mucho\n"
+                "\nRESTO DE LA SEMANA — NO REPITAS NINGUNO DE ESTOS PLATOS (ni desayunos ni meriendas):\n"
+                + "\n".join(f"  - {x}" for x in otros_dias[:40])
+                + "\nElige además una proteína distinta de las que ya dominan la semana (si ya hay mucho\n"
                 "pollo o salmón, usa ternera, cerdo, huevos, marisco, pavo, legumbre o pescado blanco).\n"
+            )
+        if anteriores:
+            semana_block += (
+                "\nYA COCINADOS LAS SEMANAS ANTERIORES — TAMPOCO LOS REPITAS:\n"
+                + "\n".join(f"  - {p}" for p in anteriores) + "\n"
             )
 
         evitar_block = ""

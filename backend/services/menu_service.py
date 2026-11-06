@@ -10,6 +10,7 @@ from extensions import db
 from models.menu import WeeklyMenu, MenuRating, SavedRecipe
 from models.family import FamilyMember
 from services.ai_service import ai_service
+from utils.dish_variety import dish_name
 
 logger = logging.getLogger(__name__)
 
@@ -318,6 +319,11 @@ class MenuService:
 
             family_members = self._get_family_members()
 
+            # Para que el día nuevo tampoco repita platos de semanas anteriores
+            preferences = dict(preferences or {})
+            if menu.semana_inicio and 'previous_dishes' not in preferences:
+                preferences['previous_dishes'] = self._get_previous_dishes(menu.semana_inicio, weeks=3)
+
             updated_data = self.ai_service.generate_single_day(
                 current_data, dia, comidas, tipo, family_members, preferences
             )
@@ -591,10 +597,9 @@ class MenuService:
                             if not isinstance(day_meals, dict):
                                 continue
                             for meal in day_meals.values():
-                                if isinstance(meal, dict):
-                                    name = meal.get('plato') or meal.get('nombre') or meal.get('name')
-                                    if name:
-                                        dishes.append(name)
+                                name = dish_name(meal)
+                                if name:
+                                    dishes.append(name)
                 except Exception:
                     continue
             # Deduplicate preserving order
