@@ -451,7 +451,8 @@ NIÑOS:
    en "QUÉ GENERAR EXACTAMENTE" (si no aparece ese bloque: {', '.join(comidas)} en todos los días).
 2. SIEMPRE dos versiones: menu_adultos y menu_ninos. El menú de niños es adaptado (texturas suaves,
    sin especias fuertes, raciones menores) — NUNCA una copia literal del adulto.
-3. VARIEDAD TOTAL: cero repeticiones dentro de la semana. Cero coincidencias con la lista "NO REPETIR".
+3. VARIEDAD TOTAL: cero repeticiones dentro de la semana en comida, merienda y cena. Cero coincidencias con la lista "NO REPETIR".
+   EXCEPCIÓN: el DESAYUNO sí puede repetirse (basta con 2-3 desayunos que se alternen).
 4. Rotar proteínas: máx 2 días seguidos la misma (pollo, ternera, cerdo, pescado, legumbres, huevos, tofu).
 5. Verdura abundante en cada cena de adultos. (Si NO hay dieta baja en carbohidratos, incluye además al menos 2 platos vegetarianos/de legumbres por semana en adultos.)
 6. Tiempo de preparación realista para días de trabajo (máx 45 min lunes-viernes, hasta 90 min fin de semana).
@@ -1287,8 +1288,8 @@ Sustituye SOLO estos huecos por platos NUEVOS y distintos:
 (cambia la proteína principal o el tipo de preparación de verdad):
 {prohibidos_txt}
 
-Para desayunos y meriendas también hay que variar: alterna lácteos, huevos, tostadas,
-fruta, frutos secos, batidos, tortitas, etc. No repitas el mismo desayuno dos días.
+Las meriendas también hay que variarlas: alterna lácteos, fruta, frutos secos, tostadas,
+batidos, tortitas, etc. (Los desayunos sí pueden repetirse.)
 Los platos de niños (menu_ninos) son raciones infantiles, texturas suaves y sin picante.
 
 ## ALERGIAS Y RESTRICCIONES (CRÍTICO — NUNCA INCLUIR):
@@ -1435,7 +1436,7 @@ Responde SOLO con JSON válido con EXACTAMENTE estos huecos y nada más:
             from utils.dish_variety import iter_slots
             for _bloque, _etq in (('menu_adultos', 'adultos'), ('menu_ninos', 'niños')):
                 for _d, _c, _pl in iter_slots(_md, _bloque):
-                    if _d != dia:
+                    if _d != dia and _c != 'desayuno':
                         otros_dias.append(f"{_d} {_c} ({_etq}): {_pl}")
         except Exception:
             otros_dias = []
@@ -1443,7 +1444,7 @@ Responde SOLO con JSON válido con EXACTAMENTE estos huecos y nada más:
         semana_block = ""
         if otros_dias:
             semana_block = (
-                "\nRESTO DE LA SEMANA — NO REPITAS NINGUNO DE ESTOS PLATOS (ni desayunos ni meriendas):\n"
+                "\nRESTO DE LA SEMANA — NO REPITAS NINGUNO DE ESTOS PLATOS (el desayuno sí puede repetirse):\n"
                 + "\n".join(f"  - {x}" for x in otros_dias[:40])
                 + "\nElige además una proteína distinta de las que ya dominan la semana (si ya hay mucho\n"
                 "pollo o salmón, usa ternera, cerdo, huevos, marisco, pavo, legumbre o pescado blanco).\n"

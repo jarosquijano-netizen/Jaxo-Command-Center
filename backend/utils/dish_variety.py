@@ -26,6 +26,9 @@ _STOPWORDS = {
 
 SIMILARITY_THRESHOLD = 0.88
 
+# Comidas que SÍ pueden repetirse (la familia desayuna parecido cada día).
+REPEATABLE_MEALS = {'desayuno'}
+
 
 def dish_name(meal) -> str:
     """Nombre del plato en cualquiera de los formatos que ha tenido el JSON."""
@@ -100,7 +103,7 @@ def find_repeats(menu_data: Dict, previous_dishes: Optional[List[str]] = None,
     repeats = []
     for section in sections:
         vistos: List[Tuple[str, str, str]] = []
-        slots = list(iter_slots(menu_data, section))
+        slots = [s for s in iter_slots(menu_data, section) if s[1] not in REPEATABLE_MEALS]
         if only:
             # Los días fijos van primero: el día nuevo es el que debe cambiar.
             slots = [s for s in slots if s[0] not in only] + [s for s in slots if s[0] in only]
@@ -122,4 +125,5 @@ def find_repeats(menu_data: Dict, previous_dishes: Optional[List[str]] = None,
 
 
 def used_dishes(menu_data: Dict, section: str) -> List[str]:
-    return list(dict.fromkeys(n for _, _, n in iter_slots(menu_data, section)))
+    return list(dict.fromkeys(
+        n for _, c, n in iter_slots(menu_data, section) if c not in REPEATABLE_MEALS))

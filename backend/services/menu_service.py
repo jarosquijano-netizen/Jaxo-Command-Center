@@ -10,7 +10,7 @@ from extensions import db
 from models.menu import WeeklyMenu, MenuRating, SavedRecipe
 from models.family import FamilyMember
 from services.ai_service import ai_service
-from utils.dish_variety import dish_name
+from utils.dish_variety import dish_name, REPEATABLE_MEALS
 
 logger = logging.getLogger(__name__)
 
@@ -596,7 +596,9 @@ class MenuService:
                         for day_meals in (data.get(section) or {}).values():
                             if not isinstance(day_meals, dict):
                                 continue
-                            for meal in day_meals.values():
+                            for comida, meal in day_meals.items():
+                                if comida in REPEATABLE_MEALS:
+                                    continue
                                 name = dish_name(meal)
                                 if name:
                                     dishes.append(name)
